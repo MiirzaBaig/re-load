@@ -92,15 +92,11 @@ async function menu(to: string, language: "ar" | "en", profileName?: string) {
   const rows = language === "ar" ? [
     { id: "start_return", title: "طلب إرجاع جديد", description: "نراجع الطلب وسياسة المتجر" },
     { id: "check_status", title: "متابعة طلب سابق", description: "اعرف آخر تحديث على طلبك" },
-    { id: "merchant_setup", title: "ربط متجر", description: "إعداد ريلود لمتجرك" },
-    { id: "human_help", title: "التحدث مع الفريق", description: "نحوّل المحادثة لأحد أفراد الفريق" },
     { id: "report_bug", title: "الإبلاغ عن مشكلة", description: "أرسل لنا ما واجهته" },
     { id: "send_feedback", title: "إرسال ملاحظة", description: "شاركنا رأيك أو اقتراحك" },
   ] : [
     { id: "start_return", title: "Start a return", description: "Check your order against store policy" },
     { id: "check_status", title: "Track a return", description: "See the latest update on your case" },
-    { id: "merchant_setup", title: "Connect a store", description: "Set up Relod for your business" },
-    { id: "human_help", title: "Talk to our team", description: "Hand this conversation to a person" },
     { id: "report_bug", title: "Report a problem", description: "Tell us what went wrong" },
     { id: "send_feedback", title: "Send feedback", description: "Share an idea or suggestion" },
   ];
@@ -266,19 +262,12 @@ async function processFlow(admin: Admin, store: Store, conversation: Conversatio
     return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
   }
   if (normalized === "human_help") {
-    await admin.from("whatsapp_conversations").update({ state: "HANDED_TO_HUMAN" }).eq("id", conversation.id);
-    const body = language === "ar" ? "وصلنا طلبك للفريق. بيراجعون المحادثة ويردون عليك هنا خلال ساعات العمل." : "We’ve passed this conversation to our team. Someone will reply here during business hours.";
+    const body = language === "ar" ? "الدعم المباشر غير متاح حاليًا. اختر «الإبلاغ عن مشكلة» من القائمة وأرسل لنا التفاصيل، وبنحفظها للفريق مع سياق المحادثة." : "Live support is not available yet. Choose Report a problem from the menu and send the details; we’ll save it for the team with the conversation context.";
     return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
   }
   if (normalized === "merchant_setup") {
-    const token = `${crypto.randomUUID()}${crypto.randomUUID()}`;
-    await admin.rpc("create_whatsapp_onboarding_token", {
-      p_token_hash: await sha256(token), p_store_id: store.id, p_conversation_id: conversation.id,
-      p_expires_at: new Date(Date.now() + 10 * 60_000).toISOString(),
-    });
-    const destination = `/app/integrations?onboarding=${encodeURIComponent(token)}`;
-    const link = `${env("APP_URL").replace(/\/$/, "")}/?auth=1&returnUrl=${encodeURIComponent(destination)}`;
-    const body = language === "ar" ? `أكيد. هذا رابط آمن لربط متجرك في سلة:\n${link}\n\nالرابط صالح لمدة 10 دقائق، وما نطلب كلمة مرور متجرك.` : `Of course. Use this secure link to connect your Salla store:\n${link}\n\nThe link is valid for 10 minutes. Relod never asks for your store password.`;
+    const link = `${env("APP_URL").replace(/\/$/, "")}/app`;
+    const body = language === "ar" ? `إعداد المتجر وإدارة السياسة تتم من مساحة عمل ريلود:\n${link}\n\nواتساب مخصص لطلبات العملاء ومتابعتها.` : `Store setup and policy management are handled in the Relod workspace:\n${link}\n\nWhatsApp is reserved for customer returns and status updates.`;
     return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
   }
   if (normalized === "onboarding_later") {
@@ -541,11 +530,11 @@ async function processFlow(admin: Admin, store: Store, conversation: Conversatio
     const outcome = evaluated.decision?.outcome;
     const reference = caseId ? `RL-${caseId.slice(0, 8).toUpperCase()}` : null;
     const body = language === "ar"
-      ? outcome === "ELIGIBLE" ? `تمت الموافقة على طلب الإرجاع ✅\n\nرقم المتابعة: ${reference}\nسجّلنا الحالة لدى ${store.name}، وبنرسل لك هنا أي تحديث جديد.` : outcome === "MANUAL_REVIEW" ? `طلبك يحتاج مراجعة من المتجر.\n\nرقم المتابعة: ${reference}\nما رفضنا الطلب؛ فقط نحتاج من ${store.name} يتأكدون من بعض البيانات، وبنبلغك هنا.` : `للأسف، الطلب ما ينطبق عليه شرط الإرجاع في سياسة ${store.name}.\n\n${decisionExplanation(evaluated.decision, language)}\nإذا تحتاج توضيح، اختر «أحتاج مساعدة».`
-      : outcome === "ELIGIBLE" ? `Your return has been approved ✅\n\nReference: ${reference}\nThe case is now with ${store.name}. We’ll send any updates here.` : outcome === "MANUAL_REVIEW" ? `Your request needs a quick review by the store.\n\nReference: ${reference}\nIt hasn’t been rejected—${store.name} just needs to confirm some details. We’ll update you here.` : `This request doesn’t meet one of ${store.name}’s published return conditions.\n\n${decisionExplanation(evaluated.decision, language)}\nChoose “I need help” if you’d like clarification.`;
+      ? outcome === "ELIGIBLE" ? `طلبك مؤهل للإرجاع ✅\n\nرقم المتابعة: ${reference}\nأنشأنا الحالة لدى ${store.name}، وبنرسل لك هنا أي تحديث جديد.` : outcome === "MANUAL_REVIEW" ? `طلبك يحتاج مراجعة من المتجر.\n\nرقم المتابعة: ${reference}\nما رفضنا الطلب؛ فقط نحتاج من ${store.name} يتأكدون من بعض البيانات، وبنبلغك هنا.` : `للأسف، الطلب ما ينطبق عليه شرط الإرجاع في سياسة ${store.name}.\n\n${decisionExplanation(evaluated.decision, language)}`
+      : outcome === "ELIGIBLE" ? `Your request is eligible for return ✅\n\nReference: ${reference}\nA case has been created with ${store.name}. We’ll send any updates here.` : outcome === "MANUAL_REVIEW" ? `Your request needs a quick review by the store.\n\nReference: ${reference}\nIt hasn’t been rejected—${store.name} just needs to confirm some details. We’ll update you here.` : `This request doesn’t meet one of ${store.name}’s published return conditions.\n\n${decisionExplanation(evaluated.decision, language)}`;
     const buttons = language === "ar"
-      ? [{ id: "feedback_clear", title: "واضح، شكرًا" }, { id: "human_help", title: "أحتاج مساعدة" }]
-      : [{ id: "feedback_clear", title: "Clear, thank you" }, { id: "human_help", title: "I need help" }];
+      ? [{ id: "feedback_clear", title: "واضح، شكرًا" }, { id: "report_bug", title: "الإبلاغ عن مشكلة" }]
+      : [{ id: "feedback_clear", title: "Clear, thank you" }, { id: "report_bug", title: "Report a problem" }];
     return { body, result: await sendWhatsAppButtons(to, body, buttons), type: "INTERACTIVE" as const };
   }
   if (flow.step === "COMPLETE" && normalized === "feedback_clear") {

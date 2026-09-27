@@ -124,8 +124,8 @@ export function LandingPage() {
   const heroLine1 = t("Faster return decisions.", "قرارات إرجاع أسرع.");
   const heroLine2 = t("A clearer path to financing.", "وطريق أوضح للتمويل.");
   const heroBody = t(
-    "AI reads your return policy and answers customers in seconds. Close returns faster, then qualify for financing.",
-    "يقرأ الذكاء الاصطناعي سياسة الإرجاع ويجيب عملاءك خلال ثوانٍ. أغلق المرتجعات أسرع، ثم تأهّل للتمويل.",
+    "AI helps structure your return policy. Merchant-approved rules give customers a clear answer in seconds and create reliable data for future financing assessment.",
+    "يساعد الذكاء الاصطناعي في تنظيم سياسة الإرجاع. وتمنح القواعد التي يعتمدها التاجر العملاء إجابة واضحة خلال ثوانٍ، وتبني بيانات موثوقة لتقييم فرص التمويل مستقبلًا.",
   );
   const heroSteps = HERO_STEPS.map((step, index) => ({ ...step, label: [t("Policy clause", "نص السياسة"), t("Approved rule", "قاعدة معتمدة"), t("Order fact", "بيانات الطلب")][index], value: [t("Items may be returned within 14 days of delivery", "يمكن إرجاع المنتجات خلال 14 يومًا من التسليم"), t("Return window: 14 days from delivery date", "مدة الإرجاع: 14 يومًا من تاريخ التسليم"), t("Delivered 6 days ago", "تم التسليم قبل 6 أيام")][index] }));
   // "Required for the live pilot" was an internal note, not a customer claim.
@@ -135,7 +135,7 @@ export function LandingPage() {
     window.open(getWhatsAppStartUrl(), "_blank", "noopener,noreferrer");
   };
   const setupSteps = [
-    { label: t("Connect Salla", "اربط سلة"), icon: "salla" as const },
+    { label: t("Connect your store", "اربط متجرك"), icon: "salla" as const },
     { label: t("Approve your policy", "اعتمد سياستك"), icon: FileCheck2 },
     { label: t("Activate WhatsApp", "فعّل واتساب"), icon: "whatsapp" as const },
     { label: t("Run your first test", "نفّذ أول اختبار"), icon: MessageCircleMore },
@@ -282,7 +282,7 @@ export function LandingPage() {
                 {t("Returns tie up cash. Relod shortens the gap.", "المرتجعات تجمّد نقدك. ريلود يقصّر الفجوة.")}
               </h2>
               <p className="mt-4 text-lg leading-relaxed text-muted-foreground text-pretty">
-                {t("Every day a return sits undecided is working capital locked in stock you cannot sell. When decisions are automated against your own policy, cases close sooner, your return data becomes reliable, and the path to financing gets shorter.", "كل يوم يبقى فيه طلب الإرجاع دون قرار هو رأس مال عامل محتجز في بضاعة لا يمكن بيعها. وعندما تُؤتمت القرارات وفق سياسة متجرك، تُغلق الحالات أسرع، وتصبح بيانات مرتجعاتك موثوقة، ويقصر الطريق إلى التمويل.")}
+                {t("Every day a return sits undecided is working capital locked in stock you cannot sell. Relod applies your approved rules consistently, helping cases move sooner and making return data clearer for future financing assessment.", "كل يوم يبقى فيه طلب الإرجاع دون قرار هو رأس مال عامل محتجز في بضاعة لا يمكن بيعها. يطبّق ريلود قواعدك المعتمدة باستمرار، مما يساعد على تسريع معالجة الحالات وتوضيح بيانات المرتجعات لتقييم فرص التمويل مستقبلًا.")}
               </p>
             </div>
           </ScrollReveal>
@@ -295,8 +295,8 @@ export function LandingPage() {
                   desc: t("AI reads your policy and turns it into repeatable return decisions.", "يقرأ الذكاء الاصطناعي سياستك ويحوّلها إلى قرارات إرجاع قابلة للتكرار."),
                 },
                 {
-                  label: t("Returns financing", "تمويل المرتجعات"),
-                  desc: t("Move from an approved return to a clearer funding path.", "انتقل من إرجاع معتمد إلى طريق أوضح للتمويل."),
+                  label: t("Financing readiness", "الاستعداد للتمويل"),
+                  desc: t("Build documented return data that can support a future financing assessment.", "أنشئ بيانات مرتجعات موثّقة يمكن أن تدعم تقييم التمويل مستقبلًا."),
                 },
                 {
                   label: t("Evidence and control", "الأدلة والتحكم"),
@@ -602,7 +602,7 @@ export function LandingPage() {
                 {t("See a policy become an answer.", "شاهد السياسة تتحول إلى إجابة.")}
               </h2>
               <p className="max-w-md text-lg leading-relaxed text-muted-foreground text-pretty">
-                {t("Connect Salla, approve your policy, and test the WhatsApp return journey from one guided setup.", "اربط سلة، واعتمد سياستك، واختبر رحلة الإرجاع عبر واتساب من خلال إعداد واحد موجّه.")}
+                {t("Connect your store and approve its return policy in the workspace. Customers can then receive clear decisions through WhatsApp.", "اربط متجرك واعتمد سياسة الإرجاع من مساحة العمل، ثم يحصل العملاء على قرارات واضحة عبر واتساب.")}
               </p>
               <a
                 href="#whatsapp"

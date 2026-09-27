@@ -421,11 +421,13 @@ export function WhatsAppConversation({
   steps,
   refundLabel,
   refundAmount,
+  showRefundCard = true,
   caption,
 }: {
   steps: ConversationStep[];
   refundLabel: string;
   refundAmount: string;
+  showRefundCard?: boolean;
   caption: string;
 }) {
   const reduceMotion = useReducedMotion();
@@ -542,7 +544,7 @@ export function WhatsAppConversation({
 
         {/* The payoff: the refund lands in the same thread the customer
             already had open. */}
-        {done && (
+        {showRefundCard && done && (
           <motion.div
             initial={reduceMotion ? false : { opacity: 0, y: 12, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}

@@ -95,7 +95,7 @@ export function OverviewPage() {
       ),
       cta: storeConnected
         ? t("Manage connection", "إدارة الربط")
-        : t("Connect Salla", "ربط سلة"),
+        : t("Connect store", "ربط المتجر"),
       href: "/app/integrations",
       icon: Plug,
     },

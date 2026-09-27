@@ -89,3 +89,11 @@ Run TypeScript checks, production build, focused browser checks in English/Arabi
 - WhatsApp supports Report a problem and Send feedback with preview/edit/cancel confirmation. Reports are stored in `product_reports` with safe workflow context.
 - Workspace route `/app/reports` lists and resolves reports. Resolving a WhatsApp report sends a WhatsApp confirmation.
 - Migration: `202609260001_whatsapp_policy_and_reports.sql`. Functions: `whatsapp-webhook`, `salla-oauth-callback`, `whatsapp-onboarding`, `product-report-update`.
+
+## 2026-09-27 — MVP channel boundary and truthful product copy
+- Customer returns and status tracking remain in WhatsApp. Merchant store connection, policy management, cases, and settings belong in the authenticated web workspace.
+- Merchant setup and unimplemented human handoff are hidden from the WhatsApp customer menu. Existing merchant-onboarding code remains dormant for possible later use; direct legacy commands route merchants to the workspace.
+- WhatsApp eligible outcomes mean policy eligibility and case creation, not a completed refund. Refund execution remains a merchant-controlled operational step.
+- Public examples stop at a clear, documented decision. They do not claim live photo analysis, automatic refunds, guaranteed processing times, or guaranteed financing.
+- General entry points say “Connect store”; Salla is named only inside the platform-specific integration experience.
+- Financing is positioned as a future assessment supported by clearer return data, subject to a financing partner and eligibility.

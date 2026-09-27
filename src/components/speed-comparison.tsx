@@ -51,8 +51,8 @@ const MANUAL_STAGES = [
     waitAr: "اليوم 4-6",
   },
   {
-    en: "Back and forth on photos",
-    ar: "مراسلات متبادلة حول الصور",
+    en: "Customer answers follow-up questions",
+    ar: "العميل يجيب عن أسئلة إضافية",
     waitEn: "Day 7-10",
     waitAr: "اليوم 7-10",
   },
@@ -92,8 +92,7 @@ export function SpeedComparison() {
     return () => clearInterval(id);
   }, [inView, reduceMotion]);
 
-  // Yazeed's script: the whole return, not just the eligibility answer.
-  // Timestamps advance minute by minute so it reads as a live conversation.
+  // The shipped MVP path stops at the documented eligibility decision.
   const steps: ConversationStep[] = [
     {
       id: "request",
@@ -102,31 +101,21 @@ export function SpeedComparison() {
       text: t("Return request", "طلب إرجاع"),
     },
     {
-      id: "ask-photo",
+      id: "verified",
       direction: "incoming",
       time: "10:02",
       text: t(
-        "Please send a photo of the product.",
-        "يرجى إرسال صورة للمنتج.",
+        "Order verified. I’ll check your request against the store’s approved return policy.",
+        "تم التحقق من الطلب. سأراجع طلبك وفق سياسة الإرجاع المعتمدة لدى المتجر.",
       ),
     },
-    { id: "photo", direction: "outgoing", time: "10:02", photo: true },
     {
-      id: "reviewing",
+      id: "decision",
       direction: "incoming",
       time: "10:03",
       text: t(
-        "We will review the store policies.",
-        "سنراجع سياسات المتجر.",
-      ),
-    },
-    {
-      id: "approved",
-      direction: "incoming",
-      time: "10:04",
-      text: t(
-        "The request is approved according to the store policies.",
-        "تمت الموافقة على الطلب وفقًا لسياسات المتجر.",
+        "Eligible for return. All conditions in the approved policy are met.",
+        "الطلب مؤهل للإرجاع. جميع شروط السياسة المعتمدة مستوفاة.",
       ),
     },
   ];
@@ -153,8 +142,8 @@ export function SpeedComparison() {
         <motion.div {...fadeUp} className="speed-head">
           <h2 id="speed-heading" className="speed-title">
             {t(
-              "From return request to refund in the customer's hands.",
-              "من طلب الإرجاع حتى وصول المبلغ إلى العميل.",
+              "From return request to a clear, documented decision.",
+              "من طلب الإرجاع إلى قرار واضح وموثّق.",
             )}
           </h2>
           <p className="speed-sub">
@@ -249,6 +238,7 @@ export function SpeedComparison() {
                   steps={steps}
                   refundLabel={refundLabel}
                   refundAmount={t("SAR 500", "٥٠٠ ر.س")}
+                  showRefundCard={false}
                   caption={t("Today · Channel preview", "اليوم · معاينة القناة")}
                 />
               </PhoneFrame>
@@ -272,8 +262,8 @@ export function SpeedComparison() {
         {SPEED_BENCHMARK.illustrative && (
           <p className="speed-note">
             {t(
-              "Timelines shown are typical, not guaranteed — your refund process sets the final pace. The policy decision itself lands in seconds.",
-              "الجداول الزمنية المعروضة نموذجية وليست مضمونة، فسرعة استرداد المبلغ تعتمد على إجراءات متجرك. أما قرار السياسة نفسه فيصدر خلال ثوانٍ.",
+              "Timelines are illustrative and do not guarantee when a refund is initiated or received. The merchant’s process sets the final pace; Relod delivers the policy decision in seconds.",
+              "المدد المعروضة توضيحية ولا تضمن موعد بدء الاسترداد أو وصوله. تحدد إجراءات المتجر المدة النهائية، بينما يصدر قرار السياسة من ريلود خلال ثوانٍ.",
             )}
           </p>
         )}
