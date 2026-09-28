@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { Clock } from "lucide-react";
 import { RelodMark } from "./relod-logo";
@@ -8,7 +8,6 @@ import { RelodMark } from "./relod-logo";
 import {
   PhoneFrame,
   WhatsAppConversation,
-  REFUND_PAYOUT_STATUS,
   type ConversationStep,
 } from "./phone-frame";
 import { useLanguage } from "./language-provider";
@@ -51,8 +50,8 @@ const MANUAL_STAGES = [
     waitAr: "اليوم 4-6",
   },
   {
-    en: "Customer answers follow-up questions",
-    ar: "العميل يجيب عن أسئلة إضافية",
+    en: "Back and forth on photos",
+    ar: "مراسلات متبادلة حول الصور",
     waitEn: "Day 7-10",
     waitAr: "اليوم 7-10",
   },
@@ -92,8 +91,9 @@ export function SpeedComparison() {
     return () => clearInterval(id);
   }, [inView, reduceMotion]);
 
-  // The shipped MVP path stops at the documented eligibility decision.
-  const steps: ConversationStep[] = [
+  // Yazeed's script: the whole return, not just the eligibility answer.
+  // Timestamps advance minute by minute so it reads as a live conversation.
+  const steps = useMemo<ConversationStep[]>(() => [
     {
       id: "request",
       direction: "outgoing",
@@ -101,31 +101,37 @@ export function SpeedComparison() {
       text: t("Return request", "طلب إرجاع"),
     },
     {
-      id: "verified",
+      id: "ask-photo",
       direction: "incoming",
       time: "10:02",
       text: t(
-        "Order verified. I’ll check your request against the store’s approved return policy.",
-        "تم التحقق من الطلب. سأراجع طلبك وفق سياسة الإرجاع المعتمدة لدى المتجر.",
+        "Please send a photo of the product.",
+        "يرجى إرسال صورة للمنتج.",
       ),
     },
+    { id: "photo", direction: "outgoing", time: "10:02", photo: true },
     {
-      id: "decision",
+      id: "reviewing",
       direction: "incoming",
       time: "10:03",
       text: t(
-        "Eligible for return. All conditions in the approved policy are met.",
-        "الطلب مؤهل للإرجاع. جميع شروط السياسة المعتمدة مستوفاة.",
+        "I’ll review the store’s policies.",
+        "سأراجع سياسة المتجر.",
       ),
     },
-  ];
+    {
+      id: "approved",
+      direction: "incoming",
+      time: "10:04",
+      text: t(
+        "The request is approved according to the store policies.",
+        "تمت الموافقة على الطلب وفقًا لسياسات المتجر.",
+      ),
+    },
+  ], [t]);
 
-  // Until payouts ship, this is the refund the customer is owed on an approved
-  // return — true today — rather than a completed transfer.
-  const refundLabel =
-    REFUND_PAYOUT_STATUS === "live"
-      ? t("Instant refund deposited", "تم إيداع المبلغ فورًا")
-      : t("Refund approved", "تمت الموافقة على الاسترداد");
+  // Illustrative product journey; this does not confirm a real transfer.
+  const refundLabel = t("Refund completed", "تم استرداد المبلغ");
 
   const fadeUp = reduceMotion
     ? {}
@@ -142,8 +148,8 @@ export function SpeedComparison() {
         <motion.div {...fadeUp} className="speed-head">
           <h2 id="speed-heading" className="speed-title">
             {t(
-              "From return request to a clear, documented decision.",
-              "من طلب الإرجاع إلى قرار واضح وموثّق.",
+              "From return request to refund in the customer's hands.",
+              "من طلب الإرجاع حتى وصول المبلغ إلى العميل.",
             )}
           </h2>
           <p className="speed-sub">
@@ -238,8 +244,7 @@ export function SpeedComparison() {
                   steps={steps}
                   refundLabel={refundLabel}
                   refundAmount={t("SAR 500", "٥٠٠ ر.س")}
-                  showRefundCard={false}
-                  caption={t("Today · Channel preview", "اليوم · معاينة القناة")}
+                  caption={t("Illustrative journey", "رحلة توضيحية")}
                 />
               </PhoneFrame>
             </div>
@@ -262,8 +267,8 @@ export function SpeedComparison() {
         {SPEED_BENCHMARK.illustrative && (
           <p className="speed-note">
             {t(
-              "Timelines are illustrative and do not guarantee when a refund is initiated or received. The merchant’s process sets the final pace; Relod delivers the policy decision in seconds.",
-              "المدد المعروضة توضيحية ولا تضمن موعد بدء الاسترداد أو وصوله. تحدد إجراءات المتجر المدة النهائية، بينما يصدر قرار السياسة من ريلود خلال ثوانٍ.",
+              "Illustrative journey, including the refund confirmation. Photo review and instant refunds are preview features. Actual handling and payment timing depend on the store’s process; chat timestamps do not promise a fixed timeframe.",
+              "رحلة توضيحية تشمل تأكيد الاسترداد. مراجعة الصور والاسترداد الفوري ميزتان ضمن المعاينة. تعتمد مدة المعالجة والدفع الفعلية على إجراءات المتجر، ولا تضمن أوقات الرسائل مدة محددة.",
             )}
           </p>
         )}

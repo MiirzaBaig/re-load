@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
@@ -33,6 +32,7 @@ import {
 import { evaluateEligibility } from "@/lib/engine";
 import { OUTCOME_LABELS, DEMO_CLOCK, daysBetween } from "@/lib/domain";
 import {
+  Store,
   FileText,
   Check,
   Package,
@@ -135,7 +135,7 @@ export function LandingPage() {
     window.open(getWhatsAppStartUrl(), "_blank", "noopener,noreferrer");
   };
   const setupSteps = [
-    { label: t("Connect your store", "اربط متجرك"), icon: "salla" as const },
+    { label: t("Connect your store", "اربط متجرك"), icon: "store" as const },
     { label: t("Approve your policy", "اعتمد سياستك"), icon: FileCheck2 },
     { label: t("Activate WhatsApp", "فعّل واتساب"), icon: "whatsapp" as const },
     { label: t("Run your first test", "نفّذ أول اختبار"), icon: MessageCircleMore },
@@ -219,8 +219,8 @@ export function LandingPage() {
                 return (
                   <div key={step.label} className="group flex min-w-0 items-center gap-2.5 rounded-xl px-3 py-2.5 transition-colors duration-200 hover:bg-white/[0.07]">
                     <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/[0.08] ring-1 ring-white/10 transition-transform duration-200 group-hover:-translate-y-0.5">
-                      {step.icon === "salla" ? (
-                        <Image src="/salla-logo.png" alt="" width={22} height={22} className="rounded-md" />
+                      {step.icon === "store" ? (
+                        <Store className="size-5" />
                       ) : step.icon === "whatsapp" ? (
                         <WhatsAppLogo className="size-5" />
                       ) : Icon ? (
@@ -295,7 +295,7 @@ export function LandingPage() {
                   desc: t("AI reads your policy and turns it into repeatable return decisions.", "يقرأ الذكاء الاصطناعي سياستك ويحوّلها إلى قرارات إرجاع قابلة للتكرار."),
                 },
                 {
-                  label: t("Financing readiness", "الاستعداد للتمويل"),
+                  label: t("Returns financing", "تمويل المرتجعات"),
                   desc: t("Build documented return data that can support a future financing assessment.", "أنشئ بيانات مرتجعات موثّقة يمكن أن تدعم تقييم التمويل مستقبلًا."),
                 },
                 {
@@ -602,7 +602,7 @@ export function LandingPage() {
                 {t("See a policy become an answer.", "شاهد السياسة تتحول إلى إجابة.")}
               </h2>
               <p className="max-w-md text-lg leading-relaxed text-muted-foreground text-pretty">
-                {t("Connect your store and approve its return policy in the workspace. Customers can then receive clear decisions through WhatsApp.", "اربط متجرك واعتمد سياسة الإرجاع من مساحة العمل، ثم يحصل العملاء على قرارات واضحة عبر واتساب.")}
+                {t("Built for stores on any commerce platform. Connect your store, approve your policy, and bring returns automation and financing into one journey. Salla is available today; other integrations are planned.", "مصمم للمتاجر على مختلف منصات التجارة الإلكترونية. اربط متجرك واعتمد سياستك، واجمع أتمتة المرتجعات والتمويل في رحلة واحدة. ربط سلة متاح حاليًا، والتكامل مع المنصات الأخرى ضمن خطتنا.")}
               </p>
               <a
                 href="#whatsapp"

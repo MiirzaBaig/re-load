@@ -42,7 +42,9 @@ export function FinancingRequestForm({
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (status === "sending") return;
     const form = new FormData(event.currentTarget);
+    const metric = (key: string) => String(form.get(key) ?? "").trim() === "" ? null : Number(form.get(key));
     setStatus("sending");
     setError(null);
 
@@ -58,6 +60,15 @@ export function FinancingRequestForm({
           contact_name: String(form.get("name") ?? "").trim(),
           email: String(form.get("email") ?? "").trim(),
           phone: String(form.get("phone") ?? "").trim() || null,
+          store_platform: String(form.get("platform") ?? "").trim(),
+          monthly_sales: metric("monthly_sales"),
+          monthly_orders: metric("monthly_orders"),
+          return_rate: metric("return_rate"),
+          average_refund_amount: metric("average_refund_amount"),
+          monthly_refund_volume: metric("monthly_refund_volume"),
+          refund_processing_days: metric("refund_processing_days"),
+          desired_financing_days: metric("desired_financing_days"),
+          contact_consent: form.get("consent") === "on",
           monthly_returns: Math.round(snapshot.monthlyReturns),
           average_order_value: snapshot.orderValue,
           processing_minutes: Math.round(snapshot.processingMinutes),
@@ -70,15 +81,11 @@ export function FinancingRequestForm({
 
       if (insertError) throw insertError;
       setStatus("sent");
-    } catch (submitError) {
+    } catch {
       // Never strand the merchant on a dead form: show the failure and leave
       // their input in place so they can retry without retyping.
       setStatus("error");
-      setError(
-        submitError instanceof Error
-          ? submitError.message
-          : t("Something went wrong.", "حدث خطأ ما."),
-      );
+      setError(t("We couldn’t save your interest. Please try again; your details are still here.", "تعذّر حفظ طلبك. حاول مرة أخرى، بياناتك ما زالت موجودة."));
     }
   };
 
@@ -94,12 +101,12 @@ export function FinancingRequestForm({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button className="financing-cta group h-12 w-full rounded-xl text-[15px] font-semibold">
-          {t("Request return financing", "اطلب تمويل المرتجعات")}
+          {t("Register financing interest", "سجّل اهتمامك بالتمويل")}
           <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="rounded-2xl sm:max-w-lg">
+      <DialogContent dir={isArabic ? "rtl" : "ltr"} className="max-h-[85dvh] overflow-y-auto rounded-2xl sm:max-w-2xl">
         {status === "sent" ? (
           <div className="py-6 text-center">
             <span className="mx-auto mb-4 grid size-12 place-items-center rounded-full bg-eligible-muted text-eligible">
@@ -110,8 +117,8 @@ export function FinancingRequestForm({
             </DialogTitle>
             <DialogDescription className="mt-2">
               {t(
-                "We have your numbers. Someone from the team will be in touch about returns financing.",
-                "وصلتنا أرقامك. سيتواصل معك أحد أعضاء الفريق بخصوص تمويل المرتجعات.",
+                "Your interest is saved. The Relod team may contact you about future options with licensed financing partners.",
+                "سجّلنا اهتمامك. قد يتواصل معك فريق ريلود بخصوص الخيارات المستقبلية مع شركاء تمويل مرخّصين.",
               )}
             </DialogDescription>
             <Button
@@ -126,12 +133,12 @@ export function FinancingRequestForm({
           <>
             <DialogHeader>
               <DialogTitle>
-                {t("Request return financing", "اطلب تمويل المرتجعات")}
+                {t("Register financing interest", "سجّل اهتمامك بالتمويل")}
               </DialogTitle>
               <DialogDescription>
                 {t(
-                  "Your estimate is attached to this request, so the conversation starts from your actual numbers.",
-                  "سيُرفق تقديرك مع الطلب، لتبدأ المحادثة من أرقامك الفعلية.",
+                  "Tell us about your store so we can understand your needs for future licensed financing partners. Estimates are welcome.",
+                  "عرّفنا بمتجرك لنفهم احتياجاتك استعدادًا للتعاون مع شركاء تمويل مرخّصين مستقبلًا. يمكنك إدخال أرقام تقديرية.",
                 )}
               </DialogDescription>
             </DialogHeader>
@@ -184,6 +191,33 @@ export function FinancingRequestForm({
                 />
               </div>
 
+              <fieldset className="grid gap-4 rounded-xl border border-border bg-muted/30 p-4">
+                <legend className="px-1 text-sm font-semibold">{t("About your store", "عن متجرك")}</legend>
+                <div className="grid gap-2">
+                  <Label htmlFor="fin-platform">{t("Commerce platform", "منصة المتجر")}</Label>
+                  <Input id="fin-platform" name="platform" required maxLength={120} placeholder={t("Salla, Zid, Shopify, custom store…", "سلة، زد، شوبيفاي، متجر خاص…")} />
+                </div>
+                <p className="text-xs leading-relaxed text-muted-foreground">{t("Business figures are optional. Your calculator estimate will be attached separately.", "الأرقام التشغيلية اختيارية. سنرفق تقدير الحاسبة بشكل منفصل.")}</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {[
+                    { key: "monthly_sales", label: t("Monthly sales (SAR)", "المبيعات الشهرية (ر.س)"), max: 9999999999, step: "0.01" },
+                    { key: "monthly_orders", label: t("Monthly orders", "عدد الطلبات شهريًا"), max: 100000000, step: "1" },
+                    { key: "return_rate", label: t("Return rate (%)", "نسبة المرتجعات (%)"), max: 100, step: "0.01" },
+                    { key: "average_refund_amount", label: t("Average refund (SAR)", "متوسط مبلغ الاسترداد (ر.س)"), max: 9999999999, step: "0.01" },
+                    { key: "monthly_refund_volume", label: t("Monthly refund total (SAR)", "إجمالي الاستردادات شهريًا (ر.س)"), max: 9999999999, step: "0.01" },
+                    { key: "refund_processing_days", label: t("Current refund time (days)", "مدة الاسترداد الحالية (أيام)"), max: 365, step: "0.5" },
+                    { key: "desired_financing_days", label: t("Preferred repayment period (days)", "مدة السداد المطلوبة (أيام)"), max: 365, step: "1" },
+                  ].map(field => <div key={field.key} className="grid gap-2">
+                    <Label htmlFor={`fin-${field.key}`}>{field.label}</Label>
+                    <Input id={`fin-${field.key}`} name={field.key} type="number" min={0} max={field.max} step={field.step} inputMode="decimal" dir="ltr" />
+                  </div>)}
+                </div>
+              </fieldset>
+              <label className="flex items-start gap-3 text-sm leading-relaxed">
+                <input name="consent" type="checkbox" required className="mt-1 size-4 shrink-0 accent-primary" />
+                <span>{t("I agree that Relod may contact me about this interest. This is not a financing application, offer, or approval.", "أوافق على تواصل ريلود معي بخصوص هذا الاهتمام. هذا التسجيل ليس طلب تمويل أو عرضًا أو موافقة تمويلية.")}</span>
+              </label>
+
               {error && (
                 <p role="alert" className="text-sm text-not-eligible">
                   {error}
@@ -205,8 +239,8 @@ export function FinancingRequestForm({
 
               <p className="text-center text-xs text-muted-foreground">
                 {t(
-                  "Submitting does not commit you to anything.",
-                  "إرسال الطلب لا يُلزمك بأي شيء.",
+                  "Financing would be subject to a licensed partner’s assessment and terms.",
+                  "يخضع أي تمويل مستقبلي لتقييم الشريك المرخّص وشروطه.",
                 )}
               </p>
             </form>

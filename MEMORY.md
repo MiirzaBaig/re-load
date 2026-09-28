@@ -97,3 +97,10 @@ Run TypeScript checks, production build, focused browser checks in English/Arabi
 - Public examples stop at a clear, documented decision. They do not claim live photo analysis, automatic refunds, guaranteed processing times, or guaranteed financing.
 - General entry points say “Connect store”; Salla is named only inside the platform-specific integration experience.
 - Financing is positioned as a future assessment supported by clearer return data, subject to a financing partner and eligibility.
+
+## 2026-09-28 — Yazeed's correction: restore the marketing journey
+- Supersedes the September 27 instruction to remove photos/refunds from the public example. Restore the photo → policy review → approval → “Refund completed” animation and refund headline. This remains an explicitly illustrative journey, not live payout confirmation.
+- Keep returns automation + financing as the positioning. General setup uses a store icon and platform-neutral language; Salla is currently available and other connectors are planned.
+- Extended the existing financing interest form with platform, optional monthly sales/orders, return rate, refund amounts/volume, processing time, preferred repayment period, and required contact consent. Calculator estimates remain separate from merchant-provided figures.
+- Migration `202609280001_financing_interest.sql` adds fields and validation; public inserts require consent, and no public read policy was added. Existing leads remain intact.
+- This task changes marketing and financing interest collection only. Customer WhatsApp and merchant workspace operational flows remain as implemented.
