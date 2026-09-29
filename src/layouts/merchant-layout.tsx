@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, type CSSProperties, type ReactNode } from "react";
-import { RelodMark } from "@/components/relod-logo";
+import { ReloadMark } from "@/components/reload-logo";
 import { PageTransition } from "@/components/page-transition";
 import { ModeToggle } from "@/components/mode-toggle";
 import {
@@ -120,9 +120,9 @@ export function MerchantLayout({ children }: { children: ReactNode }) {
             className="sidebar-nav-enter flex items-center gap-2.5 rounded-lg px-1 py-1 transition-opacity duration-200 hover:opacity-80"
             style={navEnterStyle(0)}
           >
-            <RelodMark className="size-7 shrink-0 text-primary" />
+            <ReloadMark className="size-7 shrink-0 text-primary" />
             <span className="font-display text-[15px] font-semibold tracking-tight text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-              {t("Relod", "ريلود")}
+              {t("Reload", "ريلود")}
             </span>
           </Link>
           <div

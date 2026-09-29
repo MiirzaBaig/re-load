@@ -72,10 +72,8 @@ export function ReturnsCostCalculator() {
             </div>
           </div>
 
-          <div className="calculator-results relative isolate flex min-h-[440px] flex-col justify-center overflow-hidden bg-[#211a16] p-6 text-[#fffaf5] sm:p-8 lg:p-10" aria-live="polite">
-            <div aria-hidden="true" className="absolute -right-24 -top-24 size-64 rounded-full bg-primary/15 blur-3xl" />
-            <div aria-hidden="true" className="absolute -bottom-32 -left-24 size-72 rounded-full bg-primary/25 blur-3xl" />
-            <p className="relative flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-orange-200"><span className="size-1.5 rounded-full bg-primary" />{t("The cost of unresolved returns", "تكلفة المرتجعات غير المعالجة")}</p>
+          <div className="calculator-results relative isolate flex min-h-[440px] flex-col justify-center overflow-hidden bg-[#0F0F12] p-6 text-[#F8F7F4] sm:p-8 lg:p-10" aria-live="polite">
+            <p className="relative flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#F8F7F4]/70"><span className="size-1.5 rounded-full bg-[#F8F7F4]" />{t("The cost of unresolved returns", "تكلفة المرتجعات غير المعالجة")}</p>
             <ResultValue
               icon={<WalletCards className="size-5" />}
               label={t("Tied up in delayed returns", "قيمة معلّقة في مرتجعات متأخرة")}
@@ -86,7 +84,7 @@ export function ReturnsCostCalculator() {
               <ResultValue icon={<Clock3 className="size-4" />} label={t("Estimated operational cost", "التكلفة التشغيلية التقديرية")} value={`${formatMoney(results.operatingCost)} ${t("/ month", "/ شهر")}`} />
               <ResultValue icon={<TimerReset className="size-4" />} label={t("Average return resolution", "متوسط مدة معالجة الإرجاع")} value={`${n(resolutionDays, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${t("days", "يوم")}`} />
             </div>
-            <div className="relative mt-6 flex items-center justify-between rounded-xl bg-white/5 px-4 py-3 text-xs text-orange-100/75"><span>{t("Monthly staff time", "وقت العمل الشهري")}</span><span className="font-semibold tabular-nums latin-nums">{n(monthlyReturns * processingMinutes / 60, { maximumFractionDigits: 1 })} {t("hours", "ساعة")}</span></div>
+            <div className="relative mt-6 flex items-center justify-between rounded-xl bg-white/5 px-4 py-3 text-xs text-[#F8F7F4]/75"><span>{t("Monthly staff time", "وقت العمل الشهري")}</span><span className="font-semibold tabular-nums latin-nums">{n(monthlyReturns * processingMinutes / 60, { maximumFractionDigits: 1 })} {t("hours", "ساعة")}</span></div>
             <div className="relative mt-7 border-t border-white/10 pt-6">
               <FinancingRequestForm
                 snapshot={{
@@ -99,7 +97,7 @@ export function ReturnsCostCalculator() {
                   operatingCost: results.operatingCost,
                 }}
               />
-              <p className="mt-4 text-xs leading-relaxed text-orange-100/65">
+              <p className="mt-4 text-xs leading-relaxed text-[#F8F7F4]/65">
                 {t("Planning estimate, not guaranteed savings or an offer of credit. Tied-up value assumes returns arrive evenly throughout a 30-day month. Operational cost uses processing time × staff cost.", "تقدير لأغراض التخطيط وليس توفيرًا مضمونًا ولا عرض تمويل. يفترض تقدير القيمة المعلّقة توزيع المرتجعات بالتساوي خلال شهر من 30 يومًا، وتُحسب التكلفة التشغيلية من وقت المعالجة وتكلفة الموظف.")}
               </p>
             </div>
@@ -142,7 +140,7 @@ function CalculatorInput({ label, value, min, max, step, prefix, suffix, onChang
         />
         {suffix && <span className="ms-2 whitespace-nowrap text-xs text-muted-foreground">{suffix}</span>}
       </div>
-      {!compact && <><input aria-label={`${label} slider`} type="range" value={value} min={min} max={max} step={step} style={{ background: `linear-gradient(to ${isArabic ? "left" : "right"}, var(--primary) ${(value-min)/(max-min)*100}%, var(--border) ${(value-min)/(max-min)*100}%)` }} onChange={(event) => { setDraft(null); update(Number(event.target.value)); }} className="calculator-range mt-4 w-full" />{/* The row mirrors with the page, which is correct: a native range input in
+      {!compact && <><input aria-label={`${label} slider`} type="range" value={value} min={min} max={max} step={step} style={{ background: `linear-gradient(to ${isArabic ? "left" : "right"}, var(--brand-accent-fill) ${(value-min)/(max-min)*100}%, var(--border) ${(value-min)/(max-min)*100}%)` }} onChange={(event) => { setDraft(null); update(Number(event.target.value)); }} className="calculator-range mt-4 w-full" />{/* The row mirrors with the page, which is correct: a native range input in
     RTL puts its minimum on the right, so min/max stay under their own ends. */}
 <div aria-hidden="true" className="mt-2 flex justify-between text-[10px] tabular-nums latin-nums text-muted-foreground"><span>{min}</span><span>{formatNumber(max)}</span></div></>}
     </div>
@@ -154,7 +152,7 @@ function ResultValue({ icon, label, value, emphasis = false }: {
 }) {
   return (
     <div className={emphasis ? "relative mt-5" : "rounded-2xl border border-white/10 bg-white/[0.045] p-4 backdrop-blur-sm transition-colors hover:bg-white/[0.07]"}>
-      <div className="flex items-center gap-2 text-xs text-orange-200/80">{icon}<span>{label}</span></div>
+      <div className="flex items-center gap-2 text-xs text-[#F8F7F4]/70">{icon}<span>{label}</span></div>
       {/* No `key` here: keying on the value remounts the node on every keystroke,
           which replays the fade and reads as a flicker while dragging a slider. */}
       <p className={emphasis ? "mt-2 text-[clamp(2.25rem,5vw,4.25rem)] font-semibold leading-none tabular-nums latin-nums" : "mt-2 text-lg font-semibold tracking-tight tabular-nums latin-nums"}>

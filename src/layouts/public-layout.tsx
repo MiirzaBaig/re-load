@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
-import { RelodLogo } from "@/components/relod-logo";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ReloadLogo } from "@/components/reload-logo";
 
 import { CurtainReveal } from "@/components/curtain-reveal";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -21,6 +21,7 @@ import { getWhatsAppStartUrl } from "@/lib/whatsapp";
 
 export function PublicLayout({ children }: { children: ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
@@ -101,7 +102,10 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       const stepped = Math.round(progress * 50) / 50;
       if (stepped === last) return;
       last = stepped;
-      document.documentElement.style.setProperty(
+      // Set on the header, not <html>: a custom property changed on the root
+      // re-resolves styles for every element on the page, dozens of times per
+      // scroll. Only the header reads this value.
+      headerRef.current?.style.setProperty(
         "--header-progress",
         String(stepped),
       );
@@ -151,12 +155,13 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col">
       <header
+        ref={headerRef}
         className={cn("public-header", scrolled && "public-header-scrolled")}
       >
         <div className="public-header-surface">
           <div className="public-header-inner">
             <Link href="/" className="rounded-lg p-1 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
-              <RelodLogo
+              <ReloadLogo
                 className={cn(
                   "transition-transform duration-[520ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
                   scrolled ? "scale-90" : "scale-100",
@@ -332,17 +337,16 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           className="whatsapp-float group"
           aria-label={t("Start a WhatsApp conversation", "ابدأ محادثة عبر واتساب")}
         >
-          <span className="whatsapp-float-copy">
+          {/* Icon first so it anchors in the corner; the label slides out
+              beside it on hover, on focus, and in the one-time peek. */}
+          <span className="whatsapp-float-icon" aria-hidden="true">
+            <WhatsAppLogo className="size-[19px] !text-current" />
+            <span className="whatsapp-float-online" />
+          </span>
+          <span className="whatsapp-float-label" aria-hidden="true">
             <span className="whatsapp-float-title">
               {t("Start on WhatsApp", "ابدأ عبر واتساب")}
             </span>
-            <span className="whatsapp-float-note">
-              {t("Guided pilot setup", "إعداد تجريبي بخطوات واضحة")}
-            </span>
-          </span>
-          <span className="whatsapp-float-icon">
-            <WhatsAppLogo className="size-6 !text-white" />
-            <span className="whatsapp-float-pulse" aria-hidden="true" />
           </span>
         </a>
       )}

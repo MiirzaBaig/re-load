@@ -1,13 +1,13 @@
 <div align="center">
-  <img src="public/relod-mark.svg" width="72" height="72" alt="Relod logo" />
-  <h1>Relod · ريلود</h1>
+  <img src="public/brand/reload-icon.svg" width="72" height="72" alt="Reload logo" />
+  <h1>Reload · ريلود</h1>
   <p><strong>Clear, explainable return decisions for Saudi commerce.</strong></p>
   <p>Turn merchant-approved return policies into consistent customer outcomes and an auditable operational record.</p>
 </div>
 
 ## Overview
 
-Relod connects a merchant's published return policy with verified order facts. Its deterministic decision engine produces one of three explicit outcomes: eligible, not eligible, or manual review. Every evaluation preserves the policy version, relevant facts, applied rules, reason codes, and timestamp that produced the answer.
+Reload connects a merchant's published return policy with verified order facts. Its deterministic decision engine produces one of three explicit outcomes: eligible, not eligible, or manual review. Every evaluation preserves the policy version, relevant facts, applied rules, reason codes, and timestamp that produced the answer.
 
 AI can help interpret policy language and propose structured rules. A merchant must review and publish those rules before they can affect a customer decision.
 

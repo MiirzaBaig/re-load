@@ -392,7 +392,7 @@ export function WhatsAppThread({
 /**
  * Whether the refund-deposit card renders as money actually moved.
  *
- * Relod decides eligibility; it does not move funds yet. While this is
+ * Reload decides eligibility; it does not move funds yet. While this is
  * "preview" the deposit card is labelled as the refund the customer is owed on
  * an approved return — true today — instead of claiming a completed transfer.
  * Flip to "live" when payouts ship and the wording follows.

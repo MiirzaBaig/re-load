@@ -154,7 +154,7 @@ export function LandingPage() {
             variants={{ hidden: {}, visible: { transition: { delayChildren: reduceMotion ? 0 : 0.08, staggerChildren: reduceMotion ? 0 : 0.11 } } }}
             className="hero-card-content"
           >
-            <motion.span variants={heroItem} className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-white/70 backdrop-blur">
+            <motion.span variants={heroItem} className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-white/70">
               <span className="size-1.5 rounded-full bg-primary" />
               {t("AI-powered returns for Saudi ecommerce", "مرتجعات مدعومة بالذكاء الاصطناعي للتجارة الإلكترونية السعودية")}
             </motion.span>
@@ -211,7 +211,7 @@ export function LandingPage() {
               variants={heroItem}
               initial="hidden"
               animate={heroIntroDone ? "visible" : "hidden"}
-              className="grid w-full max-w-3xl grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-white/[0.045] p-2.5 text-start backdrop-blur-sm sm:grid-cols-4"
+              className="grid w-full max-w-3xl grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-white/[0.045] p-2.5 text-start sm:grid-cols-4"
               aria-label={t("Merchant setup flow", "خطوات إعداد التاجر")}
             >
               {setupSteps.map((step, index) => {
@@ -276,13 +276,13 @@ export function LandingPage() {
           <ScrollReveal>
             <div className="max-w-2xl">
               <span className="text-sm font-semibold text-primary">
-                {t("Why Relod", "لماذا ريلود")}
+                {t("Why Reload", "لماذا ريلود")}
               </span>
               <h2 className="mt-3 font-display text-3xl font-semibold tracking-[-0.02em] text-foreground md:text-[40px] md:leading-[1.1] text-balance">
-                {t("Returns tie up cash. Relod shortens the gap.", "المرتجعات تجمّد نقدك. ريلود يقصّر الفجوة.")}
+                {t("Returns tie up cash. Reload shortens the gap.", "المرتجعات تجمّد نقدك. ريلود يقصّر الفجوة.")}
               </h2>
               <p className="mt-4 text-lg leading-relaxed text-muted-foreground text-pretty">
-                {t("Every day a return sits undecided is working capital locked in stock you cannot sell. Relod applies your approved rules consistently, helping cases move sooner and making return data clearer for future financing assessment.", "كل يوم يبقى فيه طلب الإرجاع دون قرار هو رأس مال عامل محتجز في بضاعة لا يمكن بيعها. يطبّق ريلود قواعدك المعتمدة باستمرار، مما يساعد على تسريع معالجة الحالات وتوضيح بيانات المرتجعات لتقييم فرص التمويل مستقبلًا.")}
+                {t("Every day a return sits undecided is working capital locked in stock you cannot sell. Reload applies your approved rules consistently, helping cases move sooner and making return data clearer for future financing assessment.", "كل يوم يبقى فيه طلب الإرجاع دون قرار هو رأس مال عامل محتجز في بضاعة لا يمكن بيعها. يطبّق ريلود قواعدك المعتمدة باستمرار، مما يساعد على تسريع معالجة الحالات وتوضيح بيانات المرتجعات لتقييم فرص التمويل مستقبلًا.")}
               </p>
             </div>
           </ScrollReveal>

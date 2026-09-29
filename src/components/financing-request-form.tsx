@@ -117,7 +117,7 @@ export function FinancingRequestForm({
             </DialogTitle>
             <DialogDescription className="mt-2">
               {t(
-                "Your interest is saved. The Relod team may contact you about future options with licensed financing partners.",
+                "Your interest is saved. The Reload team may contact you about future options with licensed financing partners.",
                 "سجّلنا اهتمامك. قد يتواصل معك فريق ريلود بخصوص الخيارات المستقبلية مع شركاء تمويل مرخّصين.",
               )}
             </DialogDescription>
@@ -215,7 +215,7 @@ export function FinancingRequestForm({
               </fieldset>
               <label className="flex items-start gap-3 text-sm leading-relaxed">
                 <input name="consent" type="checkbox" required className="mt-1 size-4 shrink-0 accent-primary" />
-                <span>{t("I agree that Relod may contact me about this interest. This is not a financing application, offer, or approval.", "أوافق على تواصل ريلود معي بخصوص هذا الاهتمام. هذا التسجيل ليس طلب تمويل أو عرضًا أو موافقة تمويلية.")}</span>
+                <span>{t("I agree that Reload may contact me about this interest. This is not a financing application, offer, or approval.", "أوافق على تواصل ريلود معي بخصوص هذا الاهتمام. هذا التسجيل ليس طلب تمويل أو عرضًا أو موافقة تمويلية.")}</span>
               </label>
 
               {error && (

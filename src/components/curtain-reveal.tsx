@@ -44,7 +44,7 @@ function FooterPanel({
 }) {
   const router = useRouter();
   const { t, isArabic } = useLanguage();
-  const wordmark = t("Relod", "ريلود");
+  const wordmark = t("Reload", "ريلود");
   const footerLinks = [
     { label: t("Product", "المنتج"), href: "/#product" },
     { label: t("How it works", "كيف يعمل"), href: "/#how-it-works" },
@@ -152,7 +152,7 @@ function FooterPanel({
                   never has to reorder a trailing "©" or full stop. */}
               <span>
                 {t(
-                  `© ${new Date().getFullYear()} Relod. All rights reserved.`,
+                  `© ${new Date().getFullYear()} Reload. All rights reserved.`,
                   `جميع الحقوق محفوظة لريلود © ${new Date().getFullYear()}`,
                 )}
               </span>

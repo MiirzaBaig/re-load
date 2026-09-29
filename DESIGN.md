@@ -1,4 +1,4 @@
-# Relod design system
+# Reload design system
 
 ## Direction
 
@@ -6,7 +6,7 @@ Desert Indigo: a warm paper canvas, deep indigo actions, saffron highlights, rea
 
 ## Tokens
 
-Light mode uses a warm near-white canvas, white surfaces, deep ink text, `#4F46E5` indigo primary action, saffron highlight, and separated eligibility/status colors. Dark mode uses an ink-indigo canvas, elevated dark surfaces, soft lavender text, and lighter indigo actions. Tokens are defined as CSS variables in `src/index.css` and consumed through Tailwind utilities.
+Brand System 3.0 is monochrome first. Light mode is ink `#0F0F12` on off-white `#F8F7F4` with white cards and stone `#E7E9EF` borders; dark mode inverts to off-white on ink. Primary actions are solid ink (white in dark mode). Blue-violet is a 10% signal for focus and selection only: deep accent `#4557C7` on light (text-safe at 5.70:1) and soft accent `#AEB8F5` on dark, exposed as `--brand-accent` and `--ring`. Eligibility/status colours stay separate from brand colour. Tokens are defined as CSS variables in `src/index.css` and consumed through Tailwind utilities.
 
 ## Typography
 

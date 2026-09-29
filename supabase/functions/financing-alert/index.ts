@@ -42,7 +42,7 @@ Deno.serve(async (request) => {
     if (leadError || !lead) throw leadError ?? new Error("financing_request_not_found");
 
     const message = [
-      "New Relod financing request",
+      "New Reload financing request",
       "",
       `Store: ${lead.store_name}`,
       `Contact: ${lead.contact_name}`,

@@ -99,7 +99,7 @@ export function IntegrationsPage() {
       body: { storeId: workspace.storeId, action: nextAction },
     });
     if (error) toast.error(nextAction === "test" ? t("Salla did not accept the stored connection.", "لم تقبل سلة بيانات الربط المحفوظة.") : t("Could not disconnect Salla.", "تعذّر فصل الربط مع سلة."));
-    else toast.success(nextAction === "test" ? t("Salla connection is healthy.", "الربط مع سلة يعمل بشكل سليم.") : t("Salla credentials removed from Relod.", "تم حذف بيانات سلة من ريلود."));
+    else toast.success(nextAction === "test" ? t("Salla connection is healthy.", "الربط مع سلة يعمل بشكل سليم.") : t("Salla credentials removed from Reload.", "تم حذف بيانات سلة من ريلود."));
     await loadConnection();
     setAction(null);
   };
@@ -158,7 +158,7 @@ export function IntegrationsPage() {
         <div>
           <Badge variant="outline" className="mb-3">{t("Commerce", "التجارة الإلكترونية")}</Badge>
           <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{t("Store integrations", "تكاملات المتجر")}</h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{t("Connect your Salla store so Relod can verify orders against real merchant data.", "اربط متجرك في سلة ليتمكن ريلود من التحقق من الطلبات ببيانات متجرك الفعلية.")}</p>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{t("Connect your Salla store so Reload can verify orders against real merchant data.", "اربط متجرك في سلة ليتمكن ريلود من التحقق من الطلبات ببيانات متجرك الفعلية.")}</p>
         </div>
       </ScrollReveal>
       <ScrollReveal delay={80}>
@@ -175,7 +175,7 @@ export function IntegrationsPage() {
                     ) : <Badge variant="outline">{t("Not connected", "غير متصل")}</Badge>}
                   </div>
                   <p className="mt-1 max-w-lg text-sm leading-6 text-muted-foreground">
-                    {connected ? t(`Store authorization is active for ${connection.external_store_name ?? "your store"}.`, `تفويض الوصول إلى ${connection.external_store_name ?? "متجرك"} مفعّل.`) : t("Authorize read-only order access through Salla. Relod never receives your merchant password.", "امنح صلاحية قراءة الطلبات فقط عبر سلة. لن يطّلع ريلود على كلمة مرور متجرك إطلاقًا.")}
+                    {connected ? t(`Store authorization is active for ${connection.external_store_name ?? "your store"}.`, `تفويض الوصول إلى ${connection.external_store_name ?? "متجرك"} مفعّل.`) : t("Authorize read-only order access through Salla. Reload never receives your merchant password.", "امنح صلاحية قراءة الطلبات فقط عبر سلة. لن يطّلع ريلود على كلمة مرور متجرك إطلاقًا.")}
                   </p>
                   {connected && <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     <span>{t(

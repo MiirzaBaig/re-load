@@ -18,7 +18,7 @@ function safeUrl(value: string) {
 async function fetchHtml(input: URL) {
   let current = input;
   for (let redirects = 0; redirects < 4; redirects += 1) {
-    const response = await fetch(current, { redirect: "manual", headers: { "User-Agent": "Relod-Policy-Discovery/1.0", Accept: "text/html" } });
+    const response = await fetch(current, { redirect: "manual", headers: { "User-Agent": "Reload-Policy-Discovery/1.0", Accept: "text/html" } });
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get("location");
       if (!location) throw new Error("redirect_missing");

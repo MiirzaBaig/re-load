@@ -200,7 +200,7 @@ export function PolicyNewPage() {
                   <Label htmlFor="url">{t("Policy URL", "رابط السياسة")}</Label>
                   <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://yourstore.sa/policies/returns" />
                   <p className="text-xs text-muted-foreground">
-                    {t("Relod securely imports the public page, then shows you the text before AI proposes any rules.", "يستورد ريلود الصفحة العامة بأمان، ثم يعرض النص عليك قبل أن يقترح الذكاء الاصطناعي أي قواعد.")}
+                    {t("Reload securely imports the public page, then shows you the text before AI proposes any rules.", "يستورد ريلود الصفحة العامة بأمان، ثم يعرض النص عليك قبل أن يقترح الذكاء الاصطناعي أي قواعد.")}
                   </p>
                   <Button onClick={() => void fetchPolicySource("fetch")} disabled={sourceLoading || !url.trim()} className="self-start">
                     {sourceLoading ? <Spinner className="me-1" /> : <Link2 className="size-4" />}
@@ -232,7 +232,7 @@ export function PolicyNewPage() {
       {extractionState === "idle" && (
         <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
           <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
-          <p className="text-xs leading-relaxed text-muted-foreground"><span className="font-medium text-foreground">{t("How it works:", "كيف يعمل:")}</span> {t("Relod proposes rules from your text. You decide what gets approved and published.", "يقترح ريلود القواعد من نصك، وأنت تقرر ما يُعتمد ويُنشر.")}</p>
+          <p className="text-xs leading-relaxed text-muted-foreground"><span className="font-medium text-foreground">{t("How it works:", "كيف يعمل:")}</span> {t("Reload proposes rules from your text. You decide what gets approved and published.", "يقترح ريلود القواعد من نصك، وأنت تقرر ما يُعتمد ويُنشر.")}</p>
         </div>
       )}
 

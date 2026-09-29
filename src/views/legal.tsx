@@ -79,7 +79,7 @@ export function PrivacyPage() {
     <LegalPage
       eyebrow="Legal"
       title="Privacy Policy"
-      intro="How Relod handles merchant and customer data when evaluating return requests."
+      intro="How Reload handles merchant and customer data when evaluating return requests."
       sections={[
         {
           heading: "1. Information we process",
@@ -98,7 +98,7 @@ export function PrivacyPage() {
         {
           heading: "3. Decision records",
           body: [
-            "When a return is evaluated, Relod stores a record of that decision: the policy version applied, the rules that fired, the relevant order facts, and the time of evaluation. This record is what makes a decision explainable and auditable later.",
+            "When a return is evaluated, Reload stores a record of that decision: the policy version applied, the rules that fired, the relevant order facts, and the time of evaluation. This record is what makes a decision explainable and auditable later.",
             "Editing a policy creates a new version. Past decisions keep the evidence they were made with.",
           ],
         },
@@ -130,13 +130,13 @@ export function TermsPage() {
     <LegalPage
       eyebrow="Legal"
       title="Terms of Service"
-      intro="The agreement between Relod and merchants using the service."
+      intro="The agreement between Reload and merchants using the service."
       sections={[
         {
-          heading: "1. What Relod does",
+          heading: "1. What Reload does",
           body: [
-            "Relod turns a merchant's written return policy into structured rules, and applies those rules to individual return requests to produce an eligibility decision with supporting evidence.",
-            "Relod is a decision and explanation layer. It does not issue refunds, move money, create shipping labels, or change inventory.",
+            "Reload turns a merchant's written return policy into structured rules, and applies those rules to individual return requests to produce an eligibility decision with supporting evidence.",
+            "Reload is a decision and explanation layer. It does not issue refunds, move money, create shipping labels, or change inventory.",
           ],
         },
         {
@@ -148,14 +148,14 @@ export function TermsPage() {
         {
           heading: "3. Decisions and responsibility",
           body: [
-            "Relod applies your published rules to the facts of an order and returns Eligible, Not eligible, or Manual review. The merchant remains responsible for honouring, overriding, or declining any individual return, and for compliance with applicable consumer protection law.",
-            "Where required facts are missing, Relod returns Manual review rather than guessing.",
+            "Reload applies your published rules to the facts of an order and returns Eligible, Not eligible, or Manual review. The merchant remains responsible for honouring, overriding, or declining any individual return, and for compliance with applicable consumer protection law.",
+            "Where required facts are missing, Reload returns Manual review rather than guessing.",
           ],
         },
         {
           heading: "4. Acceptable use",
           body: [
-            "Do not use Relod to evaluate data you have no right to process, to attempt to access another merchant's store data, or to probe the service for vulnerabilities without prior written permission.",
+            "Do not use Reload to evaluate data you have no right to process, to attempt to access another merchant's store data, or to probe the service for vulnerabilities without prior written permission.",
           ],
         },
         {

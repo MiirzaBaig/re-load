@@ -69,7 +69,7 @@ async function languagePrompt(to: string, profileName?: string) {
     `يا هلا${name ? ` ${name}` : ""}، حيّاك الله في ريلود 👋`,
     "نرتّب لك طلب الإرجاع من التحقق إلى القرار، ونوضح لك كل خطوة.",
     "",
-    `Hi${name ? ` ${name}` : ""}, welcome to Relod 👋`,
+    `Hi${name ? ` ${name}` : ""}, welcome to Reload 👋`,
     "We’ll guide your return from order verification to a clear decision.",
     "",
     "اختر لغتك للمتابعة · Choose your language",
@@ -236,7 +236,7 @@ async function processFlow(admin: Admin, store: Store, conversation: Conversatio
     }
     const context = { ...flow.context, reportMessage: input.trim().slice(0, 4000) };
     await setFlow(admin, conversation.id, "AWAITING_REPORT_CONFIRMATION", context);
-    const body = language === "ar" ? `هذا اللي بنرسله لفريق ريلود:\n\n“${context.reportMessage}”\n\nتأكد أنه ما يحتوي على كلمة مرور أو بيانات حساسة.` : `Here’s what we’ll send to the Relod team:\n\n“${context.reportMessage}”\n\nPlease check that it contains no passwords or sensitive information.`;
+    const body = language === "ar" ? `هذا اللي بنرسله لفريق ريلود:\n\n“${context.reportMessage}”\n\nتأكد أنه ما يحتوي على كلمة مرور أو بيانات حساسة.` : `Here’s what we’ll send to the Reload team:\n\n“${context.reportMessage}”\n\nPlease check that it contains no passwords or sensitive information.`;
     return { body, result: await sendWhatsAppButtons(to, body, language === "ar" ? [{ id: "report_send", title: "إرسال" }, { id: "report_edit", title: "تعديل" }, { id: "report_cancel", title: "إلغاء" }] : [{ id: "report_send", title: "Send" }, { id: "report_edit", title: "Edit" }, { id: "report_cancel", title: "Cancel" }]), type: "INTERACTIVE" as const };
   }
   if (flow.step === "AWAITING_REPORT_CONFIRMATION") {
@@ -267,7 +267,7 @@ async function processFlow(admin: Admin, store: Store, conversation: Conversatio
   }
   if (normalized === "merchant_setup") {
     const link = `${env("APP_URL").replace(/\/$/, "")}/app`;
-    const body = language === "ar" ? `إعداد المتجر وإدارة السياسة تتم من مساحة عمل ريلود:\n${link}\n\nواتساب مخصص لطلبات العملاء ومتابعتها.` : `Store setup and policy management are handled in the Relod workspace:\n${link}\n\nWhatsApp is reserved for customer returns and status updates.`;
+    const body = language === "ar" ? `إعداد المتجر وإدارة السياسة تتم من مساحة عمل ريلود:\n${link}\n\nواتساب مخصص لطلبات العملاء ومتابعتها.` : `Store setup and policy management are handled in the Reload workspace:\n${link}\n\nWhatsApp is reserved for customer returns and status updates.`;
     return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
   }
   if (normalized === "onboarding_later") {
@@ -407,7 +407,7 @@ async function processFlow(admin: Admin, store: Store, conversation: Conversatio
     }
     await setFlow(admin, conversation.id, "MENU");
     const version = published[0].version_label;
-    const body = language === "ar" ? `تم نشر سياسة الإرجاع ${version} ✅\n\nأصبحت القواعد معتمدة ومزامنة مع مساحة العمل. ريلود جاهز الآن للتحقق من الطلبات وإعطاء قرارات إرجاع واضحة.` : `Return policy ${version} is now live ✅\n\nThe approved rules are synced with your workspace. Relod is ready to verify orders and give customers clear return decisions.`;
+    const body = language === "ar" ? `تم نشر سياسة الإرجاع ${version} ✅\n\nأصبحت القواعد معتمدة ومزامنة مع مساحة العمل. ريلود جاهز الآن للتحقق من الطلبات وإعطاء قرارات إرجاع واضحة.` : `Return policy ${version} is now live ✅\n\nThe approved rules are synced with your workspace. Reload is ready to verify orders and give customers clear return decisions.`;
     return { body, result: await sendWhatsAppButtons(to, body, language === "ar" ? [{ id: "start_return", title: "بدء أول تجربة" }, { id: "menu", title: "القائمة الرئيسية" }] : [{ id: "start_return", title: "Run first test" }, { id: "menu", title: "Main menu" }]), type: "INTERACTIVE" as const };
   }
   if (normalized === "check_status") {

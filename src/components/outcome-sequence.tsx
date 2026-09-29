@@ -77,7 +77,8 @@ export function OutcomeSequence({ children }: { children: ReactNode }) {
         const rotateY = (slot * -7 * p + (1 - p) * -14).toFixed(2);
         const rotateZ = (slot * 1.25 * p).toFixed(2);
         card.style.transform = `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), ${z}px) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg) scale(${(scale * fit).toFixed(4)})`;
-        card.style.opacity = String(slot === 0 ? 1 : 0.78 + 0.22 * p);
+        // Phones stay fully opaque. Fading them on a dark page let the black
+        // behind bleed through, which read as a murky, over-darkened screen.
         card.style.setProperty("--label-opacity", String(Math.max(0, Math.min(1, (fan - 0.45) / 0.35))));
       });
       const reveal = reducedMotion ? 1 : Math.max(0, Math.min(1, (progress - 0.6) / 0.28));

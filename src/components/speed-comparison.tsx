@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { Clock } from "lucide-react";
-import { RelodMark } from "./relod-logo";
+import { ReloadMark } from "./reload-logo";
 
 import {
   PhoneFrame,
@@ -16,7 +16,7 @@ import { useLanguage } from "./language-provider";
  * The timeline figures behind the comparison.
  *
  * These are illustrative, not measured: they describe a typical manual returns
- * timeline versus the path Relod is built for. Swap in real pilot medians here
+ * timeline versus the path Reload is built for. Swap in real pilot medians here
  * — one edit, both cards and the dot track follow — and drop `illustrative`
  * to false once the numbers come from actual merchant data.
  */
@@ -69,7 +69,7 @@ export function SpeedComparison() {
   const ref = useRef<HTMLOListElement>(null);
   const inView = useInView(ref, { amount: 0.4, once: true });
 
-  // Dots fill one by one so the manual path visibly *takes* time. The Relod
+  // Dots fill one by one so the manual path visibly *takes* time. The Reload
   // card resolves in a single beat next to it — the contrast plays out in
   // motion, not just in the two numbers.
   const [filled, setFilled] = useState(0);
@@ -174,7 +174,7 @@ export function SpeedComparison() {
               </span>
               <div>
                 <p className="speed-eyebrow">
-                  {t("Without Relod", "بدون ريلود")}
+                  {t("Without Reload", "بدون ريلود")}
                 </p>
                 <h3 className="speed-card-title">
                   {t("Current process", "الإجراء الحالي")}
@@ -208,7 +208,7 @@ export function SpeedComparison() {
             </p>
           </motion.article>
 
-          {/* Relod path — the phone *is* the reason it collapses to a day and
+          {/* Reload path — the phone *is* the reason it collapses to a day and
               a half: the customer was answered in seconds. */}
           <motion.article
             {...fadeUp}
@@ -218,10 +218,10 @@ export function SpeedComparison() {
                 : { duration: 0.6, delay: 0.12, ease: [0.22, 1, 0.36, 1] }
             }
             className="speed-card speed-card-relod"
-            aria-label={t("With Relod", "مع ريلود")}
+            aria-label={t("With Reload", "مع ريلود")}
           >
             <header className="speed-card-head">
-              <RelodMark className="speed-brand-mark size-[3.25rem]" />
+              <ReloadMark className="speed-brand-mark size-[3.25rem]" />
               <div>
                 <p className="speed-eyebrow speed-eyebrow-accent">
                   {t("Automated", "آلي")}
@@ -229,7 +229,7 @@ export function SpeedComparison() {
                 <h3 className="speed-card-title">
                   {t("With ", "مع ")}
                   <span className="speed-brand-name">
-                    {t("Relod", "ريلود")}
+                    {t("Reload", "ريلود")}
                   </span>
                 </h3>
               </div>

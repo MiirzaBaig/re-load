@@ -28,7 +28,7 @@ Deno.serve(async (request) => {
       business_account_id: env("WHATSAPP_WABA_ID"),
       phone_number_id: phoneNumberId,
       display_phone_number: Deno.env.get("WHATSAPP_DISPLAY_PHONE_NUMBER") ?? null,
-      verified_name: "Relod Test",
+      verified_name: "Reload Test",
       status: "CONNECTED",
       connected_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

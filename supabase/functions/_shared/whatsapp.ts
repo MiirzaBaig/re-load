@@ -83,7 +83,7 @@ export async function sendWhatsAppList(
       action: {
         button: button.slice(0, 20),
         sections: [{
-          title: "Relod",
+          title: "Reload",
           rows: rows.map((row) => ({
             id: row.id.slice(0, 200),
             title: row.title.slice(0, 24),

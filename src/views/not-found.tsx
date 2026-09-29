@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { RelodLogo } from "@/components/relod-logo";
+import { ReloadLogo } from "@/components/reload-logo";
 
 export function NotFoundPage() {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background px-5">
-      <RelodLogo />
+      <ReloadLogo />
       <div className="text-center">
         <h1 className="font-display text-4xl font-semibold tracking-tight text-foreground">
           Page not found

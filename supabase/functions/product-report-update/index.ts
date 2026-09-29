@@ -24,7 +24,7 @@ Deno.serve(async (request) => {
       const contact = Array.isArray(conversation?.whatsapp_contacts) ? conversation.whatsapp_contacts[0] : conversation?.whatsapp_contacts;
       if (contact?.wa_id) {
         const ref = `RL-${report.id.slice(0, 8).toUpperCase()}`;
-        await sendWhatsAppText(contact.wa_id, conversation?.language === "en" ? `Update on ${ref}: the Relod team has marked this ${report.report_type === "BUG" ? "problem" : "feedback item"} as resolved. Thank you for helping us improve.` : `تحديث على ${ref}: تم حل ${report.report_type === "BUG" ? "المشكلة" : "الملاحظة"} من فريق ريلود. شكرًا لأنك ساعدتنا نطوّر التجربة.`);
+        await sendWhatsAppText(contact.wa_id, conversation?.language === "en" ? `Update on ${ref}: the Reload team has marked this ${report.report_type === "BUG" ? "problem" : "feedback item"} as resolved. Thank you for helping us improve.` : `تحديث على ${ref}: تم حل ${report.report_type === "BUG" ? "المشكلة" : "الملاحظة"} من فريق ريلود. شكرًا لأنك ساعدتنا نطوّر التجربة.`);
         notified = true;
       }
     }

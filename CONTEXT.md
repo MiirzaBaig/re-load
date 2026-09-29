@@ -1,12 +1,12 @@
-# Relod context
+# Reload context
 
-Relod serves Saudi ecommerce merchants with explainable, policy-based return eligibility. The current frontend iteration is English and left-to-right; Arabic-first localization remains future work.
+Reload serves Saudi ecommerce merchants with explainable, policy-based return eligibility. The current frontend iteration is English and left-to-right; Arabic-first localization remains future work.
 
 This file is the durable product and engineering context for the repository. It records decisions that should survive across development sessions. It intentionally excludes private interview transcripts, personal contact information, and compensation details.
 
 ## Product thesis and MVP outcome
 
-Relod is the decision layer between a merchant's written return policy, the facts of a specific order, and the merchant's operational return workflow. It is not a support inbox and it is not an AI decision-maker.
+Reload is the decision layer between a merchant's written return policy, the facts of a specific order, and the merchant's operational return workflow. It is not a support inbox and it is not an AI decision-maker.
 
 The Sprint 01 outcome is one complete merchant-ready flow:
 
@@ -141,7 +141,7 @@ The minimum server boundaries are:
 - Server-side deterministic evaluation and transactional decision/case persistence.
 - Rate limits, non-enumerating verification errors, structured logs, error monitoring, health checks, backups, and secret management.
 
-For Salla, the MVP should begin with OAuth and the `orders.read` scope, normalize Order Details and Order Items into Relod facts, handle access-token refresh/revocation, verify webhook signatures, subscribe only to events needed for store/app lifecycle and order freshness, cache responsibly, and honor Salla rate-limit headers. Do not request order write or shipping scopes for the decision-only MVP.
+For Salla, the MVP should begin with OAuth and the `orders.read` scope, normalize Order Details and Order Items into Reload facts, handle access-token refresh/revocation, verify webhook signatures, subscribe only to events needed for store/app lifecycle and order freshness, cache responsibly, and honor Salla rate-limit headers. Do not request order write or shipping scopes for the decision-only MVP.
 
 ## MVP screen set
 

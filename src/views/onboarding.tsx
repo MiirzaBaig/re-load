@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { RelodLogo } from "@/components/relod-logo";
+import { ReloadLogo } from "@/components/reload-logo";
 import { Spinner } from "@/components/ui/spinner";
 import { services } from "@/lib/services";
 import { toast } from "sonner";
@@ -47,7 +47,7 @@ export function OnboardingPage() {
     <div className="flex min-h-svh flex-col bg-muted/20">
       <header className="border-b border-border bg-background">
         <div className="mx-auto flex max-w-[640px] items-center justify-between px-5 py-4">
-          <RelodLogo />
+          <ReloadLogo />
         </div>
       </header>
       <main className="flex-1">

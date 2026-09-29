@@ -1,10 +1,10 @@
-# Relod project memory
+# Reload project memory
 
 Updated: 24 September 2026
 
 ## Product
 
-Relod is an Arabic-first return decision layer for Saudi ecommerce merchants. A merchant provides a written return policy, AI proposes structured rules with their source clauses, and the merchant reviews and publishes them. Customer eligibility is then decided by deterministic code using the published rules and verified order facts. AI never decides eligibility.
+Reload is an Arabic-first return decision layer for Saudi ecommerce merchants. A merchant provides a written return policy, AI proposes structured rules with their source clauses, and the merchant reviews and publishes them. Customer eligibility is then decided by deterministic code using the published rules and verified order facts. AI never decides eligibility.
 
 The three outcomes are `ELIGIBLE`, `NOT_ELIGIBLE`, and `MANUAL_REVIEW`. Every decision must preserve the policy version, order facts, applied rules, reason codes, and evaluation time. Published versions and past decisions are immutable.
 

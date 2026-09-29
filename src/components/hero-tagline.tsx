@@ -69,7 +69,7 @@ function RevealedLine({
   if (!wordByWord) {
     return (
       <motion.span
-        className={cn("hero-tagline-line block will-change-[opacity,transform,filter]", className)}
+        className={cn("hero-tagline-line block", className)}
         variants={lineReveal}
         custom={delay}
         initial="hidden"
@@ -98,7 +98,7 @@ function RevealedLine({
           <motion.span
             key={`${part}-${index}`}
             className={cn(
-              "hero-tagline-word will-change-[opacity,transform,filter]",
+              "hero-tagline-word",
               className,
             )}
             variants={wordReveal}
@@ -170,7 +170,7 @@ export function HeroTagline({
       </h1>
 
       <motion.p
-        className="mx-auto max-w-[46ch] text-lg leading-relaxed text-muted-foreground text-pretty will-change-[opacity,transform,filter]"
+        className="mx-auto max-w-[46ch] text-lg leading-relaxed text-muted-foreground text-pretty"
         initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
         transition={{ delay: bodyDelay, duration: 0.75, ease: EASE }}

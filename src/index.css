@@ -55,6 +55,9 @@
   --color-review-foreground: var(--review-foreground);
   --color-review-muted: var(--review-muted);
   --color-brand-tint: var(--brand-tint);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-fill: var(--brand-accent-fill);
+  --color-brand-accent-soft: var(--brand-accent-soft);
   --color-saffron: var(--saffron);
   --color-saffron-foreground: var(--saffron-foreground);
   --color-saffron-muted: var(--saffron-muted);
@@ -69,38 +72,38 @@
 :root {
   --header-progress: 0;
   --radius: 0.5rem;
-  --background: #f5f5f4;
-  --foreground: #1c1917;
+  --background: #f8f7f4;
+  --foreground: #0f0f12;
   --card: #ffffff;
-  --card-foreground: #1c1917;
+  --card-foreground: #0f0f12;
   --popover: #ffffff;
-  --popover-foreground: #1c1917;
-  --primary: #f97316;
-  --primary-foreground: #1c1917;
-  --secondary: #fafaf9;
-  --secondary-foreground: #292524;
-  --muted: #eeece9;
-  --muted-foreground: #6f6761;
-  --accent: #ffedd5;
-  --accent-foreground: #9a3412;
+  --popover-foreground: #0f0f12;
+  --primary: #0f0f12;
+  --primary-foreground: #f8f7f4;
+  --secondary: #efeff2;
+  --secondary-foreground: #0f0f12;
+  --muted: #efeff2;
+  --muted-foreground: #4b5363;
+  --accent: #e7e9ef;
+  --accent-foreground: #0f0f12;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #e7e5e4;
-  --input: #d6d3d1;
-  --ring: #f97316;
-  --chart-1: #f97316;
-  --chart-2: #f59e0b;
-  --chart-3: #78716c;
-  --chart-4: #fdba74;
+  --border: #e7e9ef;
+  --input: #677185;
+  --ring: #4557c7;
+  --chart-1: #5669e0;
+  --chart-2: #0f0f12;
+  --chart-3: #9099ab;
+  --chart-4: #aeb8f5;
   --chart-5: #dc2626;
-  --sidebar: #fafaf9;
-  --sidebar-foreground: #1c1917;
-  --sidebar-primary: #f97316;
-  --sidebar-primary-foreground: #1c1917;
-  --sidebar-accent: #ffedd5;
-  --sidebar-accent-foreground: #9a3412;
-  --sidebar-border: #e7e5e4;
-  --sidebar-ring: #f97316;
+  --sidebar: #f1f1ee;
+  --sidebar-foreground: #0f0f12;
+  --sidebar-primary: #4557c7;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e7e9ef;
+  --sidebar-accent-foreground: #0f0f12;
+  --sidebar-border: #e7e9ef;
+  --sidebar-ring: #4557c7;
   --eligible: #059669;
   --eligible-foreground: #ffffff;
   --eligible-muted: #d1fae5;
@@ -110,58 +113,63 @@
   --review: #d97706;
   --review-foreground: #ffffff;
   --review-muted: #fef3c7;
-  --brand-tint: #ffedd5;
-  --saffron: #f59e0b;
-  --saffron-foreground: #1c1917;
-  --saffron-muted: #fef3c7;
+  --brand-tint: #e8ebfc;
+  --saffron: #677185;
+  --saffron-foreground: #0f0f12;
+  --saffron-muted: #efeff2;
   /* Light-mode footer: a distinctly deeper tinted surface than the page panel
      (#faf9f6) — enough separation for the curtain reveal to read, while still
      clearly a light surface. */
-  --footer-bg: #e7e2dc;
-  --footer-fg: #1c1917;
-  --footer-muted: #57534e;
-  --footer-subtle: #c8c2bb;
-  --footer-gold: #ea580c;
-  --footer-gold-foreground: #ffffff;
+  --footer-bg: #e7e9ef;
+  --footer-fg: #0f0f12;
+  --footer-muted: #374151;
+  --footer-subtle: #c9cdd6;
+  --footer-gold: #0f0f12;
+  --footer-gold-foreground: #f8f7f4;
   /* Hero inset card: the page it floats on, and the card itself. */
   --hero-shell-bg: var(--background);
-  --hero-card-bg: #14100d;
+  --hero-card-bg: #0f0f12;
   --hero-card-rim: transparent;
+  /* Brand 3.0 accent: a signal for focus and selection, never a page fill.
+     Deep accent #4557c7 is the text-safe shade on light (5.70:1). */
+  --brand-accent: #4557c7;
+  --brand-accent-fill: #5669e0;
+  --brand-accent-soft: #e8ebfc;
 }
 
 .dark {
-  --background: #141210;
-  --foreground: #fafaf9;
-  --card: #1c1917;
-  --card-foreground: #fafaf9;
-  --popover: #231f1c;
-  --popover-foreground: #fafaf9;
-  --primary: #fb923c;
-  --primary-foreground: #1c1917;
-  --secondary: #292524;
-  --secondary-foreground: #fafaf9;
-  --muted: #24201d;
-  --muted-foreground: #b0a9a3;
-  --accent: #3a2418;
-  --accent-foreground: #fed7aa;
+  --background: #0f0f12;
+  --foreground: #f8f7f4;
+  --card: #17181c;
+  --card-foreground: #f8f7f4;
+  --popover: #1c1d22;
+  --popover-foreground: #f8f7f4;
+  --primary: #f8f7f4;
+  --primary-foreground: #0f0f12;
+  --secondary: #1c1d22;
+  --secondary-foreground: #f8f7f4;
+  --muted: #1c1d22;
+  --muted-foreground: #a9afbc;
+  --accent: #24262c;
+  --accent-foreground: #f8f7f4;
   --destructive: #f87171;
   --destructive-foreground: #1a0a0a;
-  --border: #37312c;
-  --input: #4a423c;
-  --ring: #fb923c;
-  --chart-1: #fb923c;
-  --chart-2: #fbbf24;
-  --chart-3: #a8a29e;
-  --chart-4: #fdba74;
+  --border: #26282e;
+  --input: #4a4f5c;
+  --ring: #aeb8f5;
+  --chart-1: #aeb8f5;
+  --chart-2: #f8f7f4;
+  --chart-3: #677185;
+  --chart-4: #5669e0;
   --chart-5: #f87171;
-  --sidebar: #181512;
-  --sidebar-foreground: #fafaf9;
-  --sidebar-primary: #fb923c;
-  --sidebar-primary-foreground: #1c1917;
-  --sidebar-accent: #342218;
-  --sidebar-accent-foreground: #fed7aa;
-  --sidebar-border: #37312c;
-  --sidebar-ring: #fb923c;
+  --sidebar: #131418;
+  --sidebar-foreground: #f8f7f4;
+  --sidebar-primary: #aeb8f5;
+  --sidebar-primary-foreground: #0f0f12;
+  --sidebar-accent: #24262c;
+  --sidebar-accent-foreground: #f8f7f4;
+  --sidebar-border: #26282e;
+  --sidebar-ring: #aeb8f5;
   --eligible: #34d399;
   --eligible-foreground: #0a1a14;
   --eligible-muted: #0a2a1e;
@@ -171,24 +179,29 @@
   --review: #fbbf24;
   --review-foreground: #1a1408;
   --review-muted: #2a2414;
-  --brand-tint: #342218;
-  --saffron: #fbbf24;
-  --saffron-foreground: #1a1408;
-  --saffron-muted: #2a2414;
+  --brand-tint: #22273f;
+  --saffron: #a9afbc;
+  --saffron-foreground: #0f0f12;
+  --saffron-muted: #1c1d22;
   /* Lighter than the page (#0d1110), not darker: there is no headroom below
      near-black, so a darker footer gave the curtain edge ~1.03:1 and the reveal
      was invisible. Raising it instead reads as a lit surface behind the panel. */
-  --footer-bg: #28221e;
-  --footer-fg: #fafaf9;
-  --footer-muted: #b0a9a3;
-  --footer-subtle: #463c35;
-  --footer-gold: #fb923c;
-  --footer-gold-foreground: #1c1917;
+  --footer-bg: #1c1d22;
+  --footer-fg: #f8f7f4;
+  --footer-muted: #a9afbc;
+  --footer-subtle: #33353c;
+  --footer-gold: #f8f7f4;
+  --footer-gold-foreground: #0f0f12;
   /* Dark mode: the page recedes and the card lifts, so the inset edge still
      reads without the light-mode contrast. */
   --hero-shell-bg: var(--background);
-  --hero-card-bg: #1c1713;
-  --hero-card-rim: rgb(255 255 255 / 0.07);
+  --hero-card-bg: #17181c;
+  --hero-card-rim: rgb(255 255 255 / 0.08);
+  /* Blue-violet fails on ink (4.09:1); the guideline's soft accent is the
+     dark-theme signal colour instead (10:1). */
+  --brand-accent: #aeb8f5;
+  --brand-accent-fill: #5669e0;
+  --brand-accent-soft: #22273f;
 }
 
 @layer base {
@@ -1002,111 +1015,151 @@ html[dir="rtl"] .sidebar-nav-enter {
   transform: scale(1);
 }
 
+/* The current section is a selection, so it takes the brand signal colour. */
 .public-nav-link[data-active="true"],
 .public-nav-link[aria-current="page"] {
-  color: var(--foreground);
+  color: var(--brand-accent);
 }
 
-/* Familiar WhatsApp entry point, kept intentionally compact so it reads as a
-   useful shortcut rather than an ad. The label reveals on intent while the
-   icon remains easy to reach on touch screens. */
+/* Floating WhatsApp entry: a compact chat bubble that says hi once.
+   At rest it is a 44px ink bubble whose corner nearest the screen edge is
+   squared off like a message tail. Shortly after load it peeks open once to
+   show its label, then tucks away and stays still (Brand 3.0: resolve once,
+   then remain still). Hover and keyboard focus open it again.
+   The label collapses with max-width, not a 0fr grid track: a 0fr track still
+   reserves the text's min-content width, which left an empty gap beside the
+   icon. No backdrop blur and no glow — this floats over every section. */
 .whatsapp-float {
   position: fixed;
   z-index: 38;
-  inset-inline-start: max(18px, env(safe-area-inset-left));
-  bottom: max(18px, env(safe-area-inset-bottom));
-  display: flex;
+  inset-inline-start: max(16px, env(safe-area-inset-left));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-height: 58px;
-  padding: 6px;
-  padding-inline-start: 16px;
-  border: 1px solid color-mix(in srgb, #25d366 38%, var(--border));
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--background) 88%, transparent);
-  color: var(--foreground);
-  box-shadow:
-    0 16px 38px -18px rgb(7 94 84 / 0.5),
-    0 4px 12px -7px rgb(0 0 0 / 0.28),
-    inset 0 1px 0 color-mix(in srgb, #fff 42%, transparent);
-  backdrop-filter: blur(18px) saturate(135%);
-  -webkit-backdrop-filter: blur(18px) saturate(135%);
-  animation: whatsapp-float-in 620ms cubic-bezier(0.22, 1, 0.36, 1) 700ms both;
-  transition:
-    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 180ms ease,
-    box-shadow 220ms ease;
+  height: 44px;
+  padding: 3px;
+  border-radius: 17px 17px 17px 5px;
+  background: var(--foreground);
+  color: var(--background);
+  box-shadow: 0 8px 20px -12px rgb(0 0 0 / 0.5);
+  animation: whatsapp-float-in 420ms cubic-bezier(0.2, 0, 0, 1) 500ms both;
+  transition: transform 180ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-.whatsapp-float:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in srgb, #25d366 66%, var(--border));
-  box-shadow:
-    0 22px 44px -18px rgb(7 94 84 / 0.58),
-    0 6px 16px -8px rgb(0 0 0 / 0.3),
-    inset 0 1px 0 color-mix(in srgb, #fff 48%, transparent);
+/* The tail points into the corner the bubble sits in, so it mirrors in RTL. */
+html[dir="rtl"] .whatsapp-float {
+  border-radius: 17px 17px 5px 17px;
 }
 
-.whatsapp-float:active { transform: translateY(0) scale(0.97); }
-.whatsapp-float:focus-visible { outline: 3px solid color-mix(in srgb, #25d366 42%, transparent); outline-offset: 3px; }
-
-.whatsapp-float-copy {
-  display: grid;
-  gap: 1px;
-  text-align: start;
-  line-height: 1.2;
+.whatsapp-float:hover { transform: translateY(-2px); }
+.whatsapp-float:active { transform: scale(0.95); transition-duration: 90ms; }
+.whatsapp-float:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
 }
-
-.whatsapp-float-title { font-size: 13px; font-weight: 650; letter-spacing: -0.01em; }
-.whatsapp-float-note { font-size: 10px; color: var(--muted-foreground); }
 
 .whatsapp-float-icon {
   position: relative;
   display: grid;
-  width: 46px;
-  height: 46px;
-  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  flex: none;
   place-items: center;
-  overflow: visible;
-  border-radius: 999px;
-  background: linear-gradient(145deg, #32dc72, #18b957);
-  box-shadow:
-    0 8px 18px -8px rgb(37 211 102 / 0.9),
-    inset 0 1px 1px rgb(255 255 255 / 0.42);
-  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  color: var(--background);
+  transition: transform 220ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-.whatsapp-float:hover .whatsapp-float-icon { transform: rotate(-4deg) scale(1.05); }
+.whatsapp-float:hover .whatsapp-float-icon { transform: rotate(-8deg); }
 
-.whatsapp-float-pulse {
+/* "Online" dot: WhatsApp green as a status signal, ringed in the bubble
+   colour so it reads as sitting on the edge of the icon. */
+.whatsapp-float-online {
   position: absolute;
-  top: 1px;
-  right: 1px;
-  width: 9px;
-  height: 9px;
-  border: 2px solid var(--background);
+  top: 6px;
+  inset-inline-end: 6px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--foreground);
   border-radius: 999px;
-  background: #f97316;
+  background: #25d366;
+}
+
+/* Truly zero-width when closed, so there is no gap beside the icon. */
+.whatsapp-float-label {
+  display: block;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width 240ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.whatsapp-float-title {
+  display: block;
+  padding-inline: 2px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition:
+    opacity 160ms cubic-bezier(0.2, 0, 0, 1),
+    transform 240ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+html[dir="rtl"] .whatsapp-float-title { transform: translateX(6px); }
+
+.whatsapp-float:hover .whatsapp-float-label,
+.whatsapp-float:focus-visible .whatsapp-float-label {
+  max-width: 180px;
+}
+.whatsapp-float:hover .whatsapp-float-title,
+.whatsapp-float:focus-visible .whatsapp-float-title {
+  opacity: 1;
+  transform: none;
+  transition-delay: 40ms;
+}
+
+/* The one-time hello: opens ~2.5s after load, holds, closes, never repeats. */
+@media (min-width: 640px) and (prefers-reduced-motion: no-preference) {
+  .whatsapp-float-label {
+    animation: whatsapp-float-peek 3.6s cubic-bezier(0.2, 0, 0, 1) 2.5s both;
+  }
+  .whatsapp-float-title {
+    animation: whatsapp-float-peek-text 3.6s cubic-bezier(0.2, 0, 0, 1) 2.5s both;
+  }
+  .whatsapp-float:hover .whatsapp-float-label,
+  .whatsapp-float:hover .whatsapp-float-title,
+  .whatsapp-float:focus-visible .whatsapp-float-label,
+  .whatsapp-float:focus-visible .whatsapp-float-title {
+    animation: none;
+  }
+}
+
+@keyframes whatsapp-float-peek {
+  0%, 100% { max-width: 0; }
+  10%, 84% { max-width: 180px; }
+}
+
+@keyframes whatsapp-float-peek-text {
+  0%, 6%, 88%, 100% { opacity: 0; }
+  16%, 80% { opacity: 1; transform: none; }
 }
 
 @keyframes whatsapp-float-in {
-  from { opacity: 0; transform: translateY(16px) scale(0.9); }
+  from { opacity: 0; transform: translateY(10px) scale(0.9); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* Phones: icon only. The label would cover content on a narrow screen. */
 @media (max-width: 639px) {
-  .whatsapp-float {
-    min-height: 54px;
-    padding: 5px;
-    padding-inline-start: 13px;
-  }
-  .whatsapp-float-icon { width: 44px; height: 44px; }
-  .whatsapp-float-note { display: none; }
+  .whatsapp-float-label { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .whatsapp-float { animation: none; transition: none; }
-  .whatsapp-float-icon { transition: none; }
+  .whatsapp-float,
+  .whatsapp-float-icon,
+  .whatsapp-float-label,
+  .whatsapp-float-title { animation: none; transition: none; }
 }
 
 /* Full-bleed at rest; insets to a compact floating pill when scrolled. */
@@ -1459,7 +1512,7 @@ html.dark .mode-toggle:active .mode-toggle-moon {
 }
 .dark .phone-device {
   border-color: #888c98;
-  box-shadow: 0 36px 64px -18px rgb(0 0 0 / .8), 0 0 32px -15px color-mix(in srgb, var(--primary) 25%, transparent), inset 1px 2px 1px rgb(255 255 255 / .6), inset -2px -2px 2px #000;
+  box-shadow: 0 30px 56px -24px rgb(0 0 0 / .5), inset 1px 2px 1px rgb(255 255 255 / .6), inset -2px -2px 2px #000;
 }
 /* Hero scene — ambient depth so the phone sits in a space rather than floating in a void.
    All glow is bounded inside the section; nothing bleeds past .curtain-content's clip. */
@@ -1483,6 +1536,13 @@ html.dark .mode-toggle:active .mode-toggle-moon {
      gap the design wants. Both surfaces are dark, so more reads as a black void. */
   margin-top: -64px;
   padding: 80px clamp(12px, 2.2vw, 28px) clamp(12px, 2.2vw, 28px);
+  /* Exactly one screen tall, navbar clearance included, so the card below
+     fills what is left and its content centres in the part you can see —
+     rather than in a card taller than the screen with its bottom cut off. */
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  box-sizing: border-box;
   /* No background of its own: painting the shell tint here put a full-width
      band behind the floating header pill. The page background shows through
      and the card supplies the only surface. */
@@ -1492,6 +1552,9 @@ html.dark .mode-toggle:active .mode-toggle-moon {
   position: relative;
   isolation: isolate;
   overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   border-radius: clamp(20px, 2.4vw, 34px);
   background: var(--hero-card-bg);
   /* Light mode gets separation from tone alone (18:1); dark mode cannot, so a
@@ -1500,11 +1563,6 @@ html.dark .mode-toggle:active .mode-toggle-moon {
     0 30px 70px -40px rgb(8 14 12 / 0.55),
     0 2px 8px -4px rgb(8 14 12 / 0.3),
     inset 0 0 0 1px var(--hero-card-rim);
-  /* Promote to its own layer up front so the scroll-linked transform never
-     triggers a mid-animation layer promotion, and keep text sharp while the
-     card is rotated in 3D. */
-  will-change: transform;
-  backface-visibility: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -1515,66 +1573,41 @@ html.dark .mode-toggle:active .mode-toggle-moon {
   border-bottom: 1px solid color-mix(in srgb, var(--foreground) 7%, transparent);
 }
 
-/* Scroll-linked depth: the card tilts back and settles as it leaves the top of
-   the viewport, so the page has a sense of dimension rather than flat scroll.
-   `animation-timeline: view()` is GPU-driven and needs no JS. */
+/* Zoom-out on scroll: as the hero leaves the top of the screen the card shrinks
+   back like a window receding, and grows to full size again on the way up.
+   The animation is bound to scroll position, so reversing is automatic.
+
+   Deliberately a flat 2D `scale` and nothing else. The GPU resizes the card's
+   already-painted picture, so nothing is redrawn per frame. The earlier 3D
+   tilt (perspective + rotateX) is what lagged and flashed white; do not add
+   perspective, rotation, filter, blur or opacity back onto this card. */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) and (min-width: 768px) {
     .hero-card {
+      /* Shrinks toward its bottom edge, so it reads as pulling away from the
+         viewer rather than sliding up. */
       transform-origin: 50% 100%;
-      animation: hero-card-recede linear both;
+      animation: hero-card-zoom linear both;
       animation-timeline: view();
-      animation-range: exit 0% exit 100%;
-    }
-
-
-    .hero-card::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      z-index: 2;
-      pointer-events: none;
-      border-radius: inherit;
-      background: linear-gradient(
-        to bottom,
-        rgb(4 6 5 / 0.9),
-        rgb(4 6 5 / 0.35) 55%,
-        transparent
-      );
-      opacity: 0;
-      will-change: opacity;
-      animation: hero-card-shade linear both;
-      animation-timeline: view();
-      animation-range: exit 0% exit 100%;
+      animation-range: exit 0% exit 65%;
     }
   }
 }
 
-/* No opacity change: fading the card let the light page show through and
-   washed it grey. Depth comes from the tilt and a shorter perspective, with a
-   darkening overlay (.hero-card::after) standing in for the light falling off
-   as the surface angles away. */
-@keyframes hero-card-recede {
+@keyframes hero-card-zoom {
   from {
-    transform: perspective(900px) rotateX(0deg) scale(1);
+    transform: scale(1);
   }
   to {
-    /* Pivots on its bottom edge, so the top tips away from the viewer — the
-       card lies back like a laptop lid closing. */
-    transform: perspective(900px) rotateX(20deg) scale(0.9);
+    transform: scale(0.86);
   }
 }
 
-/* A dark scrim that comes in as the card angles away — reads as the top of the
-   panel catching less light, rather than the card becoming transparent. */
-@keyframes hero-card-shade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 0.45;
-  }
-}
+/* The hero card used to tilt back in 3D as it scrolled away. That promoted a
+   near-full-viewport layer and re-rasterised it every frame — together with
+   blurred glass inside the card and under the header it is what made this
+   section lag, flicker and flash white. Brand 3.0 motion is "resolve once,
+   then remain still", so the card now scrolls as a flat, stable surface. */
 
 .hero-card-content {
   position: relative;
@@ -1582,13 +1615,16 @@ html.dark .mode-toggle:active .mode-toggle-moon {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.75rem;
+  /* Tightens a little on shorter screens so the whole hero fits in one view. */
+  gap: clamp(1.25rem, 2.6vh, 1.75rem);
   max-width: 62rem;
   margin-inline: auto;
-  /* Vertical padding scales with the viewport so the card fills the screen
-     rather than floating in it; the min keeps it honest on short laptops. */
-  padding: clamp(5rem, 13vh, 8rem) clamp(1.25rem, 4vw, 2.5rem)
-    clamp(5rem, 13vh, 8rem);
+  /* The card's height now comes from the screen, not from this padding, so it
+     only needs to be breathing room. `margin-block: auto` centres the content
+     in the card; on a short laptop where the content is taller than the space,
+     the card simply grows instead of clipping. */
+  margin-block: auto;
+  padding: clamp(2rem, 5vh, 4.5rem) clamp(1.25rem, 4vw, 2.5rem);
   text-align: center;
 }
 
@@ -1741,8 +1777,8 @@ html.dark .mode-toggle:active .mode-toggle-moon {
   cursor: pointer;
   appearance: none;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--primary) 18%, var(--border));
-  accent-color: var(--primary);
+  background: color-mix(in srgb, var(--brand-accent-fill) 18%, var(--border));
+  accent-color: var(--brand-accent-fill);
 }
 .calculator-range::-webkit-slider-thumb {
   width: 16px;
@@ -1750,18 +1786,18 @@ html.dark .mode-toggle:active .mode-toggle-moon {
   appearance: none;
   border: 3px solid var(--background);
   border-radius: 999px;
-  background: var(--primary);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 45%, transparent), 0 3px 8px rgb(0 0 0 / .18);
+  background: var(--brand-accent-fill);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-accent-fill) 45%, transparent), 0 3px 8px rgb(0 0 0 / .18);
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
 .calculator-range:hover::-webkit-slider-thumb,
-.calculator-range:focus-visible::-webkit-slider-thumb { transform: scale(1.15); box-shadow: 0 0 0 5px color-mix(in srgb, var(--primary) 14%, transparent); }
+.calculator-range:focus-visible::-webkit-slider-thumb { transform: scale(1.15); box-shadow: 0 0 0 5px color-mix(in srgb, var(--brand-accent-fill) 14%, transparent); }
 .calculator-range::-moz-range-thumb {
   width: 12px;
   height: 12px;
   border: 3px solid var(--background);
   border-radius: 999px;
-  background: var(--primary);
+  background: var(--brand-accent-fill);
 }
 .calculator-range:focus-visible { outline: none; }
 .calculator-assumptions[data-open="true"] .calculator-chevron { transform: rotate(45deg); }
@@ -2071,7 +2107,7 @@ html.dark .mode-toggle:active .mode-toggle-moon {
   background-color: #ece5dd;
   background-image:
     radial-gradient(circle at 15% 25%, #bec6b650 1px, transparent 2px),
-    radial-gradient(circle at 75% 65%, #bec6b650 1px, transparent 2px);
+    radial-gradient(circle at 75% 65%, #c9cdd650 1px, transparent 2px);
   background-size: 29px 37px;
 }
 .phone-bubble { background: #ffffff; }
@@ -2124,9 +2160,9 @@ html.dark .mode-toggle:active .mode-toggle-moon {
     color-mix(in srgb, var(--primary) 22%, transparent),
     transparent 68%
   );
-  /* The radial gradient already has a soft falloff. Removing the large blur
-     avoids repainting most of the pinned viewport on every scroll frame. */
-  opacity: 0.9;
+  /* Hidden under Brand 3.0 (no decorative glow); it drew a grey arc behind
+     the phones on the dark theme. */
+  display: none;
 }
 
 /* Its own band above the stage, so the devices never reach it. */
@@ -2174,35 +2210,31 @@ html.dark .mode-toggle:active .mode-toggle-moon {
   height: 26px;
   transform: translateX(-50%) translateZ(-60px) rotateX(74deg);
   border-radius: 50%;
-  background: radial-gradient(ellipse, rgb(6 20 16 / 0.34), transparent 70%);
-  opacity: 0.72;
+  background: radial-gradient(ellipse, rgb(0 0 0 / 0.22), transparent 70%);
+  opacity: 0.6;
   pointer-events: none;
 }
 
 /* Layered like real light: a tight contact edge, a mid shadow, then wide ambient. */
 .outcome-sequence-card [data-phone-frame] {
   box-shadow:
-    0 2px 4px -1px rgb(6 20 16 / 0.28),
-    0 12px 22px -10px rgb(6 20 16 / 0.3),
-    0 38px 62px -28px rgb(6 20 16 / 0.38),
+    0 2px 4px -1px rgb(0 0 0 / 0.16),
+    0 12px 22px -12px rgb(0 0 0 / 0.18),
+    0 34px 54px -30px rgb(0 0 0 / 0.22),
     inset 1px 2px 1px rgb(255 255 255 / 0.65),
     inset -2px -2px 2px rgb(0 0 0 / 0.8);
 }
 
 .outcome-sequence-card[data-position="center"] [data-phone-frame] {
   box-shadow:
-    0 3px 6px -1px rgb(6 20 16 / 0.32),
-    0 18px 32px -12px rgb(6 20 16 / 0.34),
-    0 54px 88px -30px rgb(6 20 16 / 0.45),
+    0 3px 6px -1px rgb(0 0 0 / 0.18),
+    0 16px 28px -14px rgb(0 0 0 / 0.2),
+    0 44px 70px -34px rgb(0 0 0 / 0.26),
     0 0 0 1px color-mix(in srgb, var(--primary) 12%, transparent),
     inset 1px 2px 1px rgb(255 255 255 / 0.68),
     inset -2px -2px 2px rgb(0 0 0 / 0.82);
 }
 
-/* Side devices sit further from the light, so they read slightly cooler. */
-.outcome-sequence-card[data-position="side"] [data-phone-frame] {
-  opacity: 0.96;
-}
 
 .outcome-sequence-card [data-phone-frame],
 .outcome-sequence-card .phone-screen {
@@ -2471,9 +2503,9 @@ html[dir="rtl"] .link-underline::after {
 }
 
 /* ---------------------------------------------------------------------------
-   Speed comparison — manual returns timeline vs. Relod
+   Speed comparison — manual returns timeline vs. Reload
    Two cards argue by contrast: the manual one counts out its days on a dot
-   track, the Relod one shows the WhatsApp thread that collapses them.
+   track, the Reload one shows the WhatsApp thread that collapses them.
 --------------------------------------------------------------------------- */
 .speed-section {
   padding: clamp(4.5rem, 9vw, 7rem) 0;
@@ -2744,7 +2776,7 @@ html[dir="rtl"] .link-underline::after {
 
 /* Both figures sit on the card floor, so the two numbers line up across the
    pair however tall each card is. Only the manual card gets a rule above it:
-   on the Relod side the tilted phone overhangs that line, and it read as a
+   on the Reload side the tilted phone overhangs that line, and it read as a
    stray mark crossing behind the device. */
 .speed-figure,
 .speed-figure-muted {
@@ -2964,4 +2996,68 @@ html[dir="rtl"] .link-underline::after {
     transform: none;
     transition: none;
   }
+}
+
+/* ===========================================================================
+   Brand System 3.0 — component adjustments
+   ---------------------------------------------------------------------------
+   The palette itself lives in :root / .dark. These rules adapt surfaces that
+   were designed around the old orange-and-green look.
+=========================================================================== */
+
+/* The hero card is ink in both themes, so inside it the tokens invert:
+   primary controls, icons and the accent dot become off-white. */
+.hero-card {
+  --primary: #f8f7f4;
+  --primary-foreground: #0f0f12;
+  --ring: #f8f7f4;
+}
+
+/* Two-tone headline instead of a colour gradient: white, then slate. */
+.hero-gradient-text {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: #aeb3bf;
+}
+
+/* Brand 3.0: no decorative glow. Surfaces separate by contrast alone. */
+.hero-aurora,
+.footer-glow,
+.speed-phone-glow {
+  display: none;
+}
+
+/* The speed comparison used green as decoration; green now means approved,
+   and nothing else. The brand side is carried by ink. */
+.speed-card-current {
+  background: var(--muted);
+}
+.speed-card-relod {
+  border-color: var(--foreground);
+  box-shadow: none;
+}
+.speed-brand-mark,
+.speed-eyebrow-accent,
+.speed-brand-name,
+.speed-pencil {
+  color: var(--foreground);
+}
+.speed-brand-mark {
+  filter: none;
+}
+.speed-brand-name::after {
+  background: var(--foreground);
+}
+.speed-figure-delta {
+  color: var(--foreground);
+  background: var(--accent);
+}
+
+/* The financing CTA sits on the ink results panel in both themes. */
+.financing-cta {
+  background: #f8f7f4;
+  color: #0f0f12;
+}
+.dark .calculator-results {
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
 }

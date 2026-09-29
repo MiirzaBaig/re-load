@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
-import { RelodMark } from "@/components/relod-logo";
+import { ReloadMark } from "@/components/reload-logo";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -103,9 +103,9 @@ export function AuthDialog({ open, onOpenChange, redirectTo = "/app" }: AuthDial
       <DialogContent className="auth-dialog overflow-hidden border-border/80 bg-card p-0 shadow-[0_32px_100px_-24px_rgba(0,0,0,0.42)] sm:max-w-[400px]">
         <div className="px-7 pb-7 pt-9">
           <DialogHeader className="items-center text-center sm:text-center">
-            <RelodMark className="mb-5 size-9 text-primary" />
+            <ReloadMark className="mb-5 size-9 text-primary" />
             <DialogTitle className="font-display text-[23px] leading-tight tracking-[-0.02em]">
-              {t("Sign in to Relod", "تسجيل الدخول إلى ريلود")}
+              {t("Sign in to Reload", "تسجيل الدخول إلى ريلود")}
             </DialogTitle>
             <DialogDescription className="mt-1.5 leading-relaxed">
               {t("No password needed.", "لا تحتاج إلى كلمة مرور.")}
