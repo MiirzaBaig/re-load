@@ -10,6 +10,7 @@ import {
   WhatsAppConversation,
   type ConversationStep,
 } from "./phone-frame";
+import { Tone } from "@/components/heading-accent";
 import { useLanguage } from "./language-provider";
 
 /**
@@ -147,10 +148,8 @@ export function SpeedComparison() {
       <div className="speed-inner">
         <motion.div {...fadeUp} className="speed-head">
           <h2 id="speed-heading" className="speed-title">
-            {t(
-              "From return request to refund in the customer's hands.",
-              "من طلب الإرجاع حتى وصول المبلغ إلى العميل.",
-            )}
+            {t("From return request ", "من طلب الإرجاع ")}
+            <Tone>{t("to refund in the customer's hands.", "حتى وصول المبلغ إلى العميل.")}</Tone>
           </h2>
           <p className="speed-sub">
             {t(

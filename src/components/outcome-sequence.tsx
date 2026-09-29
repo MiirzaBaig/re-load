@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WhatsAppChannel } from "./phone-frame";
 import { useLanguage } from "@/components/language-provider";
+import { Tone } from "@/components/heading-accent";
 
 /**
  * Three outcome phones arranged as a live CSS 3D fan.
@@ -147,7 +148,7 @@ export function OutcomeSequence({ children }: { children: ReactNode }) {
 
           <div className="outcome-sequence-heading">
             <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-              {t("Every answer has its evidence.", "لكل إجابة أدلتها.")}
+              {t("Every answer ", "لكل إجابة ")}<Tone>{t("has its evidence.", "أدلتها.")}</Tone>
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
               {t("A clear yes. An explained no. A human when it matters.", "موافقة واضحة، ورفض مفسّر، وتدخل بشري عند الحاجة.")}

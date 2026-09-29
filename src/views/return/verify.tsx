@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { services } from "@/lib/services";
 import { DEMO_CREDENTIALS } from "@/lib/fixtures";
-import { Search, AlertCircle, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, AlertCircle, ArrowLeft } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
 import { ReturnProgress } from "@/components/return-progress";
 import { supabase } from "@/lib/supabase";
@@ -24,12 +25,16 @@ export function ReturnVerifyPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showDemo, setShowDemo] = useState(false);
   const returnCode = searchParams.get("store");
   const live = Boolean(returnCode);
 
   useEffect(() => {
     if (returnCode) sessionStorage.setItem("relod-return-code", returnCode);
+    else {
+      sessionStorage.removeItem("relod-return-code");
+      sessionStorage.removeItem("relod-verification-token");
+      sessionStorage.removeItem("relod-decision-id");
+    }
   }, [returnCode]);
 
   const handleVerify = async (e: React.FormEvent) => {
@@ -69,12 +74,16 @@ export function ReturnVerifyPage() {
 
   return (
     <div className="flex flex-col gap-5">
+      <Link href="/" className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
+        <ArrowLeft className="size-4 rtl:rotate-180" />{t("Back to Reload", "العودة إلى ريلود")}
+      </Link>
       <ReturnProgress currentStep={1} />
 
       <ScrollReveal>
         <div className="flex flex-col gap-1">
           <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">{t("Start a return", "بدء طلب إرجاع")}</h1>
           <p className="text-sm text-muted-foreground">{t("Verify your order to check return eligibility.", "تحقق من طلبك لمعرفة أهلية المنتج للإرجاع.")}</p>
+          {!live && <p className="mt-3 rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs leading-5 text-muted-foreground">{t("Demo only · This page uses sample orders. For a real return, use the link provided by your store.", "تجربة توضيحية فقط · تستخدم هذه الصفحة طلبات نموذجية. لطلب إرجاع فعلي، استخدم الرابط الذي يقدمه متجرك.")}</p>}
         </div>
       </ScrollReveal>
 
@@ -119,32 +128,7 @@ export function ReturnVerifyPage() {
         </Card>
       </ScrollReveal>
 
-      {!live && <ScrollReveal delay={200}>
-        <button
-          onClick={() => setShowDemo(!showDemo)}
-          className="flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <Sparkles className="size-3 text-primary" />
-          {t("Demo helper", "بيانات التجربة")}
-          {showDemo ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-        </button>
-      </ScrollReveal>}
-
-      {!live && showDemo && (
-        <Card className="border-dashed bg-muted/20 animate-scale-in">
-          <CardContent className="pt-6">
-            <div className="flex flex-col gap-3 text-sm">
-              <p className="text-muted-foreground">{t("Use these demo credentials to try the flow:", "استخدم هذه البيانات لتجربة رحلة الإرجاع:")}</p>
-              <div className="rounded-lg border border-border bg-card p-3 font-mono text-xs">
-                <div>{t("Order", "الطلب")}: <span className="font-medium text-foreground">{DEMO_CREDENTIALS.orderNumber}</span></div>
-                <div>{t("Email", "البريد الإلكتروني")}: <span className="font-medium text-foreground">{DEMO_CREDENTIALS.email}</span></div>
-              </div>
-              <Button variant="outline" size="sm" onClick={fillDemo}>{t("Fill demo credentials", "تعبئة بيانات التجربة")}</Button>
-              <p className="text-[11px] text-muted-foreground/70">{t("These are synthetic fixtures, not real customer data.", "هذه بيانات تجريبية وليست بيانات عملاء حقيقية.")}</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {!live && <Button variant="ghost" size="sm" className="self-center text-muted-foreground" onClick={fillDemo}>{t("Try with a sample order", "التجربة بطلب نموذجي")}</Button>}
     </div>
   );
 }

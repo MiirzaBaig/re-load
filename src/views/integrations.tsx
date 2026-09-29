@@ -16,6 +16,7 @@ import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/components/language-provider";
 import { formatDateString, formatDateTimeString } from "@/lib/numerals";
 import { WhatsAppLogo } from "@/components/phone-frame";
+import { getWhatsAppStartUrl } from "@/lib/whatsapp";
 
 interface SallaConnection {
   external_store_name: string | null;
@@ -107,11 +108,23 @@ export function IntegrationsPage() {
   const connected = connection?.status === "CONNECTED";
   const whatsAppConnected = whatsApp?.status === "CONNECTED";
   const returnPath = returnCode ? `/return?store=${encodeURIComponent(returnCode)}` : null;
+  const testWhatsAppNumber = whatsApp?.display_phone_number?.replace(/\D/g, "") ?? "";
+  const testWhatsAppLink = whatsAppConnected && testWhatsAppNumber ? getWhatsAppStartUrl(testWhatsAppNumber) : null;
 
   const copyReturnLink = async () => {
     if (!returnPath) return;
     await navigator.clipboard.writeText(`${window.location.origin}${returnPath}`);
     toast.success(t("Customer return link copied.", "تم نسخ رابط إرجاع العملاء."));
+  };
+
+  const copyWhatsAppLink = async () => {
+    if (!testWhatsAppLink) return;
+    try {
+      await navigator.clipboard.writeText(testWhatsAppLink);
+      toast.success(t("Test WhatsApp link copied.", "تم نسخ رابط واتساب التجريبي."));
+    } catch {
+      toast.error(t("Could not copy the link. Please try again.", "تعذّر نسخ الرابط. حاول مرة أخرى."));
+    }
   };
 
   const updateWhatsApp = async (nextAction: "connect" | "disconnect") => {
@@ -228,7 +241,7 @@ export function IntegrationsPage() {
                   </div>
                   <p className="mt-1 max-w-lg text-sm leading-6 text-muted-foreground">
                     {whatsAppConnected
-                      ? t("The Meta test number is assigned to this workspace. Incoming messages can start merchant setup or a customer return.", "تم ربط رقم ميتا التجريبي بمساحة العمل. يمكن للرسائل الواردة بدء إعداد التاجر أو طلب إرجاع العميل.")
+                      ? t("The Meta test number is assigned to this workspace for customer return tests.", "رقم ميتا التجريبي مربوط بمساحة العمل هذه لاختبار طلبات إرجاع العملاء.")
                       : t("Assign the Meta test number to this workspace while the WhatsApp journey is being developed and verified.", "اربط رقم ميتا التجريبي بمساحة العمل أثناء تطوير رحلة واتساب والتحقق منها.")}
                   </p>
                   {whatsAppConnected && <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -248,6 +261,14 @@ export function IntegrationsPage() {
                   ? <Button variant="ghost" className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive sm:ms-auto" onClick={() => void updateWhatsApp("disconnect")} disabled={whatsAppAction !== null}>{whatsAppAction === "disconnect" ? <Spinner /> : <Unplug className="size-4" />} {t("Disconnect test channel", "فصل القناة التجريبية")}</Button>
                   : <Button onClick={() => void updateWhatsApp("connect")} disabled={whatsAppAction !== null}>{whatsAppAction === "connect" ? <Spinner /> : <Link2 className="size-4" />} {t("Connect test channel", "ربط القناة التجريبية")}</Button>}
               </div>
+              {whatsAppConnected && <div className="rounded-2xl border border-border/70 bg-muted/20 p-4 sm:p-5">
+                <p className="text-sm font-semibold text-foreground">{t("Customer test link", "رابط تجربة العملاء")}</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">{t("Only share this Meta test-number link with approved testers. It is not ready for your customers yet.", "شارك رابط رقم ميتا التجريبي مع المختبرين المعتمدين فقط. ليس مخصصًا لعملائك بعد.")}</p>
+                {testWhatsAppLink ? <div className="mt-4 flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => void copyWhatsAppLink()}><Copy className="size-4" />{t("Copy test WhatsApp link", "نسخ رابط واتساب التجريبي")}</Button>
+                  <Button variant="ghost" size="sm" asChild><a href={testWhatsAppLink} target="_blank" rel="noopener noreferrer"><ExternalLink className="size-4" />{t("Open test chat", "فتح المحادثة التجريبية")}</a></Button>
+                </div> : <p className="mt-3 text-xs text-muted-foreground">{t("The test number is connected, but its display number is unavailable. Check the channel setup before sharing a link.", "القناة التجريبية متصلة، لكن رقمها غير ظاهر. تحقق من إعداد القناة قبل مشاركة الرابط.")}</p>}
+              </div>}
             </div>
             <div className="grid border-t border-border/60 bg-muted/20 sm:grid-cols-3">
               <div className="flex items-center gap-3 p-4 text-sm"><ShieldCheck className="size-4 text-[#128C7E] dark:text-[#25D366]" /><span>{t("Signed webhooks", "خطافات موقّعة")}</span></div>

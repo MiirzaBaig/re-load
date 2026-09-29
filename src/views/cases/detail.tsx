@@ -1,26 +1,70 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AlertCircle, ArrowLeft, FileText, Lock, Package, ShieldCheck } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Check,
+  CircleHelp,
+  FileText,
+  Lock,
+  Package,
+  Scale,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
 import { OutcomeBadge, CaseStatusBadge } from "@/components/outcome-badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Spinner } from "@/components/ui/spinner";
 import type { CaseStatus, EligibilityOutcome } from "@/lib/domain";
-import { formatDateTime } from "@/lib/domain";
+import { formatDate, formatDateTime } from "@/lib/domain";
+import {
+  conditionLabel,
+  reasonLabel,
+  receiptRules,
+  statusLabel,
+  type ReceiptRule,
+} from "@/lib/decision-receipt";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 type CaseData = {
-  id: string; orderId: string; status: CaseStatus; outcome: EligibilityOutcome; createdAt: string;
-  customer: Record<string, unknown>; item: Record<string, unknown>; decision: Record<string, any>;
+  id: string;
+  orderId: string;
+  status: CaseStatus;
+  outcome: EligibilityOutcome;
+  createdAt: string;
+  customer: Record<string, unknown>;
+  item: Record<string, unknown>;
+  decision: Record<string, any>;
 };
 
-const transitions: Record<CaseStatus, CaseStatus[]> = { OPEN: ["AWAITING_ITEM", "RESOLVED", "CANCELLED"], AWAITING_ITEM: ["RECEIVED", "CANCELLED"], RECEIVED: ["RESOLVED"], RESOLVED: [], CANCELLED: [] };
+const transitions: Record<CaseStatus, CaseStatus[]> = {
+  OPEN: ["AWAITING_ITEM", "RESOLVED", "CANCELLED"],
+  AWAITING_ITEM: ["RECEIVED", "CANCELLED"],
+  RECEIVED: ["RESOLVED"],
+  RESOLVED: [],
+  CANCELLED: [],
+};
+
+/** The happy path, drawn as steps. Cancelled sits outside it. */
+const PATH: CaseStatus[] = ["OPEN", "AWAITING_ITEM", "RECEIVED", "RESOLVED"];
+
+/** Closing a case has consequences, so these ask first. */
+const NEEDS_CONFIRM = new Set<CaseStatus>(["RESOLVED", "CANCELLED"]);
 
 export function CaseDetailPage() {
   const { caseId } = useParams<{ caseId: string }>();
@@ -28,42 +72,388 @@ export function CaseDetailPage() {
   const { t, isArabic } = useLanguage();
   const [data, setData] = useState<CaseData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState<CaseStatus | null>(null);
+  const [confirming, setConfirming] = useState<CaseStatus | null>(null);
 
   const load = async () => {
     if (!supabase || !caseId) return setLoading(false);
-    const result = await supabase.from("return_cases").select("id, order_id, status, customer_snapshot, item_snapshot, created_at, eligibility_decisions(outcome, reason_codes, order_facts_snapshot, policy_snapshot, evaluated_at, policy_versions(version_label))").eq("id", caseId).maybeSingle();
+    const result = await supabase
+      .from("return_cases")
+      .select(
+        "id, order_id, status, customer_snapshot, item_snapshot, created_at, eligibility_decisions(outcome, reason_codes, order_facts_snapshot, policy_snapshot, evaluated_at, policy_versions(version_label))",
+      )
+      .eq("id", caseId)
+      .maybeSingle();
     const row = result.data as Record<string, any> | null;
-    if (row) setData({ id: row.id, orderId: row.order_id, status: row.status, outcome: row.eligibility_decisions.outcome, createdAt: row.created_at, customer: row.customer_snapshot ?? {}, item: row.item_snapshot ?? {}, decision: row.eligibility_decisions ?? {} });
+    if (row)
+      setData({
+        id: row.id,
+        orderId: row.order_id,
+        status: row.status,
+        outcome: row.eligibility_decisions.outcome,
+        createdAt: row.created_at,
+        customer: row.customer_snapshot ?? {},
+        item: row.item_snapshot ?? {},
+        decision: row.eligibility_decisions ?? {},
+      });
     setLoading(false);
   };
-  useEffect(() => { void load(); }, [caseId]);
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caseId]);
 
   const updateStatus = async (status: CaseStatus) => {
     if (!supabase || !data) return;
-    setSaving(true);
-    const { error } = await supabase.rpc("update_return_case_status", { p_case_id: data.id, p_status: status });
-    setSaving(false);
+    setSaving(status);
+    const { error } = await supabase.rpc("update_return_case_status", {
+      p_case_id: data.id,
+      p_status: status,
+    });
+    setSaving(null);
+    setConfirming(null);
     if (error) return toast.error(t("Could not update this case.", "تعذّر تحديث الحالة."));
-    setData({ ...data, status }); toast.success(t("Case status updated", "تم تحديث حالة الطلب"));
+    setData({ ...data, status });
+    toast.success(t(`Marked as ${statusLabel(status, t).toLowerCase()}`, `تم التحديث إلى: ${statusLabel(status, t)}`));
   };
 
-  if (loading) return <div className="flex justify-center py-24"><Spinner /></div>;
-  if (!data) return <div className="flex flex-col items-center gap-4 py-20 text-center"><AlertCircle className="size-8 text-muted-foreground" /><p className="text-sm text-muted-foreground">{t("Case not found.", "لم يتم العثور على الحالة.")}</p><Button variant="outline" onClick={() => router.push("/app/cases")}>{t("Back to cases", "العودة إلى الطلبات")}</Button></div>;
+  const requestStatus = (status: CaseStatus) =>
+    NEEDS_CONFIRM.has(status) ? setConfirming(status) : void updateStatus(status);
+
+  if (loading)
+    return (
+      <div className="flex justify-center py-24">
+        <Spinner />
+      </div>
+    );
+  if (!data)
+    return (
+      <div className="flex flex-col items-center gap-4 py-20 text-center">
+        <AlertCircle className="size-8 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">
+          {t("Case not found.", "لم يتم العثور على الحالة.")}
+        </p>
+        <Button variant="outline" onClick={() => router.push("/app/cases")}>
+          {t("Back to cases", "العودة إلى الطلبات")}
+        </Button>
+      </div>
+    );
 
   const policy = data.decision.policy_versions ?? {};
   const snapshot = data.decision.policy_snapshot ?? {};
   const facts = data.decision.order_facts_snapshot ?? {};
-  return <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-    <div className="flex items-center gap-3"><Button variant="ghost" size="icon" onClick={() => router.push("/app/cases")}><ArrowLeft className={cn("size-4", isArabic && "rotate-180")} /></Button><div><div className="flex flex-wrap items-center gap-2"><h1 className="font-display text-xl font-semibold">{data.orderId}</h1><OutcomeBadge outcome={data.outcome} size="sm" /><CaseStatusBadge status={data.status} size="sm" /></div><p className="mt-1 text-xs text-muted-foreground">{data.id} · {formatDateTime(data.createdAt)}</p></div></div>
-    <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
-      <div className="space-y-5">
-        <Card><CardHeader><CardTitle className="flex items-center gap-2 text-sm"><Package className="size-4 text-primary" />{t("Return request", "طلب الإرجاع")}</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm sm:grid-cols-2"><Detail label={t("Customer", "العميل")} value={String(data.customer.name ?? "—")} /><Detail label={t("Item", "المنتج")} value={String(data.item.name ?? "—")} /><Detail label={t("Quantity", "الكمية")} value={String(data.item.quantity ?? "—")} /><Detail label={t("Reason", "السبب")} value={String(data.item.reason ?? "—")} /><Detail label={t("Condition", "الحالة")} value={String(data.item.condition ?? "—")} /><Detail label={t("Order status", "حالة الطلب")} value={String(facts.orderStatus ?? "—")} /></CardContent></Card>
-        <Card><CardHeader><CardTitle className="flex items-center gap-2 text-sm"><Lock className="size-4 text-primary" />{t("Frozen decision evidence", "أدلة القرار المحفوظة")}</CardTitle></CardHeader><CardContent className="space-y-3 text-sm"><Detail label={t("Policy version", "إصدار السياسة")} value={String(policy.version_label ?? "—")} /><Detail label={t("Evaluated", "وقت التقييم")} value={formatDateTime(String(data.decision.evaluated_at))} /><Detail label={t("Reason codes", "رموز الأسباب")} value={(data.decision.reason_codes ?? []).join(", ") || "—"} /><div className="rounded-xl border bg-muted/30 p-3 text-xs leading-6 text-muted-foreground"><FileText className="mb-2 size-4 text-primary" />{t(`${Array.isArray(snapshot.rules_snapshot) ? snapshot.rules_snapshot.length : 0} approved rules were frozen with this decision.`, `تم حفظ ${Array.isArray(snapshot.rules_snapshot) ? snapshot.rules_snapshot.length : 0} قاعدة معتمدة مع هذا القرار.`)}</div></CardContent></Card>
+  const codes: string[] = data.decision.reason_codes ?? [];
+  const rules = receiptRules(snapshot.rules_snapshot, codes);
+  const failed = rules.filter((r) => r.state === "failed");
+  const missing = rules.filter((r) => r.state === "missing");
+  const currency = String(facts.currency ?? "SAR");
+  const price = Number(data.item.price);
+  const versionLabel = String(policy.version_label ?? snapshot.version_label ?? "—");
+
+  const why =
+    data.outcome === "ELIGIBLE"
+      ? t(
+          `All ${rules.length} rules in your published policy passed.`,
+          `اجتازت جميع قواعد سياستك المنشورة (${rules.length}).`,
+        )
+      : data.outcome === "MANUAL_REVIEW"
+        ? t(
+            `Reload couldn’t check ${missing.map((r) => r.name).join(", ") || "a rule"} because the order data was incomplete, so it came to you instead of guessing.`,
+            `لم يتمكن ريلود من التحقق من ${missing.map((r) => r.name).join("، ") || "إحدى القواعد"} لنقص بيانات الطلب، فأحالها إليك بدلًا من التخمين.`,
+          )
+        : t(
+            `Didn’t meet: ${failed.map((r) => r.name).join(", ") || "a policy rule"}.`,
+            `لم يستوفِ: ${failed.map((r) => r.name).join("، ") || "إحدى قواعد السياسة"}.`,
+          );
+
+  return (
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="mt-0.5 shrink-0"
+          onClick={() => router.push("/app/cases")}
+          aria-label={t("Back to cases", "العودة إلى الطلبات")}
+        >
+          <ArrowLeft className={cn("size-4", isArabic && "rotate-180")} />
+        </Button>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="font-display text-2xl font-semibold tracking-tight">
+              <bdi>{data.orderId}</bdi>
+            </h1>
+            <OutcomeBadge outcome={data.outcome} size="sm" />
+            <CaseStatusBadge status={data.status} size="sm" />
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("Decided", "صدر القرار")} {formatDateTime(String(data.decision.evaluated_at ?? data.createdAt))}
+            {" · "}
+            {t("Policy", "السياسة")} <bdi>{versionLabel}</bdi>
+          </p>
+        </div>
       </div>
-      <Card className="h-fit"><CardHeader><CardTitle className="text-sm">{t("Operational status", "الحالة التشغيلية")}</CardTitle></CardHeader><CardContent className="space-y-3">{transitions[data.status].length ? <Select disabled={saving} onValueChange={(value) => void updateStatus(value as CaseStatus)}><SelectTrigger><SelectValue placeholder={t("Change status", "تغيير الحالة")} /></SelectTrigger><SelectContent>{transitions[data.status].map((status) => <SelectItem key={status} value={status}>{status.replaceAll("_", " ")}</SelectItem>)}</SelectContent></Select> : <p className="text-sm text-muted-foreground">{t("This case has no further status changes.", "لا توجد تغييرات أخرى متاحة لهذه الحالة.")}</p>}<div className="flex gap-2 rounded-xl bg-muted/40 p-3 text-xs leading-5 text-muted-foreground"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />{t("Status changes never alter the original eligibility decision.", "تغيير الحالة لا يعدّل قرار الأهلية الأصلي.")}</div></CardContent></Card>
+
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+        {/* The receipt */}
+        <ol className="receipt">
+          <Station
+            index={0}
+            icon={<Package className="size-4" />}
+            title={t("Return request", "طلب الإرجاع")}
+          >
+            <dl className="receipt-grid">
+              <Fact label={t("Customer", "العميل")} value={String(data.customer.name ?? "—")} />
+              <Fact label={t("Email", "البريد")} value={String(data.customer.email ?? "—")} ltr />
+              <Fact label={t("Item", "المنتج")} value={String(data.item.name ?? "—")} />
+              <Fact label="SKU" value={String(data.item.sku ?? "—")} ltr />
+              <Fact label={t("Quantity", "الكمية")} value={String(data.item.quantity ?? "—")} />
+              <Fact label={t("Reason", "السبب")} value={reasonLabel(String(data.item.reason ?? "—"), t)} />
+              <Fact label={t("Condition", "الحالة")} value={conditionLabel(String(data.item.condition ?? "—"), t)} />
+            </dl>
+          </Station>
+
+          <Station
+            index={1}
+            icon={<Lock className="size-4" />}
+            title={t("Order facts", "بيانات الطلب")}
+            aside={t("Frozen at decision time", "محفوظة وقت القرار")}
+          >
+            <dl className="receipt-grid">
+              <Fact label={t("Ordered", "تاريخ الطلب")} value={facts.orderDate ? formatDate(String(facts.orderDate)) : "—"} />
+              <Fact
+                label={t("Delivered", "تاريخ التسليم")}
+                value={facts.deliveryDate ? formatDate(String(facts.deliveryDate)) : t("Not available", "غير متوفر")}
+                flag={!facts.deliveryDate}
+              />
+              <Fact
+                label={t("Order status", "حالة الطلب")}
+                value={String(facts.orderStatus || t("Not available", "غير متوفرة"))}
+                flag={!facts.orderStatus}
+              />
+              <Fact
+                label={t("Item price", "سعر المنتج")}
+                value={Number.isFinite(price) ? `${currency} ${price.toLocaleString("en-US")}` : "—"}
+                ltr
+              />
+            </dl>
+          </Station>
+
+          <Station
+            index={2}
+            icon={<Scale className="size-4" />}
+            title={t("Policy check", "مطابقة السياسة")}
+            aside={t(`Version ${versionLabel}`, `الإصدار ${versionLabel}`)}
+          >
+            {rules.length ? (
+              <ul className="receipt-rules">
+                {rules.map((rule) => (
+                  <RuleRow key={rule.id} rule={rule} t={t} />
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {t("No rules were frozen with this decision.", "لم تُحفظ قواعد مع هذا القرار.")}
+              </p>
+            )}
+          </Station>
+
+          <Station
+            index={3}
+            icon={<FileText className="size-4" />}
+            title={t("Decision", "القرار")}
+            last
+          >
+            <div className="receipt-decision" data-outcome={data.outcome}>
+              <OutcomeBadge outcome={data.outcome} />
+              <p className="mt-3 text-[15px] leading-relaxed">{why}</p>
+              {codes.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {codes.map((code) => (
+                    <code key={code} className="receipt-code">
+                      {code}
+                    </code>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Station>
+        </ol>
+
+        {/* Status */}
+        <aside className="receipt-side h-fit">
+          <p className="text-sm font-semibold">{t("Case status", "حالة الطلب")}</p>
+          <ol className="status-path mt-4">
+            {PATH.map((step, i) => {
+              const reached =
+                data.status !== "CANCELLED" && PATH.indexOf(data.status) >= i;
+              const current = data.status === step;
+              return (
+                <li key={step} data-reached={reached || undefined} data-current={current || undefined}>
+                  <span className="status-dot" aria-hidden="true">
+                    <Check className="size-3" strokeWidth={3} />
+                  </span>
+                  <span>{statusLabel(step, t)}</span>
+                </li>
+              );
+            })}
+            {data.status === "CANCELLED" && (
+              <li data-cancelled="true" data-current="true">
+                <span className="status-dot" aria-hidden="true">
+                  <X className="size-3" strokeWidth={3} />
+                </span>
+                <span>{statusLabel("CANCELLED", t)}</span>
+              </li>
+            )}
+          </ol>
+
+          {transitions[data.status].length ? (
+            <div className="mt-5 grid gap-2">
+              <p className="text-xs text-muted-foreground">{t("Move to", "نقل إلى")}</p>
+              {transitions[data.status].map((next) => (
+                <Button
+                  key={next}
+                  variant={next === "CANCELLED" ? "ghost" : next === transitions[data.status][0] ? "default" : "outline"}
+                  disabled={saving !== null}
+                  onClick={() => requestStatus(next)}
+                  className={cn("h-10 justify-center rounded-xl", next === "CANCELLED" && "text-muted-foreground")}
+                >
+                  {saving === next && <Spinner className="size-3.5" />}
+                  <span>{statusLabel(next, t)}</span>
+                </Button>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-5 text-sm text-muted-foreground">
+              {t("This case is closed.", "هذه الحالة مغلقة.")}
+            </p>
+          )}
+
+          <div className="mt-5 flex gap-2 rounded-xl bg-muted/50 p-3 text-xs leading-5 text-muted-foreground">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-foreground" />
+            {t(
+              "Status changes never alter the original decision or its evidence.",
+              "تغيير الحالة لا يعدّل القرار الأصلي ولا أدلته.",
+            )}
+          </div>
+        </aside>
+      </div>
+
+      <AlertDialog open={confirming !== null} onOpenChange={(open) => !open && setConfirming(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirming === "CANCELLED"
+                ? t("Cancel this return?", "إلغاء هذا الإرجاع؟")
+                : t("Mark this return as resolved?", "إغلاق هذا الإرجاع؟")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                `${data.orderId} will be closed and can’t be moved to another status afterwards.`,
+                `سيتم إغلاق ${data.orderId} ولن يمكن نقله إلى حالة أخرى بعد ذلك.`,
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Keep it open", "إبقاؤه مفتوحًا")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirming && void updateStatus(confirming)}>
+              {confirming === "CANCELLED" ? t("Cancel return", "إلغاء الإرجاع") : t("Mark resolved", "تأكيد الإغلاق")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
-  </div>;
+  );
 }
 
-function Detail({ label, value }: { label: string; value: string }) { return <div><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 break-words font-medium"><bdi>{value}</bdi></p></div>; }
+function Station({
+  index,
+  icon,
+  title,
+  aside,
+  last,
+  children,
+}: {
+  index: number;
+  icon: ReactNode;
+  title: string;
+  aside?: string;
+  last?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <li className="receipt-station" data-last={last || undefined} style={{ ["--i" as string]: index }}>
+      <span className="receipt-node" aria-hidden="true">
+        {icon}
+      </span>
+      <div className="receipt-card">
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold">{title}</h2>
+          {aside && <span className="text-xs text-muted-foreground">{aside}</span>}
+        </div>
+        {children}
+      </div>
+    </li>
+  );
+}
+
+function Fact({
+  label,
+  value,
+  ltr,
+  flag,
+}: {
+  label: string;
+  value: string;
+  ltr?: boolean;
+  flag?: boolean;
+}) {
+  return (
+    <div data-flag={flag || undefined} className="receipt-fact">
+      <dt>{label}</dt>
+      <dd dir={ltr ? "ltr" : undefined}>
+        <bdi>{value}</bdi>
+      </dd>
+    </div>
+  );
+}
+
+function RuleRow({ rule, t }: { rule: ReceiptRule; t: (en: string, ar: string) => string }) {
+  const icon =
+    rule.state === "passed" ? (
+      <Check className="size-3" strokeWidth={3} />
+    ) : rule.state === "failed" ? (
+      <X className="size-3" strokeWidth={3} />
+    ) : (
+      <CircleHelp className="size-3" strokeWidth={2.5} />
+    );
+  const stateText =
+    rule.state === "passed"
+      ? t("Passed", "مستوفاة")
+      : rule.state === "failed"
+        ? t("Not met", "غير مستوفاة")
+        : t("Couldn’t check", "تعذّر التحقق");
+  return (
+    <li className="receipt-rule" data-state={rule.state}>
+      <span className="receipt-rule-mark" aria-hidden="true">
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <p className="text-sm font-medium">{rule.name}</p>
+          <span className="receipt-rule-state">{stateText}</span>
+        </div>
+        {rule.description && (
+          <p className="mt-0.5 text-sm text-muted-foreground">{rule.description}</p>
+        )}
+        {rule.sourceExcerpt && (
+          <blockquote className="receipt-quote">
+            <span className="receipt-quote-label">{t("From your policy", "من سياستك")}</span>
+            “{rule.sourceExcerpt}”
+          </blockquote>
+        )}
+      </div>
+    </li>
+  );
+}

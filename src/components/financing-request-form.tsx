@@ -1,21 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  ArrowRight,
+  Check,
+  ChevronDown,
+  Loader2,
+  Mail,
+  Phone,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { WhatsAppLogo } from "@/components/phone-frame";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getWhatsAppStartUrl } from "@/lib/whatsapp";
+import { smoothAnchorClick } from "@/lib/smooth-scroll";
 import { useLanguage } from "@/components/language-provider";
+import { Tone } from "@/components/heading-accent";
+import { cn } from "@/lib/utils";
 
 /** The estimate the merchant was looking at when they asked. */
 export interface FinancingSnapshot {
@@ -29,157 +33,251 @@ export interface FinancingSnapshot {
 }
 
 type Status = "idle" | "sending" | "sent" | "error";
+type Interest = "returns" | "financing" | "both";
+type Contact = "whatsapp" | "call" | "email";
 
-export function FinancingRequestForm({
+/** Columns added by 202609290001. Stripped on retry if that migration is not
+ *  applied yet, so a lead is never lost to a schema that lags the UI. */
+const QUALIFICATION_COLUMNS = [
+  "website",
+  "interest",
+  "preferred_contact",
+  "partner_sharing_consent",
+] as const;
+
+/**
+ * The contact / financing section, open on the page (not behind a dialog) so
+ * a visitor can find it by scrolling, by the navbar "Contact" link, or from the
+ * calculator. It sits directly under the calculator and shares its state, so
+ * the estimate shown here updates live as the sliders move.
+ */
+export function FinancingSection({
   snapshot,
 }: {
   snapshot: FinancingSnapshot;
 }) {
-  const { t, isArabic } = useLanguage();
-  const [open, setOpen] = useState(false);
+  const { t, n, isArabic } = useLanguage();
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [interest, setInterest] = useState<Interest>("both");
+  const [contact, setContact] = useState<Contact>("whatsapp");
+  const [figuresOpen, setFiguresOpen] = useState(false);
+  const [firstName, setFirstName] = useState("");
+
+  const needsPhone = contact !== "email";
+  const tiedUp = n(Math.round(useTweened(snapshot.tiedUp)), { maximumFractionDigits: 0 });
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (status === "sending") return;
     const form = new FormData(event.currentTarget);
-    const metric = (key: string) => String(form.get(key) ?? "").trim() === "" ? null : Number(form.get(key));
+    const text = (key: string) => String(form.get(key) ?? "").trim();
+    const metric = (key: string) => (text(key) === "" ? null : Number(form.get(key)));
     setStatus("sending");
     setError(null);
 
+    // The figures go in with the contact details: the estimate on screen is
+    // what the merchant is asking about, and recomputing it later from inputs
+    // they may have changed would not be the same request.
+    const payload: Record<string, unknown> = {
+      store_name: text("store"),
+      contact_name: text("name"),
+      email: text("email"),
+      phone: text("phone") || null,
+      store_platform: text("platform"),
+      website: text("website") || null,
+      interest,
+      preferred_contact: contact,
+      monthly_sales: metric("monthly_sales"),
+      monthly_orders: metric("monthly_orders"),
+      return_rate: metric("return_rate"),
+      average_refund_amount: metric("average_refund_amount"),
+      monthly_refund_volume: metric("monthly_refund_volume"),
+      refund_processing_days: metric("refund_processing_days"),
+      desired_financing_days: metric("desired_financing_days"),
+      contact_consent: form.get("consent") === "on",
+      partner_sharing_consent: form.get("partner_consent") === "on",
+      monthly_returns: Math.round(snapshot.monthlyReturns),
+      average_order_value: snapshot.orderValue,
+      processing_minutes: Math.round(snapshot.processingMinutes),
+      resolution_days: snapshot.resolutionDays,
+      hourly_cost: snapshot.hourlyCost,
+      tied_up_amount: Math.round(snapshot.tiedUp),
+      operating_cost: Math.round(snapshot.operatingCost),
+      locale: isArabic ? "ar" : "en",
+    };
+
     try {
       const supabase = getSupabaseBrowserClient();
-      // The figures go in with the contact details: the estimate on screen is
-      // what the merchant is asking about, and recomputing it later from
-      // inputs they may have changed would not be the same request.
-      const { error: insertError } = await supabase
+      let { error: insertError } = await supabase
         .from("financing_requests")
-        .insert({
-          store_name: String(form.get("store") ?? "").trim(),
-          contact_name: String(form.get("name") ?? "").trim(),
-          email: String(form.get("email") ?? "").trim(),
-          phone: String(form.get("phone") ?? "").trim() || null,
-          store_platform: String(form.get("platform") ?? "").trim(),
-          monthly_sales: metric("monthly_sales"),
-          monthly_orders: metric("monthly_orders"),
-          return_rate: metric("return_rate"),
-          average_refund_amount: metric("average_refund_amount"),
-          monthly_refund_volume: metric("monthly_refund_volume"),
-          refund_processing_days: metric("refund_processing_days"),
-          desired_financing_days: metric("desired_financing_days"),
-          contact_consent: form.get("consent") === "on",
-          monthly_returns: Math.round(snapshot.monthlyReturns),
-          average_order_value: snapshot.orderValue,
-          processing_minutes: Math.round(snapshot.processingMinutes),
-          resolution_days: snapshot.resolutionDays,
-          hourly_cost: snapshot.hourlyCost,
-          tied_up_amount: Math.round(snapshot.tiedUp),
-          operating_cost: Math.round(snapshot.operatingCost),
-          locale: isArabic ? "ar" : "en",
-        });
+        .insert(payload);
+
+      // PGRST204: a column in the payload does not exist yet. Retry with the
+      // original columns rather than dropping the merchant's request.
+      if (insertError?.code === "PGRST204") {
+        const fallback = { ...payload };
+        for (const column of QUALIFICATION_COLUMNS) delete fallback[column];
+        ({ error: insertError } = await supabase
+          .from("financing_requests")
+          .insert(fallback));
+      }
 
       if (insertError) throw insertError;
+      setFirstName(text("name").split(/\s+/)[0] ?? "");
       setStatus("sent");
     } catch {
       // Never strand the merchant on a dead form: show the failure and leave
       // their input in place so they can retry without retyping.
       setStatus("error");
-      setError(t("We couldn’t save your interest. Please try again; your details are still here.", "تعذّر حفظ طلبك. حاول مرة أخرى، بياناتك ما زالت موجودة."));
+      setError(
+        t(
+          "We couldn’t save your details. Please try again; everything you typed is still here.",
+          "تعذّر حفظ بياناتك. حاول مرة أخرى، كل ما كتبته ما زال موجودًا.",
+        ),
+      );
     }
   };
 
-  const handleOpenChange = (next: boolean) => {
-    setOpen(next);
-    if (!next && status === "sent") {
-      setStatus("idle");
-      setError(null);
-    }
+  const reset = () => {
+    setStatus("idle");
+    setError(null);
+    setFiguresOpen(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button className="financing-cta group h-12 w-full rounded-xl text-[15px] font-semibold">
-          {t("Register financing interest", "سجّل اهتمامك بالتمويل")}
-          <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
-        </Button>
-      </DialogTrigger>
+    <section id="contact" aria-labelledby="contact-title" className="fin-section scroll-mt-24">
+      <div className="mx-auto grid max-w-[1200px] gap-10 px-5 py-20 md:py-28 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
+        {/* Left: the why, pinned while the form scrolls on desktop. */}
+        <div className="fin-aside">
+          <span className="text-sm font-semibold text-foreground/70">
+            {t("Talk to Reload", "تواصل مع ريلود")}
+          </span>
+          <h2
+            id="contact-title"
+            className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-balance md:text-[40px] md:leading-[1.1]"
+          >
+            {t("Tell us ", "عرّفنا ")}
+            <Tone>{t("about your store.", "بمتجرك.")}</Tone>
+          </h2>
+          <p className="mt-4 text-lg leading-relaxed text-muted-foreground text-pretty">
+            {t(
+              "A few details and we’ll get in touch about returns, financing, or both. Estimates are fine.",
+              "بعض التفاصيل وسنتواصل معك بخصوص المرتجعات أو التمويل أو كليهما. الأرقام التقديرية كافية.",
+            )}
+          </p>
 
-      <DialogContent dir={isArabic ? "rtl" : "ltr"} className="max-h-[85dvh] overflow-y-auto rounded-2xl sm:max-w-2xl">
-        {status === "sent" ? (
-          <div className="py-6 text-center">
-            <span className="mx-auto mb-4 grid size-12 place-items-center rounded-full bg-eligible-muted text-eligible">
-              <CheckCircle2 className="size-6" />
+          {/* Live-linked to the calculator above. */}
+          <div className="fin-estimate mt-8">
+            <span className="fin-estimate-label">
+              {t("Your estimate", "تقديرك")}
             </span>
-            <DialogTitle className="text-xl">
-              {t("Request received", "تم استلام طلبك")}
-            </DialogTitle>
-            <DialogDescription className="mt-2">
+            <span className="fin-estimate-value">
+              <span className="fin-estimate-currency">{t("SAR", "ر.س")}</span>
+              <span dir="ltr" className="tabular-nums">{tiedUp}</span>
+            </span>
+            <span className="fin-estimate-note">
               {t(
-                "Your interest is saved. The Reload team may contact you about future options with licensed financing partners.",
-                "سجّلنا اهتمامك. قد يتواصل معك فريق ريلود بخصوص الخيارات المستقبلية مع شركاء تمويل مرخّصين.",
+                "tied up in delayed returns · from the calculator, attached to your request",
+                "محتجزة في مرتجعات متأخرة · من الحاسبة، ومُرفقة بطلبك",
               )}
-            </DialogDescription>
-            <Button
-              onClick={() => handleOpenChange(false)}
-              variant="outline"
-              className="mt-6 rounded-xl"
-            >
-              {t("Close", "إغلاق")}
-            </Button>
+            </span>
+            <a href="#returns-financing" onClick={smoothAnchorClick} className="fin-estimate-edit">
+              {t("Adjust in the calculator", "عدّل في الحاسبة")}
+              <ArrowRight className="size-3 -rotate-90" />
+            </a>
           </div>
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle>
-                {t("Register financing interest", "سجّل اهتمامك بالتمويل")}
-              </DialogTitle>
-              <DialogDescription>
-                {t(
-                  "Tell us about your store so we can understand your needs for future licensed financing partners. Estimates are welcome.",
-                  "عرّفنا بمتجرك لنفهم احتياجاتك استعدادًا للتعاون مع شركاء تمويل مرخّصين مستقبلًا. يمكنك إدخال أرقام تقديرية.",
-                )}
-              </DialogDescription>
-            </DialogHeader>
 
-            <form onSubmit={submit} className="grid gap-4 py-2">
-              <div className="grid gap-2">
-                <Label htmlFor="fin-store">
-                  {t("Store name", "اسم المتجر")}
-                </Label>
-                <Input id="fin-store" name="store" required autoComplete="organization" />
+          <ol className="fin-steps mt-8">
+            {[
+              t("You share your store details", "تشاركنا تفاصيل متجرك"),
+              t("We get in touch the way you prefer", "نتواصل معك بالطريقة التي تفضّلها"),
+              t("We walk through your returns together", "نراجع مرتجعاتك معًا"),
+            ].map((step, index) => (
+              <li key={step}>
+                <span className="fin-step-index">{index + 1}</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+
+          <ul className="fin-trust mt-8">
+            {[
+              t("No commitment when you submit", "لا التزام عند الإرسال"),
+              t("Eligibility is assessed by the financing partner", "يقيّم شريك التمويل الأهلية"),
+              t("Nothing is shared with a partner without your consent", "لا نشارك بياناتك مع أي شريك دون موافقتك"),
+            ].map((line) => (
+              <li key={line}>
+                <Check className="size-3.5 shrink-0" strokeWidth={2.5} />
+                {line}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Right: the form card. */}
+        <div className="fin-card" data-sent={status === "sent" || undefined}>
+          {status === "sent" ? (
+            <div className="fin-success text-center" role="status">
+              <span className="fin-success-mark" aria-hidden="true">
+                <Check className="size-6" strokeWidth={2.5} />
+              </span>
+              <h3 className="mt-5 text-xl font-semibold">
+                {firstName
+                  ? t(`Thanks, ${firstName}.`, `شكرًا، ${firstName}.`)
+                  : t("Thanks.", "شكرًا.")}
+              </h3>
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                {t(
+                  "Your details and your estimate are with the Reload team. We’ll reach you the way you chose.",
+                  "وصلت بياناتك وتقديرك إلى فريق ريلود، وسنتواصل معك بالطريقة التي اخترتها.",
+                )}
+              </p>
+              <div className="mt-7 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+                <a
+                  href={getWhatsAppStartUrl()}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="fin-wa-button"
+                >
+                  <WhatsAppLogo className="size-4 !text-current" />
+                  {t("Try Reload on WhatsApp", "جرّب ريلود على واتساب")}
+                </a>
+                <Button onClick={reset} variant="ghost" className="h-11 rounded-xl">
+                  {t("Send another", "إرسال طلب آخر")}
+                </Button>
               </div>
+            </div>
+          ) : (
+            <form onSubmit={submit} className="grid gap-5">
+              <Segmented
+                label={t("What matters most to you?", "ما الأهم بالنسبة لك؟")}
+                name="interest"
+                value={interest}
+                onChange={setInterest}
+                options={[
+                  { value: "returns", label: t("Returns", "المرتجعات") },
+                  { value: "financing", label: t("Financing", "التمويل") },
+                  { value: "both", label: t("Both", "كلاهما") },
+                ]}
+              />
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="fin-name">
-                    {t("Your name", "اسمك")}
-                  </Label>
+                <Field id="fin-name" label={t("Your name", "اسمك")}>
                   <Input id="fin-name" name="name" required autoComplete="name" />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="fin-phone">
-                    {t("Phone", "رقم الجوال")}
-                    <span className="ms-1 text-xs font-normal text-muted-foreground">
-                      {t("(optional)", "(اختياري)")}
-                    </span>
-                  </Label>
+                </Field>
+                <Field id="fin-store" label={t("Store name", "اسم المتجر")}>
                   <Input
-                    id="fin-phone"
-                    name="phone"
-                    type="tel"
-                    dir="ltr"
-                    autoComplete="tel"
-                    className="text-start"
+                    id="fin-store"
+                    name="store"
+                    required
+                    autoComplete="organization"
+                    placeholder={t("Nova Store", "متجر نوفا")}
                   />
-                </div>
+                </Field>
               </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="fin-email">
-                  {t("Work email", "البريد الإلكتروني")}
-                </Label>
+              <Field id="fin-email" label={t("Work email", "البريد الإلكتروني للعمل")}>
                 <Input
                   id="fin-email"
                   name="email"
@@ -187,39 +285,139 @@ export function FinancingRequestForm({
                   required
                   dir="ltr"
                   autoComplete="email"
+                  placeholder="name@company.com"
                   className="text-start"
                 />
+              </Field>
+
+              <Segmented
+                label={t("How should we reach you?", "كيف تفضّل أن نتواصل معك؟")}
+                name="preferred_contact"
+                value={contact}
+                onChange={setContact}
+                options={[
+                  {
+                    value: "whatsapp",
+                    label: "WhatsApp",
+                    icon: <WhatsAppLogo className="size-3.5 !text-current" />,
+                  },
+                  { value: "call", label: t("Call", "اتصال"), icon: <Phone className="size-3.5" /> },
+                  { value: "email", label: t("Email", "بريد"), icon: <Mail className="size-3.5" /> },
+                ]}
+              />
+
+              {/* Phone slides in only when the chosen channel needs it. */}
+              <div className="fin-reveal" data-open={needsPhone || undefined}>
+                <div className="min-h-0 overflow-hidden">
+                  <Field id="fin-phone" label={t("Mobile number", "رقم الجوال")}>
+                    <Input
+                      id="fin-phone"
+                      name="phone"
+                      type="tel"
+                      dir="ltr"
+                      required={needsPhone}
+                      disabled={!needsPhone}
+                      autoComplete="tel"
+                      placeholder="+966 5x xxx xxxx"
+                      className="text-start"
+                    />
+                  </Field>
+                </div>
               </div>
 
-              <fieldset className="grid gap-4 rounded-xl border border-border bg-muted/30 p-4">
-                <legend className="px-1 text-sm font-semibold">{t("About your store", "عن متجرك")}</legend>
-                <div className="grid gap-2">
-                  <Label htmlFor="fin-platform">{t("Commerce platform", "منصة المتجر")}</Label>
-                  <Input id="fin-platform" name="platform" required maxLength={120} placeholder={t("Salla, Zid, Shopify, custom store…", "سلة، زد، شوبيفاي، متجر خاص…")} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field id="fin-platform" label={t("Store platform", "منصة المتجر")}>
+                  <Input
+                    id="fin-platform"
+                    name="platform"
+                    required
+                    maxLength={120}
+                    placeholder={t("Salla, Zid, Shopify…", "سلة، زد، شوبيفاي…")}
+                  />
+                </Field>
+                <Field
+                  id="fin-website"
+                  label={t("Website", "الموقع الإلكتروني")}
+                  optional={t("optional", "اختياري")}
+                >
+                  <Input
+                    id="fin-website"
+                    name="website"
+                    dir="ltr"
+                    maxLength={200}
+                    placeholder="novastore.sa"
+                    className="text-start"
+                  />
+                </Field>
+              </div>
+
+              <div className="fin-figures" data-open={figuresOpen || undefined}>
+                <button
+                  type="button"
+                  className="fin-figures-toggle"
+                  aria-expanded={figuresOpen}
+                  aria-controls="fin-figures-body"
+                  onClick={() => setFiguresOpen((value) => !value)}
+                >
+                  <span>
+                    {t("Add business figures", "أضف أرقام متجرك")}
+                    <span className="ms-2 text-xs font-normal text-muted-foreground">
+                      {t("optional · helps us prepare", "اختياري · يساعدنا على الاستعداد")}
+                    </span>
+                  </span>
+                  <ChevronDown className="fin-figures-chevron size-4" />
+                </button>
+                <div id="fin-figures-body" className="fin-reveal" data-open={figuresOpen || undefined}>
+                  <div className="min-h-0 overflow-hidden">
+                    <div className="grid gap-4 pt-4 sm:grid-cols-2">
+                      {[
+                        { key: "monthly_sales", label: t("Monthly online sales (SAR)", "المبيعات الشهرية (ر.س)"), max: 9999999999, step: "0.01" },
+                        { key: "monthly_orders", label: t("Monthly orders", "عدد الطلبات شهريًا"), max: 100000000, step: "1" },
+                        { key: "return_rate", label: t("Return rate (%)", "نسبة المرتجعات (%)"), max: 100, step: "0.01" },
+                        { key: "average_refund_amount", label: t("Average refund (SAR)", "متوسط الاسترداد (ر.س)"), max: 9999999999, step: "0.01" },
+                        { key: "monthly_refund_volume", label: t("Monthly refund total (SAR)", "إجمالي الاستردادات شهريًا (ر.س)"), max: 9999999999, step: "0.01" },
+                        { key: "refund_processing_days", label: t("Current refund time (days)", "مدة الاسترداد الحالية (أيام)"), max: 365, step: "0.5" },
+                        { key: "desired_financing_days", label: t("Preferred repayment period (days)", "مدة السداد المفضّلة (أيام)"), max: 365, step: "1" },
+                      ].map((field) => (
+                        <Field key={field.key} id={`fin-${field.key}`} label={field.label}>
+                          <Input
+                            id={`fin-${field.key}`}
+                            name={field.key}
+                            type="number"
+                            min={0}
+                            max={field.max}
+                            step={field.step}
+                            inputMode="decimal"
+                            dir="ltr"
+                            tabIndex={figuresOpen ? undefined : -1}
+                          />
+                        </Field>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <p className="text-xs leading-relaxed text-muted-foreground">{t("Business figures are optional. Your calculator estimate will be attached separately.", "الأرقام التشغيلية اختيارية. سنرفق تقدير الحاسبة بشكل منفصل.")}</p>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {[
-                    { key: "monthly_sales", label: t("Monthly sales (SAR)", "المبيعات الشهرية (ر.س)"), max: 9999999999, step: "0.01" },
-                    { key: "monthly_orders", label: t("Monthly orders", "عدد الطلبات شهريًا"), max: 100000000, step: "1" },
-                    { key: "return_rate", label: t("Return rate (%)", "نسبة المرتجعات (%)"), max: 100, step: "0.01" },
-                    { key: "average_refund_amount", label: t("Average refund (SAR)", "متوسط مبلغ الاسترداد (ر.س)"), max: 9999999999, step: "0.01" },
-                    { key: "monthly_refund_volume", label: t("Monthly refund total (SAR)", "إجمالي الاستردادات شهريًا (ر.س)"), max: 9999999999, step: "0.01" },
-                    { key: "refund_processing_days", label: t("Current refund time (days)", "مدة الاسترداد الحالية (أيام)"), max: 365, step: "0.5" },
-                    { key: "desired_financing_days", label: t("Preferred repayment period (days)", "مدة السداد المطلوبة (أيام)"), max: 365, step: "1" },
-                  ].map(field => <div key={field.key} className="grid gap-2">
-                    <Label htmlFor={`fin-${field.key}`}>{field.label}</Label>
-                    <Input id={`fin-${field.key}`} name={field.key} type="number" min={0} max={field.max} step={field.step} inputMode="decimal" dir="ltr" />
-                  </div>)}
-                </div>
-              </fieldset>
-              <label className="flex items-start gap-3 text-sm leading-relaxed">
-                <input name="consent" type="checkbox" required className="mt-1 size-4 shrink-0 accent-primary" />
-                <span>{t("I agree that Reload may contact me about this interest. This is not a financing application, offer, or approval.", "أوافق على تواصل ريلود معي بخصوص هذا الاهتمام. هذا التسجيل ليس طلب تمويل أو عرضًا أو موافقة تمويلية.")}</span>
-              </label>
+              </div>
+
+              <div className="grid gap-3">
+                <Consent name="consent" required>
+                  {t(
+                    "Reload may contact me about this request.",
+                    "أوافق على تواصل ريلود معي بخصوص هذا الطلب.",
+                  )}
+                </Consent>
+                <Consent name="partner_consent">
+                  {t(
+                    "Reload may share my store details with licensed financing partners so they can assess eligibility.",
+                    "أوافق على مشاركة ريلود لتفاصيل متجري مع شركاء تمويل مرخّصين لتقييم الأهلية.",
+                  )}
+                  <span className="ms-1 text-muted-foreground">
+                    {t("(optional)", "(اختياري)")}
+                  </span>
+                </Consent>
+              </div>
 
               {error && (
-                <p role="alert" className="text-sm text-not-eligible">
+                <p role="alert" className="fin-error">
                   {error}
                 </p>
               )}
@@ -227,26 +425,141 @@ export function FinancingRequestForm({
               <Button
                 type="submit"
                 disabled={status === "sending"}
-                className="mt-2 h-11 w-full rounded-xl"
+                className="group h-12 w-full rounded-xl text-[15px] font-semibold"
               >
-                {status === "sending" && (
-                  <Loader2 className="size-4 animate-spin" />
-                )}
-                {status === "sending"
-                  ? t("Sending…", "جارٍ الإرسال…")
-                  : t("Submit request", "إرسال الطلب")}
+                {/* Fixed structure across states (see return-walkthrough.tsx). */}
+                <span className="fin-submit" data-sending={status === "sending" || undefined}>
+                  <Loader2 className="fin-submit-spinner size-4 animate-spin" aria-hidden="true" />
+                  <span>
+                    {status === "sending"
+                      ? t("Sending…", "جارٍ الإرسال…")
+                      : t("Contact me", "تواصلوا معي")}
+                  </span>
+                  <ArrowRight className="fin-submit-arrow size-4 transition-transform duration-200 group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" aria-hidden="true" />
+                </span>
               </Button>
 
-              <p className="text-center text-xs text-muted-foreground">
+              <p className="text-center text-xs leading-relaxed text-muted-foreground">
                 {t(
-                  "Financing would be subject to a licensed partner’s assessment and terms.",
-                  "يخضع أي تمويل مستقبلي لتقييم الشريك المرخّص وشروطه.",
+                  "Submitting is not a financing application or approval. Any financing is subject to a licensed partner’s assessment and terms.",
+                  "الإرسال ليس طلب تمويل ولا موافقة عليه. يخضع أي تمويل لتقييم الشريك المرخّص وشروطه.",
                 )}
               </p>
             </form>
-          </>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Eases a number toward its target so the live estimate glides, rather than
+ *  jumping, while a calculator slider is dragged. */
+function useTweened(target: number, duration = 260) {
+  const [value, setValue] = useState(target);
+  const from = useRef(target);
+  const frame = useRef(0);
+  useEffect(() => {
+    const start = performance.now();
+    const origin = from.current;
+    cancelAnimationFrame(frame.current);
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const next = origin + (target - origin) * eased;
+      from.current = next;
+      setValue(next);
+      if (p < 1) frame.current = requestAnimationFrame(tick);
+    };
+    frame.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame.current);
+  }, [target, duration]);
+  return value;
+}
+
+function Field({
+  id,
+  label,
+  optional,
+  children,
+}: {
+  id: string;
+  label: string;
+  optional?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor={id} className="text-[13px]">
+        {label}
+        {optional && (
+          <span className="ms-1 text-xs font-normal text-muted-foreground">
+            ({optional})
+          </span>
         )}
-      </DialogContent>
-    </Dialog>
+      </Label>
+      {children}
+    </div>
+  );
+}
+
+/** Radio group styled as a segmented control. Native radios keep keyboard
+ *  arrows and form semantics; the pill is purely visual. */
+function Segmented<T extends string>({
+  label,
+  name,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  name: string;
+  value: T;
+  onChange: (value: T) => void;
+  options: { value: T; label: string; icon?: ReactNode }[];
+}) {
+  return (
+    <fieldset className="grid gap-2">
+      <legend className="mb-2 text-[13px] font-medium">{label}</legend>
+      <div className="fin-segmented" role="radiogroup" aria-label={label}>
+        {options.map((option) => (
+          <label
+            key={option.value}
+            className={cn("fin-segment", value === option.value && "is-selected")}
+          >
+            <input
+              type="radio"
+              name={name}
+              value={option.value}
+              checked={value === option.value}
+              onChange={() => onChange(option.value)}
+              className="sr-only"
+            />
+            {option.icon}
+            {option.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+function Consent({
+  name,
+  required,
+  children,
+}: {
+  name: string;
+  required?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <label className="fin-consent">
+      <input name={name} type="checkbox" required={required} className="peer sr-only" />
+      <span className="fin-checkbox" aria-hidden="true">
+        <Check className="size-3" strokeWidth={3} />
+      </span>
+      <span className="text-[13px] leading-relaxed">{children}</span>
+    </label>
   );
 }

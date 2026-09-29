@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils";
 import { services } from "@/lib/services";
 import { useAuth } from "@/components/auth-provider";
 import { LanguageToggle } from "@/components/language-toggle";
+import { CommandPalette } from "@/components/command-palette";
 import { useLanguage } from "@/components/language-provider";
 import { StoreIdentity } from "@/components/store-identity";
 import { SidebarWorkspaceSkeleton } from "@/components/merchant-skeletons";
@@ -114,13 +115,17 @@ export function MerchantLayout({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon" side={isArabic ? "right" : "left"}>
-        <SidebarHeader className="gap-3 px-3 pt-3 pb-2">
+        <SidebarHeader className="gap-3 px-3 pt-3 pb-2 group-data-[collapsible=icon]:px-2">
+          {/* Collapsed, the rail is 48px wide: centre the mark and size it to
+              the nav icon column below, instead of keeping the expanded
+              padding that pushed it off-centre and made it look oversized. */}
           <Link
             href="/app"
-            className="sidebar-nav-enter flex items-center gap-2.5 rounded-lg px-1 py-1 transition-opacity duration-200 hover:opacity-80"
+            className="sidebar-nav-enter flex items-center gap-2.5 rounded-lg px-1 py-1 transition-opacity duration-200 hover:opacity-80 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
             style={navEnterStyle(0)}
+            aria-label={t("Reload workspace home", "الصفحة الرئيسية لمساحة ريلود")}
           >
-            <ReloadMark className="size-7 shrink-0 text-primary" />
+            <ReloadMark className="size-7 shrink-0 text-primary transition-[width,height] duration-200 group-data-[collapsible=icon]:size-[22px]" />
             <span className="font-display text-[15px] font-semibold tracking-tight text-sidebar-foreground group-data-[collapsible=icon]:hidden">
               {t("Reload", "ريلود")}
             </span>
@@ -257,6 +262,7 @@ export function MerchantLayout({ children }: { children: ReactNode }) {
             <WorkspaceBreadcrumb pathname={pathname} />
           </div>
           <div className="flex shrink-0 items-center gap-1">
+            <CommandPalette />
             <LanguageToggle />
             <ModeToggle className="size-8" />
           </div>

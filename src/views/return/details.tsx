@@ -23,6 +23,7 @@ import { ReturnProgress } from "@/components/return-progress";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
+import { getReturnStartPath } from "@/lib/return-url";
 
 export function ReturnDetailsPage() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export function ReturnDetailsPage() {
   useEffect(() => {
     const raw = sessionStorage.getItem("relod-verified-order");
     if (!raw) {
-      router.push("/return");
+      router.push(getReturnStartPath());
       return;
     }
     try {
@@ -53,7 +54,7 @@ export function ReturnDetailsPage() {
         setQuantity(1);
       }
     } catch {
-      router.push("/return");
+      router.push(getReturnStartPath());
     }
   }, [router]);
 
@@ -82,7 +83,7 @@ export function ReturnDetailsPage() {
       decision = services.evaluate(order, selectedItemId, quantity, reason, condition);
     }
     if (!decision) {
-      router.push("/return");
+      router.push(getReturnStartPath());
       return;
     }
     sessionStorage.setItem("relod-decision", JSON.stringify(decision));
@@ -195,7 +196,7 @@ export function ReturnDetailsPage() {
       </div>
 
       <div className="flex gap-2">
-        <Button variant="outline" onClick={() => router.push("/return")}>
+        <Button variant="outline" onClick={() => router.push(getReturnStartPath())}>
           <ArrowLeft className={cn("size-4", isArabic && "rotate-180")} />
           {t("Back", "رجوع")}
         </Button>

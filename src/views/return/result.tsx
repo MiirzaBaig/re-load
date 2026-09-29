@@ -34,6 +34,7 @@ import { useLanguage } from "@/components/language-provider";
 import { ReturnProgress } from "@/components/return-progress";
 import { supabase } from "@/lib/supabase";
 import { Spinner } from "@/components/ui/spinner";
+import { getReturnStartPath } from "@/lib/return-url";
 
 export function ReturnResultPage() {
   const router = useRouter();
@@ -51,7 +52,7 @@ export function ReturnResultPage() {
     const rawOrder = sessionStorage.getItem("relod-verified-order");
     const rawContext = sessionStorage.getItem("relod-return-context");
     if (!rawDecision || !rawOrder) {
-      router.push("/return");
+      router.push(getReturnStartPath());
       return;
     }
     setDecision(JSON.parse(rawDecision));
@@ -234,7 +235,7 @@ export function ReturnResultPage() {
               {t("This item does not meet the return policy conditions. If you believe this is an error, please contact the store directly.", "هذا المنتج لا يستوفي شروط سياسة الإرجاع. إذا كنت تعتقد أن هناك خطأ، فتواصل مع المتجر مباشرة.")}
             </div>
           )}
-          <Button variant="outline" onClick={() => router.push("/return")}>
+          <Button variant="outline" onClick={() => router.push(getReturnStartPath())}>
             {t("Start a new return", "بدء طلب إرجاع جديد")}
           </Button>
         </div>

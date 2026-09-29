@@ -10,6 +10,9 @@ function money(value: unknown) {
     : "—";
 }
 
+const CONTACT_LABEL: Record<string, string> = { whatsapp: "WhatsApp", call: "Phone call", email: "Email" };
+const INTEREST_LABEL: Record<string, string> = { returns: "Returns management", financing: "Financing options", both: "Returns + financing" };
+
 Deno.serve(async (request) => {
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
   let eventId: string | null = null;
@@ -37,7 +40,7 @@ Deno.serve(async (request) => {
     eventId = claimed.id;
 
     const { data: lead, error: leadError } = await admin.from("financing_requests")
-      .select("store_name, contact_name, email, phone, tied_up_amount, operating_cost")
+      .select("store_name, contact_name, email, phone, tied_up_amount, operating_cost, website, interest, preferred_contact, partner_sharing_consent")
       .eq("id", requestId).maybeSingle();
     if (leadError || !lead) throw leadError ?? new Error("financing_request_not_found");
 
@@ -48,6 +51,10 @@ Deno.serve(async (request) => {
       `Contact: ${lead.contact_name}`,
       `Email: ${lead.email}`,
       `Phone: ${lead.phone || "Not provided"}`,
+      `Prefers: ${CONTACT_LABEL[lead.preferred_contact ?? ""] ?? "Not specified"}`,
+      `Interested in: ${INTEREST_LABEL[lead.interest ?? ""] ?? "Not specified"}`,
+      `Website: ${lead.website || "Not provided"}`,
+      `Partner sharing: ${lead.partner_sharing_consent ? "Allowed" : "Not allowed"}`,
       `Tied-up value: SAR ${money(lead.tied_up_amount)}`,
       `Operating cost: SAR ${money(lead.operating_cost)} / month`,
     ].join("\n");

@@ -1,29 +1,23 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
 
+/**
+ * Plays the workspace entrance on every navigation.
+ *
+ * The previous version kept a `visible` flag in state. On navigation the new
+ * page mounted while that flag was still `true` from the old page, so it
+ * painted fully visible before an effect hid it and showed it again — every
+ * page looked instant (or flickered). Keying the wrapper on the path and
+ * driving the entrance with a CSS animation means it always starts from the
+ * hidden frame, with no state to get out of sync. See `.page-enter` in
+ * index.css, which also staggers the page's top-level sections.
+ */
 export function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    setVisible(false);
-    const raf = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setVisible(true));
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [pathname]);
-
   return (
-    <div
-      key={pathname}
-      className={cn(
-        "transition-all duration-300 ease-out",
-        visible ? "opacity-100 translate-y-0 blur-0" : "opacity-0 translate-y-2 blur-[2px]",
-      )}
-    >
+    <div key={pathname} className="page-enter">
       {children}
     </div>
   );

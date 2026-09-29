@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FinancingRequestForm } from "@/components/financing-request-form";
-import { Calculator, Clock3, SlidersHorizontal, TimerReset, WalletCards, ArrowUpRight } from "lucide-react";
+import { FinancingSection } from "@/components/financing-request-form";
+import { smoothAnchorClick } from "@/lib/smooth-scroll";
+import { Calculator, Clock3, SlidersHorizontal, TimerReset, WalletCards, ArrowUpRight, ArrowDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { useLanguage } from "@/components/language-provider";
+import { Mark, Tone } from "@/components/heading-accent";
 import { formatNumber } from "@/lib/numerals";
 
 function clamp(value: number, min: number, max: number) {
@@ -34,6 +36,7 @@ export function ReturnsCostCalculator() {
   }), [hourlyCost, monthlyReturns, orderValue, processingMinutes, resolutionDays]);
 
   return (
+    <>
     <section
       id="returns-financing"
       aria-labelledby="returns-calculator-title"
@@ -41,7 +44,7 @@ export function ReturnsCostCalculator() {
     >
       <div className="mx-auto mb-8 flex max-w-[1200px] items-end justify-between gap-6">
         <div><p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.16em] text-primary"><Calculator className="size-4" />{t("Returns financing", "تمويل المرتجعات")}</p>
-        <h2 id="returns-calculator-title" className="font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{t("How much cash is locked in your returns?", "كم من السيولة محتجزة في مرتجعاتك؟")}</h2>
+        <h2 id="returns-calculator-title" className="font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{t("How much cash is ", "كم من السيولة ")}<Mark>{t("locked", "محتجزة")}</Mark><Tone>{t(" in your returns?", " في مرتجعاتك؟")}</Tone></h2>
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">{t("Enter your numbers to see the working capital sitting in undecided returns — then request financing against it.", "أدخل أرقامك لترى رأس المال المحتجز في مرتجعات بلا قرار، ثم اطلب تمويلًا مقابله.")}</p></div>
         <ArrowUpRight aria-hidden="true" className="hidden size-10 text-primary/40 sm:block" />
       </div>
@@ -86,17 +89,16 @@ export function ReturnsCostCalculator() {
             </div>
             <div className="relative mt-6 flex items-center justify-between rounded-xl bg-white/5 px-4 py-3 text-xs text-[#F8F7F4]/75"><span>{t("Monthly staff time", "وقت العمل الشهري")}</span><span className="font-semibold tabular-nums latin-nums">{n(monthlyReturns * processingMinutes / 60, { maximumFractionDigits: 1 })} {t("hours", "ساعة")}</span></div>
             <div className="relative mt-7 border-t border-white/10 pt-6">
-              <FinancingRequestForm
-                snapshot={{
-                  monthlyReturns,
-                  orderValue,
-                  processingMinutes,
-                  resolutionDays,
-                  hourlyCost,
-                  tiedUp: results.tiedUp,
-                  operatingCost: results.operatingCost,
-                }}
-              />
+              {/* Glides to the open form below rather than opening a popup,
+                  so the form is part of the page, not hidden behind a click. */}
+              <a
+                href="#contact"
+                onClick={smoothAnchorClick}
+                className="financing-cta group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold"
+              >
+                {t("Tell us about your store", "عرّفنا بمتجرك")}
+                <ArrowDown className="size-4 transition-transform duration-300 group-hover:translate-y-0.5" />
+              </a>
               <p className="mt-4 text-xs leading-relaxed text-[#F8F7F4]/65">
                 {t("Planning estimate, not guaranteed savings or an offer of credit. Tied-up value assumes returns arrive evenly throughout a 30-day month. Operational cost uses processing time × staff cost.", "تقدير لأغراض التخطيط وليس توفيرًا مضمونًا ولا عرض تمويل. يفترض تقدير القيمة المعلّقة توزيع المرتجعات بالتساوي خلال شهر من 30 يومًا، وتُحسب التكلفة التشغيلية من وقت المعالجة وتكلفة الموظف.")}
               </p>
@@ -105,6 +107,18 @@ export function ReturnsCostCalculator() {
         </div>
       </div>
     </section>
+    <FinancingSection
+      snapshot={{
+        monthlyReturns,
+        orderValue,
+        processingMinutes,
+        resolutionDays,
+        hourlyCost,
+        tiedUp: results.tiedUp,
+        operatingCost: results.operatingCost,
+      }}
+    />
+    </>
   );
 }
 

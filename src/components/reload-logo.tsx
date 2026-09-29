@@ -58,10 +58,10 @@ export function ReloadLogo({ className }: { className?: string }) {
         <ReloadArabicLockup className="h-7 w-auto" />
       ) : (
         <span className="inline-flex items-center gap-2" aria-label="Reload">
-          <ReloadMark className="size-[26px]" />
+          <ReloadMark className="size-[30px]" />
           <span
             aria-hidden="true"
-            className="text-[21px] font-semibold leading-none tracking-[-0.02em]"
+            className="text-[19px] font-semibold leading-none tracking-[-0.02em]"
           >
             Reload
           </span>

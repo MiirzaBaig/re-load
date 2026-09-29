@@ -36,7 +36,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
     ? requestedReturnUrl
     : "/app";
   const activeSection = useSectionSpy(
-    isHome ? ["product", "how-it-works", "returns-financing"] : [],
+    isHome ? ["product", "how-it-works", "returns-financing", "contact"] : [],
   );
   const navLinks = [
     { id: "product", label: t("Product", "المنتج"), href: "/#product" },
@@ -50,6 +50,9 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       label: t("Returns financing", "تمويل المرتجعات"),
       href: "/#returns-financing",
     },
+    // The contact form lives on the home page; from any other page this link
+    // navigates home and the hash handler scrolls straight to it.
+    { id: "contact", label: t("Contact", "تواصل معنا"), href: "/#contact" },
   ];
   const isNavActive = (sectionId: string) =>
     isHome && activeSection === sectionId;

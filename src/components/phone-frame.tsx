@@ -19,7 +19,7 @@ import type { EligibilityDecision } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 
 export const WHATSAPP_STATUS: "live" | "coming-soon" = "live";
-const BRAND = {
+export const BRAND = {
   green: "#25D366",
   header: "#075E54",
   outgoing: "#DCF8C6",

@@ -33,8 +33,17 @@ export function ScrollReveal({
       rect.top < window.innerHeight * 0.92 &&
       rect.bottom > window.innerHeight * 0.08;
     if (inView) {
-      reveal();
-      return;
+      // Already on screen: wait two frames so the hidden state is painted
+      // first. Revealing synchronously here skipped the animation entirely,
+      // which is why content above the fold appeared instantly.
+      let second = 0;
+      const first = requestAnimationFrame(() => {
+        second = requestAnimationFrame(reveal);
+      });
+      return () => {
+        cancelAnimationFrame(first);
+        cancelAnimationFrame(second);
+      };
     }
 
     const observer = new IntersectionObserver(
@@ -53,8 +62,9 @@ export function ScrollReveal({
   return (
     <div
       ref={ref}
+      data-reveal=""
       className={cn(
-        "transition-[opacity,transform] duration-500 ease-out motion-reduce:transition-none",
+        "transition-[opacity,transform] duration-[560ms] ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none",
         visible ? "opacity-100" : "opacity-0 motion-reduce:opacity-100",
         className,
       )}

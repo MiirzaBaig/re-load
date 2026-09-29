@@ -43,16 +43,62 @@ const tabsListVariants = cva(
 function TabsList({
   className,
   variant = "default",
+  children,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.List> &
   VariantProps<typeof tabsListVariants>) {
+  const listRef = React.useRef<HTMLDivElement>(null)
+  const indicatorRef = React.useRef<HTMLSpanElement>(null)
+  const [ready, setReady] = React.useState(false)
+
+  // One pill that glides to the active tab, instead of each tab snapping its
+  // own background on and off. Position is read from the active trigger, so it
+  // follows resizes, wrapped rows and language (RTL) switches.
+  React.useLayoutEffect(() => {
+    const list = listRef.current
+    const indicator = indicatorRef.current
+    if (!list || !indicator || variant !== "default") return
+    let first = true
+    const place = () => {
+      const active = list.querySelector<HTMLElement>('[data-slot="tabs-trigger"][data-state="active"]')
+      if (!active) return
+      if (first) indicator.style.transition = "none"
+      indicator.style.width = `${active.offsetWidth}px`
+      indicator.style.height = `${active.offsetHeight}px`
+      indicator.style.transform = `translate(${active.offsetLeft}px, ${active.offsetTop}px)`
+      if (first) {
+        void indicator.offsetWidth
+        indicator.style.transition = ""
+        first = false
+        setReady(true)
+      }
+    }
+    place()
+    const resize = new ResizeObserver(place)
+    resize.observe(list)
+    list.querySelectorAll('[data-slot="tabs-trigger"]').forEach((el) => resize.observe(el))
+    const states = new MutationObserver(place)
+    states.observe(list, { subtree: true, attributes: true, attributeFilter: ["data-state"] })
+    return () => {
+      resize.disconnect()
+      states.disconnect()
+    }
+  }, [variant])
+
   return (
     <TabsPrimitive.List
+      ref={listRef}
       data-slot="tabs-list"
       data-variant={variant}
-      className={cn(tabsListVariants({ variant }), className)}
+      data-indicator={ready || undefined}
+      className={cn(tabsListVariants({ variant }), "relative", className)}
       {...props}
-    />
+    >
+      {variant === "default" && (
+        <span ref={indicatorRef} data-slot="tabs-indicator" aria-hidden="true" />
+      )}
+      {children}
+    </TabsPrimitive.List>
   )
 }
 

@@ -5,6 +5,6 @@
 const WHATSAPP_ENTRY_NUMBER =
   process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "") || "15551510464";
 
-export function getWhatsAppStartUrl() {
-  return `https://wa.me/${WHATSAPP_ENTRY_NUMBER}?text=${encodeURIComponent("start")}`;
+export function getWhatsAppStartUrl(number = WHATSAPP_ENTRY_NUMBER) {
+  return `https://wa.me/${number.replace(/\D/g, "")}?text=${encodeURIComponent("start")}`;
 }

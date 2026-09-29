@@ -150,7 +150,7 @@ export function HeroTagline({
           <span className="block">{line1}</span>
           <span className="hero-gradient-text block">{line2}</span>
         </h1>
-        <p className="mx-auto max-w-[46ch] text-lg leading-relaxed text-muted-foreground text-pretty">
+        <p className="mx-auto max-w-[40ch] text-base leading-relaxed text-muted-foreground md:text-[17px] text-pretty">
           {body}
         </p>
       </div>
@@ -170,7 +170,7 @@ export function HeroTagline({
       </h1>
 
       <motion.p
-        className="mx-auto max-w-[46ch] text-lg leading-relaxed text-muted-foreground text-pretty"
+        className="mx-auto max-w-[40ch] text-base leading-relaxed text-muted-foreground md:text-[17px] text-pretty"
         initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
         transition={{ delay: bodyDelay, duration: 0.75, ease: EASE }}

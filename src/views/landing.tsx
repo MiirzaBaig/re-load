@@ -15,6 +15,8 @@ import { OutcomeSequence } from "@/components/outcome-sequence";
 import { ReturnsCostCalculator } from "@/components/returns-cost-calculator";
 import { PolicyTransformation } from "@/components/policy-transformation";
 import { SpeedComparison } from "@/components/speed-comparison";
+import { ReturnWalkthrough } from "@/components/return-walkthrough";
+import { Benefits } from "@/components/benefits";
 import {
   PhoneFrame,
   WhatsAppThread,
@@ -44,6 +46,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
 import { cn } from "@/lib/utils";
+import { Mark, Tone } from "@/components/heading-accent";
 import { getWhatsAppStartUrl } from "@/lib/whatsapp";
 
 const HERO_STEPS: TraceStep[] = [
@@ -66,6 +69,18 @@ const HERO_STEPS: TraceStep[] = [
     icon: Package,
   },
 ];
+
+/*
+ * Sections hidden while the page is reviewed (2026-09-29). Nothing was deleted:
+ * flip a switch to true to bring its section back exactly as it was.
+ */
+const SHOW_WHY_RELOAD = false; // "Returns tie up cash. Reload shortens the gap."
+const SHOW_POLICY_DEMO = false; // Source policy → proposed rules approval panel
+const SHOW_CONFIDENCE = false; // "Every decision is frozen with its evidence."
+const SHOW_FINAL_CTA_CHANNEL_LINK = false; // "WhatsApp · See the conversation"
+const SHOW_MERCHANT_EXPERIENCE = false; // "A real queue, with evidence behind every row."
+const SHOW_HERO_TRUST_ROW = false; // "Human-approved rules · Evidence with every answer · WhatsApp"
+const SHOW_HERO_SETUP_GRID = false; // The four boxed setup steps (01–04)
 
 const EXAMPLES = [ORDER_ELIGIBLE, ORDER_MISSING_DELIVERY, ORDER_EXPIRED].map(
   (facts) => {
@@ -123,9 +138,12 @@ export function LandingPage() {
   const onHeroIntroComplete = useCallback(() => setHeroIntroDone(true), []);
   const heroLine1 = t("Faster return decisions.", "قرارات إرجاع أسرع.");
   const heroLine2 = t("A clearer path to financing.", "وطريق أوضح للتمويل.");
+  // Previous copy, kept for review: "AI helps structure your return policy.
+  // Merchant-approved rules give customers a clear answer in seconds and create
+  // reliable data for future financing assessment."
   const heroBody = t(
-    "AI helps structure your return policy. Merchant-approved rules give customers a clear answer in seconds and create reliable data for future financing assessment.",
-    "يساعد الذكاء الاصطناعي في تنظيم سياسة الإرجاع. وتمنح القواعد التي يعتمدها التاجر العملاء إجابة واضحة خلال ثوانٍ، وتبني بيانات موثوقة لتقييم فرص التمويل مستقبلًا.",
+    "Your customer asks. Reload answers in seconds, by the rules you approve.",
+    "عميلك يسأل، وريلود يجيب خلال ثوانٍ وفق القواعد التي تعتمدها.",
   );
   const heroSteps = HERO_STEPS.map((step, index) => ({ ...step, label: [t("Policy clause", "نص السياسة"), t("Approved rule", "قاعدة معتمدة"), t("Order fact", "بيانات الطلب")][index], value: [t("Items may be returned within 14 days of delivery", "يمكن إرجاع المنتجات خلال 14 يومًا من التسليم"), t("Return window: 14 days from delivery date", "مدة الإرجاع: 14 يومًا من تاريخ التسليم"), t("Delivered 6 days ago", "تم التسليم قبل 6 أيام")][index] }));
   // "Required for the live pilot" was an internal note, not a customer claim.
@@ -188,6 +206,7 @@ export function LandingPage() {
               </Button>
             </motion.div>
 
+            {SHOW_HERO_TRUST_ROW && (
             <motion.div
               variants={heroItem}
               initial="hidden"
@@ -206,7 +225,9 @@ export function LandingPage() {
                 <WhatsAppChannel showStatus={false} />
               </span>
             </motion.div>
+            )}
 
+            {SHOW_HERO_SETUP_GRID && (
             <motion.div
               variants={heroItem}
               initial="hidden"
@@ -235,6 +256,39 @@ export function LandingPage() {
                 );
               })}
             </motion.div>
+            )}
+
+            {/* Three steps on one thin line. The line draws itself once when the
+                intro finishes, then stays still; each step lifts on hover. */}
+            <motion.ol
+              variants={heroItem}
+              initial="hidden"
+              animate={heroIntroDone ? "visible" : "hidden"}
+              className="hero-steps"
+              data-drawn={heroIntroDone || undefined}
+              aria-label={t("How to get started", "كيف تبدأ")}
+            >
+              <span className="hero-steps-line" aria-hidden="true">
+                <span className="hero-steps-fill" />
+              </span>
+              {[
+                t("Connect store", "اربط متجرك"),
+                t("Approve policy", "اعتمد السياسة"),
+                t("Go live", "انطلق"),
+              ].map((label, index) => (
+                <li
+                  key={label}
+                  className="hero-step"
+                  style={{ ["--i" as string]: index }}
+                  tabIndex={0}
+                >
+                  <span className="hero-step-dot" aria-hidden="true">
+                    {index + 1}
+                  </span>
+                  <span className="hero-step-label">{label}</span>
+                </li>
+              ))}
+            </motion.ol>
           </motion.div>
         </div>
       </section>
@@ -270,8 +324,14 @@ export function LandingPage() {
 
       <SpeedComparison />
 
+      <ReturnWalkthrough />
+
+      <Benefits />
+
+      {SHOW_WHY_RELOAD && (
+        <>
       {/* Problem */}
-      <section id="product" className="scroll-mt-20">
+      <section className="scroll-mt-20">
         <div className="mx-auto max-w-[1200px] px-5 py-20 md:py-28">
           <ScrollReveal>
             <div className="max-w-2xl">
@@ -316,31 +376,57 @@ export function LandingPage() {
           </ScrollReveal>
         </div>
       </section>
+        </>
+      )}
+
+      {/* From policy to decisions — the three outcome phones, introduced by
+          the heading that used to open the policy demo. Anchors the navbar's
+          "Product" link now that "Why Reload" is hidden. */}
+      <div id="product" className="scroll-mt-20">
+        <div className="mx-auto w-full max-w-[1200px] px-5 pt-20 md:pt-28">
+          <ScrollReveal>
+            <div className="mx-auto max-w-3xl text-center">
+              <span className="text-sm font-semibold text-foreground/70">
+                {t("From policy to financing-ready decisions", "من السياسة إلى قرارات جاهزة للتمويل")}
+              </span>
+              <h2 className="mt-3 font-display text-3xl font-semibold tracking-[-0.025em] text-foreground md:text-[42px] md:leading-[1.08] text-balance">
+                {t("Policy becomes ", "تتحول السياسة ")}
+                <Tone>{t("a clear path to financing.", "إلى طريق واضح للتمويل.")}</Tone>
+              </h2>
+              <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg text-pretty">
+                {t("Your store policy becomes an AI-assisted return decision, and every approved decision becomes a financing-ready case. You review each rule before it goes live.", "تتحول سياسة متجرك إلى قرار إرجاع مدعوم بالذكاء الاصطناعي، ويصبح كل قرار معتمد حالة جاهزة للتمويل. وتراجع كل قاعدة قبل نشرها.")}
+              </p>
+            </div>
+          </ScrollReveal>
+        </div>
+        <OutcomeSequence>
+          {examples.map(({ facts, decision, messages }) => (
+            <article
+              key={facts.orderId}
+              aria-label={`${OUTCOME_LABELS[decision.outcome]} example`}
+              className="outcome-card-body"
+            >
+              <PhoneFrame scale="compact">
+                <WhatsAppThread messages={messages} />
+              </PhoneFrame>
+              <div className="outcome-card-label">
+                <OutcomeBadge outcome={decision.outcome} />
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  {facts.customerName} · {facts.orderId}
+                </p>
+              </div>
+            </article>
+          ))}
+        </OutcomeSequence>
+      </div>
 
       <ReturnsCostCalculator />
 
-      <PolicyTransformation />
+      {SHOW_POLICY_DEMO && <PolicyTransformation />}
 
-      <OutcomeSequence>
-        {examples.map(({ facts, decision, messages }) => (
-          <article
-            key={facts.orderId}
-            aria-label={`${OUTCOME_LABELS[decision.outcome]} example`}
-            className="outcome-card-body"
-          >
-            <PhoneFrame scale="compact">
-              <WhatsAppThread messages={messages} />
-            </PhoneFrame>
-            <div className="outcome-card-label">
-              <OutcomeBadge outcome={decision.outcome} />
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                {facts.customerName} · {facts.orderId}
-              </p>
-            </div>
-          </article>
-        ))}
-      </OutcomeSequence>
 
+      {SHOW_MERCHANT_EXPERIENCE && (
+        <>
       {/* Merchant experience */}
       <section className="bg-muted/30">
         <div className="mx-auto max-w-[1200px] px-5 py-20 md:py-28">
@@ -435,6 +521,8 @@ export function LandingPage() {
           </ScrollReveal>
         </div>
       </section>
+        </>
+      )}
 
       {/* Path split — For merchants / For customers */}
       <section className="bg-muted/30">
@@ -445,7 +533,8 @@ export function LandingPage() {
                 {t("Two sides of every return", "جانبان لكل طلب إرجاع")}
               </span>
               <h2 className="mt-3 font-display text-3xl font-semibold tracking-[-0.02em] text-foreground md:text-[40px] md:leading-[1.1] text-balance">
-                {t("One platform. Two clear paths.", "منصة واحدة، ومساران واضحان.")}
+                {t("One platform. ", "منصة واحدة، ")}
+                <Tone>{t("Two clear paths.", "ومساران واضحان.")}</Tone>
               </h2>
               <p className="mt-4 text-lg leading-relaxed text-muted-foreground text-pretty">
                 {t("Merchants get a decision workspace with evidence behind every case. Customers get a clear answer in seconds.", "يحصل التاجر على مساحة عمل مدعومة بالأدلة، ويحصل العميل على إجابة واضحة خلال ثوانٍ.")}
@@ -543,6 +632,8 @@ export function LandingPage() {
         </div>
       </section>
 
+      {SHOW_CONFIDENCE && (
+        <>
       {/* Confidence */}
       <section className="bg-muted/30 px-5 py-20 md:py-28">
         <div className="relative mx-auto max-w-[1200px] overflow-hidden rounded-3xl border border-border bg-card px-6 py-12 text-foreground shadow-sm sm:px-10 md:px-14 md:py-16">
@@ -592,6 +683,8 @@ export function LandingPage() {
           </ScrollReveal>
         </div>
       </section>
+        </>
+      )}
 
       {/* Final CTA */}
       <section>
@@ -599,11 +692,16 @@ export function LandingPage() {
           <ScrollReveal>
             <div className="flex flex-col items-center gap-6 text-center">
               <h2 className="font-display text-3xl font-semibold tracking-[-0.02em] text-foreground md:text-[40px] md:leading-[1.1] text-balance">
-                {t("See a policy become an answer.", "شاهد السياسة تتحول إلى إجابة.")}
+                {t("See a policy become ", "شاهد السياسة تتحول إلى ")}
+                <Mark>{t("an answer", "إجابة")}</Mark>.
               </h2>
               <p className="max-w-md text-lg leading-relaxed text-muted-foreground text-pretty">
-                {t("Built for stores on any commerce platform. Connect your store, approve your policy, and bring returns automation and financing into one journey. Salla is available today; other integrations are planned.", "مصمم للمتاجر على مختلف منصات التجارة الإلكترونية. اربط متجرك واعتمد سياستك، واجمع أتمتة المرتجعات والتمويل في رحلة واحدة. ربط سلة متاح حاليًا، والتكامل مع المنصات الأخرى ضمن خطتنا.")}
+                {/* Previous copy, kept for review:
+                    "Built for stores on any commerce platform. Connect your store, approve your policy, and bring returns automation and financing into one journey. Salla is available today; other integrations are planned."
+                    Changed to stay platform-neutral (no single platform named). */}
+                {t("Built for stores on any commerce platform. Connect your store, approve your policy, and bring returns and financing into one journey.", "مصمم للمتاجر على مختلف منصات التجارة الإلكترونية. اربط متجرك واعتمد سياستك، واجمع المرتجعات والتمويل في رحلة واحدة.")}
               </p>
+              {SHOW_FINAL_CTA_CHANNEL_LINK && (
               <a
                 href="#whatsapp"
                 className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
@@ -616,6 +714,7 @@ export function LandingPage() {
                 </span>
                 <ArrowRight className="size-4" />
               </a>
+              )}
               <div className="flex flex-wrap justify-center gap-3">
                 <Button
                   size="lg"

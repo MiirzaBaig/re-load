@@ -53,7 +53,7 @@ function FooterPanel({
   ];
   const companyLinks = [
     { label: t("About", "عن ريلود"), href: "/#product" },
-    { label: t("Contact", "تواصل معنا"), href: "mailto:mujebteem@gmail.com" },
+    { label: t("Contact", "تواصل معنا"), href: "/#contact" },
   ];
   const legalLinks = [
     { label: t("Privacy", "الخصوصية"), href: "/privacy" },

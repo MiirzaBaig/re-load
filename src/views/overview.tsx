@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDelayedLoad } from "@/hooks/use-delayed-load";
 import { OverviewPageSkeleton } from "@/components/merchant-skeletons";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/language-provider";
 import { StoreIdentity } from "@/components/store-identity";
+import { Tone } from "@/components/heading-accent";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type SetupStepId = "policy" | "store" | "return";
 
@@ -90,8 +93,8 @@ export function OverviewPage() {
       done: storeConnected,
       title: t("Connect your store", "اربط متجرك"),
       body: t(
-        "Pull order facts from Salla so answers stay grounded.",
-        "اسحب بيانات الطلب من سلة لتبقى الإجابات مبنية على حقائق.",
+        "Pull order facts from your store so answers stay grounded.",
+        "اسحب بيانات الطلب من متجرك لتبقى الإجابات مبنية على حقائق.",
       ),
       cta: storeConnected
         ? t("Manage connection", "إدارة الربط")
@@ -141,9 +144,17 @@ export function OverviewPage() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 space-y-1.5">
           <h1 className="font-display text-[1.65rem] font-semibold tracking-tight text-foreground sm:text-3xl">
-            {setupComplete
-              ? t("Your returns, in focus.", "مرتجعاتك في لمحة واحدة.")
-              : t("Get your workspace ready.", "جهّز مساحة عملك.")}
+            {setupComplete ? (
+              <>
+                {t("Your returns, ", "مرتجعاتك ")}
+                <Tone>{t("in focus.", "في لمحة واحدة.")}</Tone>
+              </>
+            ) : (
+              <>
+                {t("Get your workspace ", "جهّز ")}
+                <Tone>{t("ready.", "مساحة عملك.")}</Tone>
+              </>
+            )}
           </h1>
           <p className="text-sm text-muted-foreground">
             <StoreIdentity name={storeName} markSize="sm" />
@@ -201,7 +212,7 @@ export function OverviewPage() {
                         step.done
                           ? "border-eligible/40 bg-eligible-muted text-eligible"
                           : isNext
-                            ? "border-primary/35 bg-primary/10 text-primary"
+                            ? "setup-next-dot border-primary bg-primary text-primary-foreground"
                             : "border-border bg-background text-muted-foreground",
                       )}
                       aria-hidden
@@ -316,6 +327,10 @@ export function OverviewPage() {
           />
           <StatTile
             label={t("Needs review", "تحتاج مراجعة")}
+            hint={t(
+              "Open cases missing order data. Reload sent them to you instead of guessing.",
+              "حالات مفتوحة تنقصها بيانات الطلب، فأحالها ريلود إليك بدلًا من التخمين.",
+            )}
             value={manualReviewCases.length}
             icon={AlertCircle}
             emphasis={manualReviewCases.length > 0 ? "review" : undefined}
@@ -327,6 +342,10 @@ export function OverviewPage() {
           />
           <StatTile
             label={t("Eligibility", "الأهلية")}
+            hint={t(
+              "Share of all return cases that met your published policy.",
+              "نسبة حالات الإرجاع التي استوفت سياستك المنشورة.",
+            )}
             value={eligiblePct === null ? "—" : `${eligiblePct}%`}
             icon={Circle}
           />
@@ -419,10 +438,15 @@ export function OverviewPage() {
                         "When customers request returns, decisions and evidence land in this queue.",
                         "عندما يطلب العملاء الإرجاع، تظهر القرارات والأدلة في هذه القائمة.",
                       )
-                    : t(
-                        "Finish publishing a policy first — then try a sample return.",
-                        "انشر سياسة أولاً — ثم جرّب طلب إرجاع تجريبيًا.",
-                      )}
+                    : (
+                      <>
+                        {t("Finish ", "")}
+                        <Link href={setupSteps[0].href} className="link-underline link-inline font-medium text-foreground">
+                          {t("publishing a policy", "انشر سياسة")}
+                        </Link>
+                        {t(" first, then try a sample return.", " أولًا، ثم جرّب طلب إرجاع تجريبيًا.")}
+                      </>
+                    )}
                 </p>
               </div>
               {setupComplete && (
@@ -696,11 +720,14 @@ function SetupProgress({ done, total }: { done: number; total: number }) {
 
 function StatTile({
   label,
+  hint,
   value,
   icon: Icon,
   emphasis,
 }: {
   label: string;
+  /** Shown on hover; the label gets a dotted underline to signal it. */
+  hint?: string;
   value: string | number;
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   emphasis?: "review";
@@ -708,15 +735,28 @@ function StatTile({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-card px-3.5 py-3.5 transition-colors duration-200 sm:px-4",
+        "stat-tile rounded-xl border border-border bg-card px-3.5 py-3.5 sm:px-4",
         emphasis === "review" && "border-review/25 bg-review-muted/40",
       )}
     >
       <div className="flex items-center gap-2 text-muted-foreground">
         <Icon className="size-3.5" strokeWidth={1.75} />
-        <span className="text-[11px] font-medium uppercase tracking-wide">
-          {label}
-        </span>
+        {hint ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button type="button" className="term-hint text-[11px] font-medium uppercase tracking-wide">
+                {label}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[240px] text-center leading-relaxed">
+              {hint}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <span className="text-[11px] font-medium uppercase tracking-wide">
+            {label}
+          </span>
+        )}
       </div>
       <p
         className={cn(
@@ -724,7 +764,7 @@ function StatTile({
           emphasis === "review" && "text-review",
         )}
       >
-        {value}
+        <CountUp value={value} />
       </p>
     </div>
   );
@@ -816,4 +856,32 @@ function OutcomeRow({
       </div>
     </div>
   );
+}
+
+/** Counts a stat up from zero on first render ("62%" counts too). Numbers that
+ *  aren't numeric ("—") render as they are. */
+function CountUp({ value }: { value: string | number }) {
+  const match = typeof value === "number" ? null : /^(\d+)(\D*)$/.exec(value);
+  const target = typeof value === "number" ? value : match ? Number(match[1]) : null;
+  const suffix = match ? match[2] : "";
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    if (target === null) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setShown(target);
+      return;
+    }
+    let frame = 0;
+    const start = performance.now();
+    const duration = Math.min(900, 420 + target * 12);
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / duration);
+      setShown(Math.round(target * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [target]);
+  if (target === null) return <>{value}</>;
+  return <>{shown}{suffix}</>;
 }
