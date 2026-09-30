@@ -73,7 +73,7 @@ Deno.serve(async (request) => {
     const first = failures[0];
     const explanation = outcome === "ELIGIBLE" ? "This item qualifies for return. All policy conditions are met."
       : outcome === "MANUAL_REVIEW" ? "Required order information is missing, so the store needs to review this request."
-      : `This item is outside the return policy: ${first?.rule.name ?? "policy condition"} — ${first?.evaluatedValue ?? "not met"}.`;
+      : `This item is outside the return policy: ${first?.rule.name ?? "policy condition"}, ${first?.evaluatedValue ?? "not met"}.`;
     const windowRule = rules.find((rule) => rule.category === "window");
     let deadline: string | undefined;
     if (windowRule && facts.deliveryDate) { const date = new Date(facts.deliveryDate); date.setDate(date.getDate() + Number.parseInt(windowRule.value, 10)); deadline = date.toISOString(); }

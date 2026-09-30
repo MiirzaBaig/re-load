@@ -7,17 +7,17 @@ import { LOCALE_COOKIE, resolveRequestLocale } from "@/lib/locale-server";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Reload — Returns, handled.",
+  title: "Reload · Returns, handled.",
   description:
     "Turn approved return rules into clear answers for customers—and a decision trail your team can inspect.",
   openGraph: {
-    title: "Reload — Returns, handled.",
+    title: "Reload · Returns, handled.",
     description:
       "Turn approved return rules into clear answers for customers—and a decision trail your team can inspect.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Reload — Returns, handled.",
+    title: "Reload · Returns, handled.",
   },
   icons: {
     icon: "/brand/reload-favicon.svg",
@@ -42,6 +42,19 @@ export default async function RootLayout({
       dir={initialLocale === "ar" ? "rtl" : "ltr"}
       suppressHydrationWarning
     >
+      <head>
+        {/* Decides whether the brand intro plays, before anything is drawn:
+            only on a fresh open of the home page (not on refresh, not on a link with a query or hash,
+            deep link, not with Reduce motion). It must be a plain inline
+            script here: as a next/script it ran after the JS bundle on slow
+            networks, so the page painted first and the intro popped in late.
+            The overlay stays hidden unless this marks it "play". */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var d=document.documentElement;var play=location.pathname==="/"&&!location.hash&&!location.search&&!sessionStorage.getItem("reload-intro-seen")&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches;d.setAttribute("data-intro",play?"play":"skip");}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className={`${fontClassNames} ${manrope.className} antialiased`}>
         <Script id="locale-bootstrap" strategy="beforeInteractive">
           {`(function(){try{var k="${LOCALE_COOKIE}";var m=document.cookie.match(new RegExp("(?:^|; )"+k+"=([^;]*)"));var fromCookie=m&&(m[1]==="ar"||m[1]==="en")?m[1]:null;var s=localStorage.getItem(k);var l=fromCookie||(s==="ar"||s==="en"?s:(navigator.language.toLowerCase().startsWith("ar")?"ar":"en"));document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr";document.documentElement.dataset.locale=l;localStorage.setItem(k,l);document.cookie=k+"="+l+";path=/;max-age=31536000;SameSite=Lax";}catch(e){}})();`}

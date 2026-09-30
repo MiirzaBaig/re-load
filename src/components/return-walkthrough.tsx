@@ -13,6 +13,8 @@ import {
   RotateCcw,
   Sparkles,
   Video,
+  Smartphone,
+  LayoutPanelLeft,
 } from "lucide-react";
 
 import {
@@ -57,9 +59,14 @@ export function ReturnWalkthrough() {
   const { t } = useLanguage();
   const reduceMotion = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
-  const inView = useInView(sectionRef, { amount: 0.35, once: true });
-  const [step, setStep] = useState(0);
+  // Starts early: on a phone the section is taller than the screen, so waiting
+  // for 35% of it meant visitors met an empty chat.
+  const inView = useInView(sectionRef, { amount: 0.15, once: true });
+  // Opens on the customer's first message, never a blank chat.
+  const [step, setStep] = useState(1);
   const [typing, setTyping] = useState(false);
+  // Mobile only: one side of the demo at a time instead of a long stack.
+  const [view, setView] = useState<"customer" | "store">("customer");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const clearTimers = () => {
@@ -69,10 +76,10 @@ export function ReturnWalkthrough() {
 
   const play = useCallback(() => {
     clearTimers();
-    setStep(0);
+    setStep(1);
     setTyping(false);
-    let at = 400;
-    for (let next = 1; next <= LAST; next++) {
+    let at = 300;
+    for (let next = 2; next <= LAST; next++) {
       const delay = STEP_DELAYS[next];
       if (INCOMING.has(next)) {
         timers.current.push(setTimeout(() => setTyping(true), at + delay * 0.4));
@@ -115,20 +122,17 @@ export function ReturnWalkthrough() {
       <div className="mx-auto max-w-[1200px] px-5 py-20 md:py-28">
         <div className="mx-auto max-w-2xl text-center">
           <span className="text-sm font-semibold text-foreground/70">
-            {t("Behind the scenes", "خلف الكواليس")}
+            {t("How it works", "كيف يشتغل")}
           </span>
           <h2
             id="walkthrough-title"
             className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-balance md:text-[40px] md:leading-[1.1]"
           >
-            {t("What happens ", "ماذا يحدث ")}
-            <Tone>{t("behind a return request?", "خلف طلب الإرجاع؟")}</Tone>
+            {t("What happens when ", "وش يصير لما ")}
+            <Tone>{t("a customer asks?", "العميل يطلب إرجاع؟")}</Tone>
           </h2>
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground text-pretty">
-            {t(
-              "Your customer chats on WhatsApp. Reload collects the order, the photo and the reason, checks them against your approved policy, and moves the return forward.",
-              "يتحدث عميلك عبر واتساب، ويجمع ريلود الطلب والصورة والسبب، ويطابقها مع سياستك المعتمدة، ثم يدفع الإرجاع للخطوة التالية.",
-            )}
+            {t("Reload collects the order, the photo and the reason, checks your policy, and replies.", "ريلود يجمع الطلب والصورة والسبب، ويراجع سياستك، ويرد على العميل.")}
           </p>
         </div>
 
@@ -165,15 +169,30 @@ export function ReturnWalkthrough() {
             onClick={() => (reduceMotion ? jumpTo(LAST) : play())}
           >
             <RotateCcw className="size-3.5" />
-            {t("Replay", "إعادة")}
+            <span className="walkthrough-replay-label">{t("Replay", "إعادة")}</span>
           </button>
         </div>
 
-        <div className="walkthrough-grid mt-6" translate="no">
+        {/* Mobile: switch between the two sides. Hidden on desktop, where both
+            sit side by side. */}
+        <div className="walkthrough-switch mt-6" role="group" aria-label={t("Choose a side", "اختر الجهة")} data-view={view}>
+          <span className="walkthrough-switch-pill" aria-hidden="true" />
+          <button type="button" aria-pressed={view === "customer"} onClick={() => setView("customer")}>
+            <Smartphone className="size-3.5" />
+            <span>{t("Customer", "العميل")}</span>
+          </button>
+          <button type="button" aria-pressed={view === "store"} onClick={() => setView("store")}>
+            <LayoutPanelLeft className="size-3.5" />
+            <span>{t("Your store", "متجرك")}</span>
+          </button>
+        </div>
+
+        <div className="walkthrough-grid mt-6" translate="no" data-view={view}>
           <div className="walkthrough-phone">
             <PhoneFrame scale="compact">
               <Chat step={step} typing={typing} t={t} />
             </PhoneFrame>
+            <MiniSync step={step} t={t} onOpen={() => setView("store")} />
           </div>
           <Workspace step={step} t={t} />
         </div>
@@ -183,6 +202,37 @@ export function ReturnWalkthrough() {
 }
 
 type T = (en: string, ar: string) => string;
+
+/** One source for the store side, shared by the full panel and the mobile
+ *  sync strip so the two can never disagree. */
+function deriveWorkspace(step: number, t: T) {
+  const status =
+    step === 0
+      ? { label: t("Waiting", "بانتظار الطلبات"), tone: "idle" }
+      : step <= 2
+        ? { label: t("New", "جديد"), tone: "new" }
+        : step <= 4
+          ? { label: t("Collecting", "جمع البيانات"), tone: "new" }
+          : step === 5
+            ? { label: t("Reviewing", "قيد المراجعة"), tone: "busy" }
+            : step === 6
+              ? { label: t("Approved", "مقبول"), tone: "ok" }
+              : { label: t("Refund initiated", "بدأ الاسترداد"), tone: "ok" };
+
+  const checks = [
+    { label: t("Order number", "رقم الطلب"), done: step >= 3, value: t("Verified", "تم التحقق") },
+    { label: t("Product photo", "صورة المنتج"), done: step >= 4, value: t("Reviewed", "تمت المراجعة") },
+    { label: t("Return reason", "سبب الإرجاع"), done: step >= 1, value: t("Wrong size", "مقاس غير مناسب") },
+    {
+      label: t("Store policy", "سياسة المتجر"),
+      done: step >= 6,
+      busy: step === 5,
+      value: t("Matched · 14-day window", "مطابق · مهلة 14 يومًا"),
+    },
+  ];
+
+  return { status, checks };
+}
 
 function Chat({
   step,
@@ -247,7 +297,7 @@ function Chat({
 
       <div
         ref={scrollRef}
-        className="phone-chat phone-chat-scroll relative flex h-[560px] flex-col gap-2 overflow-y-auto px-3 py-4 text-[13px] leading-relaxed"
+        className="phone-chat phone-chat-scroll relative flex h-[440px] flex-col gap-2 md:h-[560px] overflow-y-auto px-3 py-4 text-[13px] leading-relaxed"
         aria-live="polite"
       >
         <span className="mx-auto shrink-0 rounded-md bg-white/75 px-3 py-0.5 text-[10px] text-[#65756d]">
@@ -325,30 +375,7 @@ function Chat({
 }
 
 function Workspace({ step, t }: { step: number; t: T }) {
-  const status =
-    step === 0
-      ? { label: t("Waiting", "بانتظار الطلبات"), tone: "idle" }
-      : step <= 2
-        ? { label: t("New", "جديد"), tone: "new" }
-        : step <= 4
-          ? { label: t("Collecting", "جمع البيانات"), tone: "new" }
-          : step === 5
-            ? { label: t("Reviewing", "قيد المراجعة"), tone: "busy" }
-            : step === 6
-              ? { label: t("Approved", "مقبول"), tone: "ok" }
-              : { label: t("Refund initiated", "بدأ الاسترداد"), tone: "ok" };
-
-  const checks = [
-    { label: t("Order number", "رقم الطلب"), done: step >= 3, value: t("Verified", "تم التحقق") },
-    { label: t("Product photo", "صورة المنتج"), done: step >= 4, value: t("Reviewed", "تمت المراجعة") },
-    { label: t("Return reason", "سبب الإرجاع"), done: step >= 1, value: t("Wrong size", "مقاس غير مناسب") },
-    {
-      label: t("Store policy", "سياسة المتجر"),
-      done: step >= 6,
-      busy: step === 5,
-      value: t("Matched · 14-day window", "مطابق · مهلة 14 يومًا"),
-    },
-  ];
+  const { status, checks } = deriveWorkspace(step, t);
 
   const ai = step >= 6 ? "done" : step === 5 ? "busy" : "idle";
 
@@ -390,7 +417,7 @@ function Workspace({ step, t }: { step: number; t: T }) {
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-semibold">{t("Knit runner", "حذاء رياضي منسوج")}</p>
           <p className="text-xs text-muted-foreground" dir="ltr">
-            {step >= 3 ? "#10248" : "#—"} · {t("Size 42", "مقاس 42")}
+            {step >= 3 ? "#10248" : "#…"} · {t("Size 42", "مقاس 42")}
           </p>
         </div>
         <p className="text-[13px] font-semibold tabular-nums" dir="ltr">
@@ -422,7 +449,7 @@ function Workspace({ step, t }: { step: number; t: T }) {
               </span>
               <span className="flex-1">{c.label}</span>
               <span className="ws-check-value">
-                {c.done ? c.value : c.busy ? t("Checking…", "جارٍ التحقق…") : "—"}
+                {c.done ? c.value : c.busy ? t("Checking…", "جارٍ التحقق…") : t("Pending", "بالانتظار")}
               </span>
             </li>
           ))}
@@ -483,12 +510,42 @@ function Workspace({ step, t }: { step: number; t: T }) {
                   ? t("Refund initiated", "بدأ الاسترداد")
                   : step >= 6
                     ? t("Initiate refund", "بدء الاسترداد")
-                    : "—"}
+                    : t("Pending", "بالانتظار")}
               </span>
             </span>
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+/** Mobile: a slim live strip under the phone, so the store side is still
+ *  visibly moving in sync with the chat. Tapping it opens the full panel. */
+function MiniSync({ step, t, onOpen }: { step: number; t: T; onOpen: () => void }) {
+  const { status, checks } = deriveWorkspace(step, t);
+  const done = checks.filter((c) => c.done).length;
+  return (
+    <button type="button" className="ws-mini" onClick={onOpen} data-live={(step > 0 && step < LAST) || undefined}>
+      <span className="ws-mini-row">
+        <span className="ws-live-dot" aria-hidden="true" />
+        <span className="ws-mini-title">{t("Your store", "متجرك")}</span>
+        <span className="ws-status" data-tone={status.tone}>
+          <Loader2 className="ws-status-spinner size-3 animate-spin" aria-hidden="true" />
+          <span>{status.label}</span>
+        </span>
+      </span>
+      <span className="ws-mini-row">
+        <span className="ws-mini-dots" aria-label={t(`${done} of 4 checks done`, `${done} من 4 تحققات`)}>
+          {checks.map((c) => (
+            <span key={c.label} data-done={c.done || undefined} data-busy={c.busy || undefined} />
+          ))}
+        </span>
+        <span className="ws-mini-open">
+          <span>{t("See your side", "شاهد جهتك")}</span>
+          <ChevronLeft className="size-3.5 rotate-180 rtl:rotate-0" />
+        </span>
+      </span>
+    </button>
   );
 }

@@ -86,7 +86,7 @@ export function evaluateEligibility(input: EvaluationInput): EligibilityDecision
     const firstFailure = appliedRules.find((r) => !r.passed && r.reasonCode !== "MISSING_DELIVERY_DATE");
     outcome = "NOT_ELIGIBLE";
     explanation = firstFailure
-      ? `This item is outside the return policy: ${firstFailure.rule.name.toLowerCase()} — ${firstFailure.evaluatedValue}.`
+      ? `This item is outside the return policy: ${firstFailure.rule.name.toLowerCase()}, ${firstFailure.evaluatedValue}.`
       : "This item is outside the return policy.";
   } else {
     outcome = "ELIGIBLE";

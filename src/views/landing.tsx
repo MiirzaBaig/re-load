@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { HeroTagline } from "@/components/hero-tagline";
+import { INTRO_DONE_EVENT } from "@/components/intro-splash";
 import { Button } from "@/components/ui/button";
 import {
   AnimatedDecisionTrace,
@@ -81,6 +82,10 @@ const SHOW_FINAL_CTA_CHANNEL_LINK = false; // "WhatsApp · See the conversation"
 const SHOW_MERCHANT_EXPERIENCE = false; // "A real queue, with evidence behind every row."
 const SHOW_HERO_TRUST_ROW = false; // "Human-approved rules · Evidence with every answer · WhatsApp"
 const SHOW_HERO_SETUP_GRID = false; // The four boxed setup steps (01–04)
+// Content pass, 2026-09-30: fewer sections, one idea each.
+const SHOW_PRINCIPLES_STRIP = false; // "Deterministic engine · Frozen evidence …" marquee
+const SHOW_OUTCOME_INTRO = false; // "Policy becomes a clear path to financing." intro above the phones
+const SHOW_TWO_PATHS = false; // "One platform. Two clear paths."
 
 const EXAMPLES = [ORDER_ELIGIBLE, ORDER_MISSING_DELIVERY, ORDER_EXPIRED].map(
   (facts) => {
@@ -136,14 +141,79 @@ export function LandingPage() {
   const heroItem = reduceMotion ? heroCopyItemStatic : heroCopyItem;
   const [heroIntroDone, setHeroIntroDone] = useState(!!reduceMotion);
   const onHeroIntroComplete = useCallback(() => setHeroIntroDone(true), []);
-  const heroLine1 = t("Faster return decisions.", "قرارات إرجاع أسرع.");
-  const heroLine2 = t("A clearer path to financing.", "وطريق أوضح للتمويل.");
+  // Hero zoom-out on scroll, for browsers without CSS scroll-driven
+  // animations (Safari). Chrome/Edge run the native version in index.css and
+  // this bails out. Same range as the CSS (exit 0% → exit 65%) and the same
+  // scale target, read from --hero-zoom-to.
+  useEffect(() => {
+    if (typeof CSS !== "undefined" && CSS.supports?.("animation-timeline: view()")) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const card = document.querySelector<HTMLElement>(".hero-card");
+    if (!card) return;
+
+    // Layout position, not getBoundingClientRect: the rect includes the scale
+    // we apply, which would feed back into its own measurement.
+    let top = 0;
+    let height = 1;
+    let target = 0.86;
+    const measure = () => {
+      let y = 0;
+      for (let el: HTMLElement | null = card; el; el = el.offsetParent as HTMLElement | null) y += el.offsetTop;
+      top = y;
+      height = card.offsetHeight || 1;
+      target = parseFloat(getComputedStyle(card).getPropertyValue("--hero-zoom-to")) || 0.86;
+    };
+
+    let frame = 0;
+    let last = -1;
+    const apply = () => {
+      frame = 0;
+      const progress = Math.min(1, Math.max(0, (window.scrollY - top) / (height * 0.65)));
+      if (progress === last) return;
+      last = progress;
+      card.style.transform = progress === 0 ? "" : `scale(${1 - (1 - target) * progress})`;
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(apply);
+    };
+    const onResize = () => {
+      measure();
+      onScroll();
+    };
+
+    measure();
+    apply();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      card.style.transform = "";
+    };
+  }, []);
+
+  // When the opening intro is playing, the hero's own entrance would run
+  // behind the curtain. Restart it the moment the curtain lifts.
+  const [heroRun, setHeroRun] = useState(0);
+  useEffect(() => {
+    const replay = () => {
+      setHeroIntroDone(!!reduceMotion);
+      setHeroRun((run) => run + 1);
+    };
+    window.addEventListener(INTRO_DONE_EVENT, replay);
+    return () => window.removeEventListener(INTRO_DONE_EVENT, replay);
+  }, [reduceMotion]);
+  // The brand line from the guidelines. Previous hero, kept for review:
+  // "Faster return decisions. / A clearer path to financing."
+  const heroLine1 = t("Returns,", "المرتجعات");
+  const heroLine2 = t("handled.", "علينا.");
   // Previous copy, kept for review: "AI helps structure your return policy.
   // Merchant-approved rules give customers a clear answer in seconds and create
   // reliable data for future financing assessment."
   const heroBody = t(
-    "Your customer asks. Reload answers in seconds, by the rules you approve.",
-    "عميلك يسأل، وريلود يجيب خلال ثوانٍ وفق القواعد التي تعتمدها.",
+    "Customers ask on WhatsApp. Reload checks your store policy, replies in seconds, and moves the refund forward.",
+    "عميلك يسأل في واتساب، وريلود يراجع سياسة متجرك ويرد خلال ثوانٍ ويكمّل الاسترداد.",
   );
   const heroSteps = HERO_STEPS.map((step, index) => ({ ...step, label: [t("Policy clause", "نص السياسة"), t("Approved rule", "قاعدة معتمدة"), t("Order fact", "بيانات الطلب")][index], value: [t("Items may be returned within 14 days of delivery", "يمكن إرجاع المنتجات خلال 14 يومًا من التسليم"), t("Return window: 14 days from delivery date", "مدة الإرجاع: 14 يومًا من تاريخ التسليم"), t("Delivered 6 days ago", "تم التسليم قبل 6 أيام")][index] }));
   // "Required for the live pilot" was an internal note, not a customer claim.
@@ -174,10 +244,11 @@ export function LandingPage() {
           >
             <motion.span variants={heroItem} className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-white/70">
               <span className="size-1.5 rounded-full bg-primary" />
-              {t("AI-powered returns for Saudi ecommerce", "مرتجعات مدعومة بالذكاء الاصطناعي للتجارة الإلكترونية السعودية")}
+              {t("Returns and financing for Saudi stores", "المرتجعات والتمويل للمتاجر السعودية")}
             </motion.span>
 
             <HeroTagline
+              key={heroRun}
               line1={heroLine1}
               line2={heroLine2}
               body={heroBody}
@@ -293,6 +364,8 @@ export function LandingPage() {
         </div>
       </section>
 
+      {SHOW_PRINCIPLES_STRIP && (
+        <>
       {/* Sits on the shell background so it reads as part of the page the hero
           card floats on, not as a strip running under the card's edge. */}
       <section
@@ -321,6 +394,8 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+        </>
+      )}
 
       <SpeedComparison />
 
@@ -383,6 +458,7 @@ export function LandingPage() {
           the heading that used to open the policy demo. Anchors the navbar's
           "Product" link now that "Why Reload" is hidden. */}
       <div id="product" className="scroll-mt-20">
+        {SHOW_OUTCOME_INTRO && (
         <div className="mx-auto w-full max-w-[1200px] px-5 pt-20 md:pt-28">
           <ScrollReveal>
             <div className="mx-auto max-w-3xl text-center">
@@ -399,6 +475,7 @@ export function LandingPage() {
             </div>
           </ScrollReveal>
         </div>
+        )}
         <OutcomeSequence>
           {examples.map(({ facts, decision, messages }) => (
             <article
@@ -524,6 +601,8 @@ export function LandingPage() {
         </>
       )}
 
+      {SHOW_TWO_PATHS && (
+        <>
       {/* Path split — For merchants / For customers */}
       <section className="bg-muted/30">
         <div className="mx-auto max-w-[1200px] px-5 py-20 md:py-28">
@@ -631,6 +710,8 @@ export function LandingPage() {
           </ScrollReveal>
         </div>
       </section>
+        </>
+      )}
 
       {SHOW_CONFIDENCE && (
         <>
@@ -692,14 +773,15 @@ export function LandingPage() {
           <ScrollReveal>
             <div className="flex flex-col items-center gap-6 text-center">
               <h2 className="font-display text-3xl font-semibold tracking-[-0.02em] text-foreground md:text-[40px] md:leading-[1.1] text-balance">
-                {t("See a policy become ", "شاهد السياسة تتحول إلى ")}
-                <Mark>{t("an answer", "إجابة")}</Mark>.
+                {/* Previous title, kept for review: "See a policy become an answer." */}
+                {t("Start with ", "ابدأ بـ")}
+                <Mark>{t("one return", "أول طلب إرجاع")}</Mark>.
               </h2>
               <p className="max-w-md text-lg leading-relaxed text-muted-foreground text-pretty">
                 {/* Previous copy, kept for review:
                     "Built for stores on any commerce platform. Connect your store, approve your policy, and bring returns automation and financing into one journey. Salla is available today; other integrations are planned."
                     Changed to stay platform-neutral (no single platform named). */}
-                {t("Built for stores on any commerce platform. Connect your store, approve your policy, and bring returns and financing into one journey.", "مصمم للمتاجر على مختلف منصات التجارة الإلكترونية. اربط متجرك واعتمد سياستك، واجمع المرتجعات والتمويل في رحلة واحدة.")}
+                {t("Connect your store, approve your policy, and try it on WhatsApp today.", "اربط متجرك، اعتمد سياستك، وجرّبه على واتساب اليوم.")}
               </p>
               {SHOW_FINAL_CTA_CHANNEL_LINK && (
               <a

@@ -64,6 +64,28 @@ const MANUAL_STAGES = [
   },
 ] as const;
 
+/**
+ * The same five beats, Reload's way. Mirrors MANUAL_STAGES so the two cards
+ * read side by side, and the chat itself lives only in the walkthrough below.
+ */
+const RELOAD_STAGES = [
+  { en: "Customer messages on WhatsApp", ar: "العميل يراسل عبر واتساب", waitEn: "Minute 1", waitAr: "الدقيقة 1" },
+  { en: "Order, photo and reason collected", ar: "جمع الطلب والصورة والسبب", waitEn: "Same chat", waitAr: "نفس المحادثة" },
+  { en: "Checked against your policy", ar: "مطابقة سياستك", waitEn: "Seconds", waitAr: "ثوانٍ" },
+  { en: "Decision sent to the customer", ar: "إرسال القرار للعميل", waitEn: "Same day", waitAr: "نفس اليوم" },
+  { en: "Refund initiated", ar: "بدء الاسترداد", waitEn: "~1.5 days", waitAr: "~1.5 يوم" },
+] as const;
+
+/*
+ * The Reload card used to play the full WhatsApp chat, which the walkthrough
+ * section right below plays again — the same conversation twice in a row
+ * (flagged in team review, 2026-09-30). Hidden, not deleted: flip to true to
+ * bring the phone back in place of the stage list.
+ */
+const SHOW_SPEED_PHONE = false;
+/** "~9x faster" pill — the title already says 14 vs 1.5. */
+const SHOW_SPEED_MULTIPLIER = false;
+
 export function SpeedComparison() {
   const { t } = useLanguage();
   const reduceMotion = useReducedMotion();
@@ -74,22 +96,34 @@ export function SpeedComparison() {
   // card resolves in a single beat next to it — the contrast plays out in
   // motion, not just in the two numbers.
   const [filled, setFilled] = useState(0);
+  const [reloadFilled, setReloadFilled] = useState(0);
   useEffect(() => {
     if (!inView) return;
     if (reduceMotion) {
       setFilled(MANUAL_STAGES.length);
+      setReloadFilled(RELOAD_STAGES.length);
       return;
     }
-    const id = setInterval(() => {
-      setFilled((n) => {
-        if (n >= MANUAL_STAGES.length) {
-          clearInterval(id);
-          return n;
-        }
-        return n + 1;
-      });
-    }, 420);
-    return () => clearInterval(id);
+    // Both lists start together: Reload's finishes in about half a second
+    // while the manual one is still crawling — the gap plays out on screen.
+    const step = (set: typeof setFilled, total: number, every: number) => {
+      const id = setInterval(() => {
+        set((n) => {
+          if (n >= total) {
+            clearInterval(id);
+            return n;
+          }
+          return n + 1;
+        });
+      }, every);
+      return id;
+    };
+    const manual = step(setFilled, MANUAL_STAGES.length, 420);
+    const reload = step(setReloadFilled, RELOAD_STAGES.length, 110);
+    return () => {
+      clearInterval(manual);
+      clearInterval(reload);
+    };
   }, [inView, reduceMotion]);
 
   // Yazeed's script: the whole return, not just the eligibility answer.
@@ -148,13 +182,14 @@ export function SpeedComparison() {
       <div className="speed-inner">
         <motion.div {...fadeUp} className="speed-head">
           <h2 id="speed-heading" className="speed-title">
-            {t("From return request ", "من طلب الإرجاع ")}
-            <Tone>{t("to refund in the customer's hands.", "حتى وصول المبلغ إلى العميل.")}</Tone>
+            {/* Previous: "From return request to refund in the customer's hands." */}
+            {t("14 days, ", "14 يوم، ")}
+            <Tone>{t("or 1.5.", "أو يوم ونص.")}</Tone>
           </h2>
           <p className="speed-sub">
             {t(
-              "Most of that time is waiting for someone to read the policy and reply.",
-              "معظم هذا الوقت انتظار لقراءة السياسة والرد على العميل.",
+              "Most of a return is waiting. Reload takes the waiting out.",
+              "أغلب وقت الإرجاع انتظار، وريلود يشيله.",
             )}
           </p>
         </motion.div>
@@ -234,19 +269,39 @@ export function SpeedComparison() {
               </div>
             </header>
 
-            <div className="speed-phone">
-              {/* Depth behind the device: a soft brand-tinted bloom, so the
-                  phone reads as sitting in space rather than pasted on. */}
-              <span className="speed-phone-glow" aria-hidden="true" />
-              <PhoneFrame scale="compact" className="speed-phone-device">
-                <WhatsAppConversation
-                  steps={steps}
-                  refundLabel={refundLabel}
-                  refundAmount={t("SAR 500", "٥٠٠ ر.س")}
-                  caption={t("Illustrative journey", "رحلة توضيحية")}
-                />
-              </PhoneFrame>
-            </div>
+            {SHOW_SPEED_PHONE ? (
+              <div className="speed-phone">
+                {/* Depth behind the device: a soft brand-tinted bloom, so the
+                    phone reads as sitting in space rather than pasted on. */}
+                <span className="speed-phone-glow" aria-hidden="true" />
+                <PhoneFrame scale="compact" className="speed-phone-device">
+                  <WhatsAppConversation
+                    steps={steps}
+                    refundLabel={refundLabel}
+                    refundAmount={t("SAR 500", "٥٠٠ ر.س")}
+                    caption={t("Illustrative journey", "رحلة توضيحية")}
+                  />
+                </PhoneFrame>
+              </div>
+            ) : (
+              <ol className="speed-stages speed-stages-reload">
+                {RELOAD_STAGES.map((stage, i) => (
+                  <li
+                    key={stage.en}
+                    className="speed-stage"
+                    data-filled={reduceMotion || i < reloadFilled || undefined}
+                  >
+                    <span className="speed-stage-marker" aria-hidden="true" />
+                    <span className="speed-stage-label">
+                      {t(stage.en, stage.ar)}
+                    </span>
+                    <span className="speed-stage-wait">
+                      {t(stage.waitEn, stage.waitAr)}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
 
             <p className="speed-figure">
               <span className="speed-figure-ring">
@@ -256,9 +311,11 @@ export function SpeedComparison() {
                 <span className="speed-figure-unit">{t("days", "يوم")}</span>
                 <PencilCircle />
               </span>
-              <span className="speed-figure-delta">
-                {t("~9x faster", "أسرع بـ 9 أضعاف")}
-              </span>
+              {SHOW_SPEED_MULTIPLIER && (
+                <span className="speed-figure-delta">
+                  {t("~9x faster", "أسرع بـ 9 أضعاف")}
+                </span>
+              )}
             </p>
           </motion.article>
         </div>
@@ -266,8 +323,8 @@ export function SpeedComparison() {
         {SPEED_BENCHMARK.illustrative && (
           <p className="speed-note">
             {t(
-              "Illustrative journey, including the refund confirmation. Photo review and instant refunds are preview features. Actual handling and payment timing depend on the store’s process; chat timestamps do not promise a fixed timeframe.",
-              "رحلة توضيحية تشمل تأكيد الاسترداد. مراجعة الصور والاسترداد الفوري ميزتان ضمن المعاينة. تعتمد مدة المعالجة والدفع الفعلية على إجراءات المتجر، ولا تضمن أوقات الرسائل مدة محددة.",
+              "Illustrative timeline. Actual timing depends on your store's process.",
+              "جدول زمني توضيحي، والمدة الفعلية تعتمد على إجراءات متجرك.",
             )}
           </p>
         )}

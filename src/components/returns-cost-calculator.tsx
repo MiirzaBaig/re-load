@@ -44,8 +44,8 @@ export function ReturnsCostCalculator() {
     >
       <div className="mx-auto mb-8 flex max-w-[1200px] items-end justify-between gap-6">
         <div><p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.16em] text-primary"><Calculator className="size-4" />{t("Returns financing", "تمويل المرتجعات")}</p>
-        <h2 id="returns-calculator-title" className="font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{t("How much cash is ", "كم من السيولة ")}<Mark>{t("locked", "محتجزة")}</Mark><Tone>{t(" in your returns?", " في مرتجعاتك؟")}</Tone></h2>
-        <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">{t("Enter your numbers to see the working capital sitting in undecided returns — then request financing against it.", "أدخل أرقامك لترى رأس المال المحتجز في مرتجعات بلا قرار، ثم اطلب تمويلًا مقابله.")}</p></div>
+        <h2 id="returns-calculator-title" className="font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{t("How much cash is ", "كم من سيولتك ")}<Mark>{t("stuck", "عالقة")}</Mark><Tone>{t(" in your returns?", " في المرتجعات؟")}</Tone></h2>
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">{t("Add your numbers and see what slow returns cost you.", "حط أرقامك وشوف كم تكلفك المرتجعات المتأخرة.")}</p></div>
         <ArrowUpRight aria-hidden="true" className="hidden size-10 text-primary/40 sm:block" />
       </div>
       <div className="mx-auto max-w-[1200px] overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-[0_28px_80px_-48px_rgba(10,50,41,.4)]">
@@ -100,7 +100,7 @@ export function ReturnsCostCalculator() {
                 <ArrowDown className="size-4 transition-transform duration-300 group-hover:translate-y-0.5" />
               </a>
               <p className="mt-4 text-xs leading-relaxed text-[#F8F7F4]/65">
-                {t("Planning estimate, not guaranteed savings or an offer of credit. Tied-up value assumes returns arrive evenly throughout a 30-day month. Operational cost uses processing time × staff cost.", "تقدير لأغراض التخطيط وليس توفيرًا مضمونًا ولا عرض تمويل. يفترض تقدير القيمة المعلّقة توزيع المرتجعات بالتساوي خلال شهر من 30 يومًا، وتُحسب التكلفة التشغيلية من وقت المعالجة وتكلفة الموظف.")}
+                {t("Planning estimate only. Not an offer of credit.", "تقدير للتخطيط فقط، وليس عرض تمويل.")}
               </p>
             </div>
           </div>

@@ -148,18 +148,21 @@ export function OutcomeSequence({ children }: { children: ReactNode }) {
 
           <div className="outcome-sequence-heading">
             <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-              {t("Every answer ", "لكل إجابة ")}<Tone>{t("has its evidence.", "أدلتها.")}</Tone>
+              {/* Previous copy, kept for review: "Every answer has its evidence." /
+                  "A clear yes. An explained no. A human when it matters." */}
+              {t("Yes, no, ", "نعم، لا، ")}<Tone>{t("or a closer look.", "أو مراجعة.")}</Tone>
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-              {t("A clear yes. An explained no. A human when it matters.", "موافقة واضحة، ورفض مفسّر، وتدخل بشري عند الحاجة.")}
-              <br />
-              {t("Three outcomes, grounded in the same published policy.", "ثلاث نتائج تستند إلى السياسة المنشورة نفسها.")}
+              {t(
+                "Clear cases get an answer. Unclear ones come to your team.",
+                "الطلبات الواضحة تنرد فورًا، وغير الواضحة توصل لفريقك.",
+              )}
             </p>
           </div>
 
           {!reducedMotion && (
             <span className="outcome-sequence-hint">
-              {t("Scroll to explore · scroll back to replay", "مرّر للاستكشاف · ارجع لإعادة العرض")}
+              {t("Scroll to explore", "مرّر للاستكشاف")}
             </span>
           )}
         </div>

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ReloadLogo } from "@/components/reload-logo";
+import { IntroSplash } from "@/components/intro-splash";
 
 import { CurtainReveal } from "@/components/curtain-reveal";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -19,14 +20,32 @@ import { ScrollToTop } from "@/components/scroll-to-top";
 import { useSectionSpy } from "@/hooks/use-section-spy";
 import { getWhatsAppStartUrl } from "@/lib/whatsapp";
 
+/** Navbar WhatsApp link (desktop). Off: the floating bubble and hero CTA cover it. */
+const SHOW_NAV_WHATSAPP = false;
+/** "Get started" (desktop navbar + mobile menu). Off: Sign in is the only navbar action. */
+const SHOW_GET_STARTED = false;
+
 export function PublicLayout({ children }: { children: ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
+  // The query string is read in an effect, not with useSearchParams(). That
+  // hook forced a <Suspense> boundary around this whole layout, and on slow
+  // networks the boundary received a provider update (auth, theme) before it
+  // finished hydrating, so React threw the server HTML away and rebuilt the
+  // page — a blank flash and a restarted intro. Nothing here needs the query
+  // during render: it only opens the sign-in dialog and handles a redirect.
+  const [query, setQuery] = useState("");
+  useEffect(() => {
+    const read = () => setQuery(window.location.search);
+    read();
+    window.addEventListener("popstate", read);
+    return () => window.removeEventListener("popstate", read);
+  }, [pathname]);
+  const searchParams = useMemo(() => new URLSearchParams(query), [query]);
   const auth = useAuth();
   const { t } = useLanguage();
   const isHome = pathname === "/";
@@ -72,6 +91,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
     setAuthOpen(open);
     if (!open && searchParams.has("auth")) {
       router.replace(pathname);
+      setQuery("");
     }
   };
 
@@ -157,6 +177,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-svh flex-col">
+      <IntroSplash />
       <header
         ref={headerRef}
         className={cn("public-header", scrolled && "public-header-scrolled")}
@@ -190,15 +211,19 @@ export function PublicLayout({ children }: { children: ReactNode }) {
 
             <div className="flex items-center gap-1.5">
               <div className="hidden items-center gap-1 md:flex">
-                <a
-                  href={whatsappStartUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="nav-ghost hidden rounded-full px-3 py-2 lg:inline-flex"
-                  aria-label={t("Start a WhatsApp conversation", "ابدأ محادثة عبر واتساب")}
-                >
-                  <WhatsAppChannel showStatus={false} />
-                </a>
+                {/* Hidden: it repeated the floating WhatsApp bubble and the
+                    hero's "Start on WhatsApp". Flip SHOW_NAV_WHATSAPP to restore. */}
+                {SHOW_NAV_WHATSAPP && (
+                  <a
+                    href={whatsappStartUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="nav-ghost hidden rounded-full px-3 py-2 lg:inline-flex"
+                    aria-label={t("Start a WhatsApp conversation", "ابدأ محادثة عبر واتساب")}
+                  >
+                    <WhatsAppChannel showStatus={false} />
+                  </a>
+                )}
                 {auth.user ? (
                   <Button
                     size="sm"
@@ -215,13 +240,18 @@ export function PublicLayout({ children }: { children: ReactNode }) {
                     >
                       {t("Sign in", "تسجيل الدخول")}
                     </button>
-                    <Button
-                      size="sm"
-                      onClick={() => setAuthOpen(true)}
-                      className="nav-cta rounded-full px-4"
-                    >
-                      {t("Get started", "ابدأ الآن")}
+                    {SHOW_GET_STARTED && (
+                      <>
+                    {/* New merchants start on WhatsApp (onboarding lives there);
+                        returning ones use Sign in. The two used to open the
+                        same sign-in dialog. */}
+                    <Button asChild size="sm" className="nav-cta rounded-full px-4">
+                      <a href={whatsappStartUrl} target="_blank" rel="noreferrer">
+                        {t("Get started", "ابدأ الآن")}
+                      </a>
                     </Button>
+                      </>
+                    )}
                   </>
                 )}
               </div>
@@ -302,19 +332,30 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             </Button>
           ) : (
             <>
+              {SHOW_GET_STARTED && (
               <Button
+                asChild
                 style={{ ["--i" as string]: String(navLinks.length + 1) }}
                 className="mobile-menu-item nav-cta h-11 w-full rounded-full"
-                onClick={() => {
-                  setMenuOpen(false);
-                  setAuthOpen(true);
-                }}
               >
-                {t("Get started", "ابدأ الآن")}
+                <a
+                  href={whatsappStartUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t("Get started", "ابدأ الآن")}
+                </a>
               </Button>
+              )}
               <button
                 style={{ ["--i" as string]: String(navLinks.length + 2) }}
-                className="mobile-menu-item h-11 w-full rounded-full text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className={cn(
+                  "mobile-menu-item h-11 w-full rounded-full text-sm font-medium transition-colors",
+                  SHOW_GET_STARTED
+                    ? "text-muted-foreground hover:text-foreground"
+                    : "nav-cta bg-primary text-primary-foreground",
+                )}
                 onClick={() => {
                   setMenuOpen(false);
                   setAuthOpen(true);

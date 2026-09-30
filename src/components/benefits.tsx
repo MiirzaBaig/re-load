@@ -39,18 +39,12 @@ export function Benefits() {
         {
           icon: RefreshCcw,
           title: t("Faster refunds", "استرداد أسرع"),
-          body: t(
-            "A clear answer in the chat they already use helps reduce hesitation at checkout.",
-            "إجابة واضحة في المحادثة التي يستخدمها أصلًا تساعد على تقليل التردد عند الشراء.",
-          ),
+          body: t("A clear answer in the chat they already use.", "رد واضح في المحادثة اللي يستخدمها."),
         },
         {
           icon: Sparkles,
           title: t("Better after-sales service", "خدمة ما بعد البيع أفضل"),
-          body: t(
-            "Quicker replies and a status they can see can help bring customers back to buy again.",
-            "ردود أسرع وحالة واضحة يمكن أن تساعد على عودة العميل للشراء مرة أخرى.",
-          ),
+          body: t("A smooth return brings customers back.", "تجربة إرجاع سلسة ترجّع العميل يشتري مرة ثانية."),
         },
       ],
     },
@@ -62,18 +56,12 @@ export function Benefits() {
         {
           icon: Clock3,
           title: t("Less time for your team", "وقت أقل لفريقك"),
-          body: t(
-            "Fewer manual reviews and follow-ups. Only unclear cases reach a person.",
-            "مراجعات يدوية ومتابعات أقل، ولا يصل إلى فريقك إلا ما يحتاج مراجعة.",
-          ),
+          body: t("Only unclear cases reach a person.", "ما يوصل لفريقك إلا اللي يحتاج مراجعة."),
         },
         {
           icon: ShieldCheck,
           title: t("Clearer decisions", "قرارات أوضح"),
-          body: t(
-            "Every request follows the policy you approved, with the reason on record.",
-            "كل طلب يتبع السياسة التي اعتمدتها، مع توثيق سبب القرار.",
-          ),
+          body: t("Every answer follows your policy, with the reason saved.", "كل رد حسب سياستك، والسبب محفوظ."),
         },
       ],
     },
@@ -99,10 +87,7 @@ export function Benefits() {
               <Tone>{t(" of a return.", " الإرجاع.")}</Tone>
             </h2>
             <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg">
-              {t(
-                "A quicker answer for the person returning. Less work for the team handling it.",
-                "إجابة أسرع لمن يُرجع المنتج، وعمل أقل للفريق الذي يتولاه.",
-              )}
+              {t("Quicker for the customer. Lighter for your team.", "أسرع لعميلك، وأخف على فريقك.")}
             </p>
           </div>
         </ScrollReveal>

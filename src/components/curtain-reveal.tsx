@@ -115,7 +115,7 @@ function FooterPanel({
                 : { opacity: taglineOpacity, y: taglineY }
             }
           >
-            {t("Return decisions, explained.", "قرارات إرجاع مفسّرة.")}
+            {t("Returns, handled.", "المرتجعات علينا.")}
           </motion.p>
 
           <motion.div

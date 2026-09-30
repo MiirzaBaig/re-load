@@ -1581,12 +1581,24 @@ html.dark .mode-toggle:active .mode-toggle-moon {
    already-painted picture, so nothing is redrawn per frame. The earlier 3D
    tilt (perspective + rotateX) is what lagged and flashed white; do not add
    perspective, rotation, filter, blur or opacity back onto this card. */
+/* How far it shrinks. Gentler on phones, where the card is nearly the full
+   screen width. Shared with the Safari fallback in views/landing.tsx. */
+.hero-card {
+  --hero-zoom-to: 0.86;
+  /* Shrinks toward its bottom edge, so it reads as pulling away from the
+     viewer rather than sliding up. */
+  transform-origin: 50% 100%;
+}
+@media (max-width: 767px) {
+  .hero-card { --hero-zoom-to: 0.92; }
+}
+
+/* Chrome/Edge: native scroll-driven animation, run by the compositor. Safari
+   has no animation-timeline yet, so landing.tsx drives the same transform
+   from scroll there (it checks CSS.supports and skips when this applies). */
 @supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) and (min-width: 768px) {
+  @media (prefers-reduced-motion: no-preference) {
     .hero-card {
-      /* Shrinks toward its bottom edge, so it reads as pulling away from the
-         viewer rather than sliding up. */
-      transform-origin: 50% 100%;
       animation: hero-card-zoom linear both;
       animation-timeline: view();
       animation-range: exit 0% exit 65%;
@@ -1599,7 +1611,7 @@ html.dark .mode-toggle:active .mode-toggle-moon {
     transform: scale(1);
   }
   to {
-    transform: scale(0.86);
+    transform: scale(var(--hero-zoom-to));
   }
 }
 
@@ -4568,3 +4580,276 @@ html[dir="rtl"] .term-hint { text-transform: none; }
   to { box-shadow: 0 0 0 6px transparent; }
 }
 @media (prefers-reduced-motion: reduce) { .setup-next-dot { animation: none; } }
+
+/* Reload's stage list (replaces the duplicate chat phone). Stages land in
+   solid ink; the manual side stays grey — same shape, different weight. */
+.speed-stages-reload .speed-stage[data-filled] .speed-stage-marker {
+  background: var(--foreground);
+  border-color: var(--foreground);
+  animation: ws-pop 260ms var(--ease-brand);
+}
+.speed-stages-reload .speed-stage[data-filled] .speed-stage-wait {
+  color: var(--foreground);
+  font-weight: 600;
+}
+/* Both cards are lists now, so let them match height and line up the figures. */
+.speed-grid { align-items: stretch; }
+.speed-grid > .speed-card { display: flex; flex-direction: column; }
+
+/* ---- Walkthrough: mobile (below 900px; desktop keeps both sides) ---------- */
+.walkthrough-switch { display: none; }
+.ws-mini { display: none; }
+
+@media (max-width: 899px) {
+  /* Stepper: one swipeable row instead of wrapping onto two lines. */
+  .walkthrough-stepper {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    margin-inline: -20px;
+    padding-inline: 20px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+  }
+  .walkthrough-stepper::-webkit-scrollbar { display: none; }
+  .walkthrough-stage { flex: none; scroll-snap-align: start; height: 34px; font-size: 12.5px; }
+  .walkthrough-replay { flex: none; }
+
+  /* Customer / Your store switch with a sliding pill. */
+  .walkthrough-switch {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 320px;
+    margin-inline: auto;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--muted);
+  }
+  .walkthrough-switch button {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    transition: color 200ms var(--ease-brand);
+  }
+  .walkthrough-switch button[aria-pressed="true"] { color: var(--primary-foreground); }
+  .walkthrough-switch button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .walkthrough-switch-pill {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    inset-inline-start: 4px;
+    width: calc(50% - 4px);
+    border-radius: 9px;
+    background: var(--primary);
+    transition: transform 300ms var(--ease-brand);
+  }
+  .walkthrough-switch[data-view="store"] .walkthrough-switch-pill { transform: translateX(100%); }
+  html[dir="rtl"] .walkthrough-switch[data-view="store"] .walkthrough-switch-pill { transform: translateX(-100%); }
+
+  /* One side at a time. */
+  .walkthrough-grid[data-view="customer"] .ws-panel { display: none; }
+  .walkthrough-grid[data-view="store"] .walkthrough-phone { display: none; }
+  .walkthrough-grid .ws-panel,
+  .walkthrough-grid .walkthrough-phone { animation: tabs-content-in 320ms var(--ease-brand) both; }
+
+  /* Slightly smaller phone so it fits a phone screen. */
+  .walkthrough-phone,
+  .walkthrough-phone [data-phone-frame] { max-width: 300px; }
+
+  /* Live strip: the store side moving in sync, under the phone. */
+  .ws-mini {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+    margin-top: 14px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: var(--card);
+    text-align: start;
+    transition: border-color 200ms var(--ease-brand), transform 160ms var(--ease-brand);
+  }
+  .ws-mini[data-live] { border-color: color-mix(in srgb, var(--foreground) 20%, var(--border)); }
+  .ws-mini:active { transform: scale(0.98); }
+  .ws-mini:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .ws-mini[data-live] .ws-live-dot { background: #25d366; opacity: 1; animation: ws-live 1.4s ease-in-out infinite; }
+  .ws-mini-row { display: flex; align-items: center; gap: 8px; }
+  .ws-mini-title { flex: 1; font-size: 13px; font-weight: 600; color: var(--foreground); }
+  .ws-mini-dots { display: flex; flex: 1; gap: 5px; }
+  .ws-mini-dots span {
+    height: 4px;
+    flex: 1;
+    border-radius: 999px;
+    background: var(--muted);
+    transition: background-color 300ms var(--ease-brand);
+  }
+  .ws-mini-dots span[data-busy] { background: color-mix(in srgb, var(--foreground) 35%, var(--muted)); }
+  .ws-mini-dots span[data-done] { background: var(--foreground); }
+  .ws-mini-open { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 500; color: var(--muted-foreground); }
+}
+
+@media (max-width: 639px) {
+  .walkthrough-replay-label { display: none; }
+  .walkthrough-replay { width: 34px; padding: 0; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .walkthrough-switch-pill, .ws-mini, .ws-mini-dots span { transition: none; }
+  .walkthrough-grid .ws-panel, .walkthrough-grid .walkthrough-phone { animation: none; }
+}
+
+/* Marketing phones: reason codes are for the merchant workspace, not a pitch. */
+#product .phone-reason-code { display: none; }
+
+/* ---- Opening intro (components/intro-splash.tsx) --------------------------
+   Hidden unless the pre-paint script marks html[data-intro="play"]. */
+.intro { display: none; }
+html[data-intro="play"] .intro,
+html[data-intro="lift"] .intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  /* Fail-safe: if the script never runs, the overlay removes itself. */
+  animation: intro-failsafe 0s 8s forwards;
+}
+@keyframes intro-failsafe { to { visibility: hidden; } }
+/* The ink curtain is its own layer, so lifting it never clips the symbol. */
+.intro-curtain { position: absolute; inset: 0; background: #0f0f12; will-change: transform; }
+.intro-lockup { position: relative; z-index: 1; }
+
+.intro-mark {
+  width: 80px;
+  color: #f8f7f4;
+  will-change: transform;
+  /* Settle: one soft breath once both halves have landed. */
+  animation: intro-breath 560ms var(--ease-brand) 1060ms both;
+}
+.intro-svg { display: block; width: 100%; height: auto; overflow: hidden; }
+
+/* Reveal: each half slides in from outside the symbol's own box, so the
+   edges act as a mask (brand motion: "mask or uniform translation; preserve
+   geometry"). */
+.intro-half { transform-box: fill-box; }
+.intro-half-b { animation: intro-rise 820ms var(--ease-brand) 150ms both; }
+.intro-half-a { animation: intro-drop 820ms var(--ease-brand) 430ms both; }
+@keyframes intro-rise { from { transform: translateY(75%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes intro-drop { from { transform: translateY(-75%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes intro-breath {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+/* While the symbol is in flight, the navbar logo waits for it: the mark is
+   hidden (the flying one lands exactly on its spot), and the wordmark fades
+   in beside it once it has landed. */
+html[data-intro="play"] [data-intro-mark],
+html[data-intro="play"] [data-intro-lockup],
+html[data-intro="lift"] [data-intro-mark],
+html[data-intro="lift"] [data-intro-lockup] { opacity: 0; animation: intro-restore 0s 8s forwards; }
+html[data-intro="play"] [data-intro-word],
+html[data-intro="lift"] [data-intro-word] {
+  opacity: 0;
+  transform: translateX(-6px);
+  animation: intro-restore 0s 8s forwards;
+}
+html[dir="rtl"][data-intro="play"] [data-intro-word],
+html[dir="rtl"][data-intro="lift"] [data-intro-word] { transform: translateX(6px); }
+/* The hero waits under the curtain; it starts its entrance as the curtain
+   lifts (no visible-then-blank flash). */
+html[data-intro="play"] .hero-card-content { visibility: hidden; animation: intro-restore 0s 8s forwards; }
+/* Fail-safe for everything the intro hides: back to normal after 6s even if
+   the script never runs. */
+@keyframes intro-restore { to { opacity: 1; transform: none; visibility: visible; } }
+html[data-intro="done"] [data-intro-word] {
+  transition: opacity 420ms var(--ease-brand) 60ms, transform 420ms var(--ease-brand) 60ms;
+}
+
+/* Full lockup: the name slides out from behind the symbol while the symbol
+   eases aside to make room (flex keeps the pair centred as it widens). */
+.intro-lockup { display: flex; align-items: center; }
+.intro-word-clip {
+  display: inline-block;
+  max-width: 0;
+  overflow: hidden;
+  animation: intro-word-open 760ms var(--ease-brand) 1080ms forwards;
+}
+@keyframes intro-word-open {
+  from { max-width: 0; padding-inline-start: 0; }
+  to { max-width: 3.6em; padding-inline-start: 0.21em; }
+}
+/* Sized to the navbar's symbol:type ratio (28px : 34px, gap 7px). */
+.intro-word {
+  display: inline-flex;
+  font-size: 97px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  color: #f8f7f4;
+  will-change: transform;
+}
+.intro-word-clip { font-size: 97px; }
+.intro-word { position: relative; top: -0.025em; }
+.intro-word > span {
+  display: inline-block;
+  animation: intro-letter 560ms var(--ease-brand) both;
+  animation-delay: calc(1160ms + var(--i) * 70ms);
+}
+@keyframes intro-letter { from { opacity: 0; transform: translateX(-0.35em); } to { opacity: 1; transform: none; } }
+
+/* Arabic: the lockup is one piece of artwork — symbol only. */
+html[dir="rtl"] .intro-word-clip { display: none; }
+
+@media (max-width: 420px) {
+  .intro-mark { width: 56px; }
+  .intro-word, .intro-word-clip { font-size: 70px; }
+}
+
+/* The flown name lands exactly on the navbar wordmark: show it at once. */
+html[data-intro="landed"] [data-intro-word] { transition: none; }
+
+/* ---- Intro, Arabic: the supplied lockup, symbol + lettering --------------
+   Starts with only the symbol centred (the whole artwork shifted so the
+   symbol sits in the middle), then ريلود slides out from behind it leftward,
+   the way Arabic reads, while the lockup eases to centre. */
+.intro-ar {
+  position: relative;
+  z-index: 1;
+  width: min(353px, 84vw);
+  color: #f8f7f4;
+  will-change: transform;
+  /* The symbol's centre is 36.2% of the artwork width right of the middle. */
+  animation: intro-ar-center 780ms var(--ease-brand) 1080ms both;
+}
+@keyframes intro-ar-center {
+  from { transform: translateX(-36.2%); }
+  to { transform: none; }
+}
+/* Drawn beneath the symbol, so it genuinely emerges from behind it. Cursive
+   lettering moves as one piece — never letter by letter. */
+.intro-ar-word {
+  transform-box: fill-box;
+  animation: intro-ar-word 780ms var(--ease-brand) 1120ms both;
+}
+@keyframes intro-ar-word {
+  from { opacity: 0; transform: translateX(22%); }
+  to { opacity: 1; transform: none; }
+}
+@media (max-width: 420px) {
+  .intro-ar { width: min(265px, 80vw); }
+}

@@ -333,7 +333,7 @@ export function WhatsAppThread({
                     Policy {message.decision.policyVersionLabel} · approved by
                     merchant
                   </p>
-                  <p className="mt-1 break-all font-mono text-[9px] text-[#65756d]">
+                  <p className="phone-reason-code mt-1 break-all font-mono text-[9px] text-[#65756d]">
                     {message.decision.appliedRules.find((r) => !r.passed)
                       ?.reasonCode ?? "WITHIN_WINDOW"}
                   </p>

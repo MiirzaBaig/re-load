@@ -157,14 +157,11 @@ export function FinancingSection({
             id="contact-title"
             className="mt-3 text-3xl font-semibold tracking-[-0.02em] text-balance md:text-[40px] md:leading-[1.1]"
           >
-            {t("Tell us ", "عرّفنا ")}
-            <Tone>{t("about your store.", "بمتجرك.")}</Tone>
+            {t("Let's talk about ", "خلنا نفهم ")}
+            <Tone>{t("your store.", "متجرك.")}</Tone>
           </h2>
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground text-pretty">
-            {t(
-              "A few details and we’ll get in touch about returns, financing, or both. Estimates are fine.",
-              "بعض التفاصيل وسنتواصل معك بخصوص المرتجعات أو التمويل أو كليهما. الأرقام التقديرية كافية.",
-            )}
+            {t("Share a few details and we'll reach you the way you prefer.", "شاركنا بيانات بسيطة ونتواصل معك بالطريقة اللي تناسبك.")}
           </p>
 
           {/* Live-linked to the calculator above. */}
@@ -177,10 +174,7 @@ export function FinancingSection({
               <span dir="ltr" className="tabular-nums">{tiedUp}</span>
             </span>
             <span className="fin-estimate-note">
-              {t(
-                "tied up in delayed returns · from the calculator, attached to your request",
-                "محتجزة في مرتجعات متأخرة · من الحاسبة، ومُرفقة بطلبك",
-              )}
+              {t("tied up in slow returns · added to your request", "عالقة في المرتجعات المتأخرة · مُرفقة بطلبك")}
             </span>
             <a href="#returns-financing" onClick={smoothAnchorClick} className="fin-estimate-edit">
               {t("Adjust in the calculator", "عدّل في الحاسبة")}
