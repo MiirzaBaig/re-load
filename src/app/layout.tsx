@@ -43,6 +43,12 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* Google Tag Manager */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-KTFN869F');`,
+          }}
+        />
         {/* Decides whether the brand intro plays, before anything is drawn:
             only on a fresh open of the home page (not on refresh, not on a link with a query or hash,
             deep link, not with Reduce motion). It must be a plain inline
@@ -56,6 +62,15 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${fontClassNames} ${manrope.className} antialiased`}>
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-KTFN869F"
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+            title="Google Tag Manager"
+          />
+        </noscript>
         <Script id="locale-bootstrap" strategy="beforeInteractive">
           {`(function(){try{var k="${LOCALE_COOKIE}";var m=document.cookie.match(new RegExp("(?:^|; )"+k+"=([^;]*)"));var fromCookie=m&&(m[1]==="ar"||m[1]==="en")?m[1]:null;var s=localStorage.getItem(k);var l=fromCookie||(s==="ar"||s==="en"?s:(navigator.language.toLowerCase().startsWith("ar")?"ar":"en"));document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr";document.documentElement.dataset.locale=l;localStorage.setItem(k,l);document.cookie=k+"="+l+";path=/;max-age=31536000;SameSite=Lax";}catch(e){}})();`}
         </Script>
