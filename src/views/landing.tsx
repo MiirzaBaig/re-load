@@ -219,9 +219,6 @@ export function LandingPage() {
   // "Required for the live pilot" was an internal note, not a customer claim.
   const productPrinciples = [t("Human-approved rules", "قواعد يعتمدها التاجر"), t("Frozen evidence", "أدلة محفوظة"), t("Deterministic engine", "محرك قواعد حتمي"), t("Store-isolated data", "بيانات معزولة لكل متجر"), t("Traced to your policy", "مرتبطة بسياستك"), t("Answers in seconds", "إجابات خلال ثوانٍ")];
   const examples = EXAMPLES.map((example) => isArabic ? ({ ...example, messages: [{ ...example.messages[0], text: `هل يمكنني إرجاع هذا المنتج؟ رقم طلبي ${example.facts.orderId}.` }, { ...example.messages[1], text: example.decision.outcome === "ELIGIBLE" ? "هذا المنتج مؤهل للإرجاع. تم استيفاء جميع شروط السياسة." : example.decision.outcome === "MANUAL_REVIEW" ? "لا يتوفر تاريخ التسليم، لذلك يحتاج المتجر إلى مراجعة الطلب." : "هذا المنتج خارج مدة الإرجاع المحددة في السياسة.", rule: example.decision.outcome === "MANUAL_REVIEW" ? "تاريخ التسليم غير متوفر · يلزم مراجعة التاجر" : "مدة الإرجاع 14 يومًا من تاريخ التسليم" }] }) : example);
-  const startWhatsAppSetup = () => {
-    window.open(getWhatsAppContactUrl(), "_blank", "noopener,noreferrer");
-  };
   const setupSteps = [
     { label: t("Connect your store", "اربط متجرك"), icon: "store" as const },
     { label: t("Approve your policy", "اعتمد سياستك"), icon: FileCheck2 },
@@ -262,18 +259,17 @@ export function LandingPage() {
               animate={heroIntroDone ? "visible" : "hidden"}
               className="flex flex-wrap items-center justify-center gap-3"
             >
-              <Button size="lg" onClick={startWhatsAppSetup} className="group">
-                <WhatsAppLogo className="size-4" />
-                {t("Talk to our team", "تواصل مع فريقنا")}
-                <ArrowRight className={cn("size-4 transition-transform group-hover:translate-x-1", isArabic && "rotate-180")} />
+              <Button asChild size="lg" className="group bg-white text-[#0F0F12] hover:bg-white/90">
+                <a href="#contact">
+                  {t("Sign up now", "سجّل الآن")}
+                  <ArrowRight className={cn("size-4 transition-transform", isArabic ? "rotate-180 group-hover:-translate-x-1" : "group-hover:translate-x-1")} />
+                </a>
               </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => router.push("/return")}
-                className="border-white/15 bg-white/[0.04] text-white hover:bg-white/[0.1] hover:text-white"
-              >
-                {t("Try the return flow", "جرّب رحلة الإرجاع")}
+              <Button asChild variant="outline" size="lg" className="border-white/20 bg-white/[0.04] text-white hover:border-white/40 hover:bg-white/[0.1] hover:text-white">
+                <a href={getWhatsAppContactUrl()} target="_blank" rel="noopener noreferrer">
+                  <WhatsAppLogo className="size-4" />
+                  {t("Contact us", "تواصل معنا")}
+                </a>
               </Button>
             </motion.div>
 
@@ -781,7 +777,7 @@ export function LandingPage() {
                 {/* Previous copy, kept for review:
                     "Built for stores on any commerce platform. Connect your store, approve your policy, and bring returns automation and financing into one journey. Salla is available today; other integrations are planned."
                     Changed to stay platform-neutral (no single platform named). */}
-                {t("Connect your store, approve your policy, and try it on WhatsApp today.", "اربط متجرك، اعتمد سياستك، وجرّبه على واتساب اليوم.")}
+                {t("Tell us about your store and we’ll help you get started.", "شاركنا معلومات متجرك، ونساعدك تبدأ.")}
               </p>
               {SHOW_FINAL_CTA_CHANNEL_LINK && (
               <a
@@ -798,21 +794,17 @@ export function LandingPage() {
               </a>
               )}
               <div className="flex flex-wrap justify-center gap-3">
-                <Button
-                  size="lg"
-                  onClick={startWhatsAppSetup}
-                  className="group"
-                >
-                  <WhatsAppLogo className="size-4" />
-                  {t("Talk to our team", "تواصل مع فريقنا")}
-                  <ArrowRight className={cn("size-4 transition-transform group-hover:translate-x-1", isArabic && "rotate-180")} />
+                <Button asChild size="lg" className="group">
+                  <a href="#contact">
+                    {t("Sign up now", "سجّل الآن")}
+                    <ArrowRight className={cn("size-4 transition-transform", isArabic ? "rotate-180 group-hover:-translate-x-1" : "group-hover:translate-x-1")} />
+                  </a>
                 </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => router.push("/return")}
-                >
-                  {t("Try the return flow", "جرّب رحلة الإرجاع")}
+                <Button asChild variant="outline" size="lg">
+                  <a href={getWhatsAppContactUrl()} target="_blank" rel="noopener noreferrer">
+                    <WhatsAppLogo className="size-4" />
+                    {t("Contact us", "تواصل معنا")}
+                  </a>
                 </Button>
               </div>
             </div>
