@@ -18,7 +18,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { useLanguage } from "@/components/language-provider";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { useSectionSpy } from "@/hooks/use-section-spy";
-import { getWhatsAppStartUrl } from "@/lib/whatsapp";
+import { getWhatsAppContactUrl } from "@/lib/whatsapp";
 
 /** Navbar WhatsApp link (desktop). Off: the floating bubble and hero CTA cover it. */
 const SHOW_NAV_WHATSAPP = false;
@@ -49,7 +49,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const { t } = useLanguage();
   const isHome = pathname === "/";
-  const whatsappStartUrl = getWhatsAppStartUrl();
+  const whatsappStartUrl = getWhatsAppContactUrl();
   const requestedReturnUrl = searchParams.get("returnUrl");
   const authReturnUrl = requestedReturnUrl?.startsWith("/") && !requestedReturnUrl.startsWith("//")
     ? requestedReturnUrl
@@ -389,7 +389,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           </span>
           <span className="whatsapp-float-label" aria-hidden="true">
             <span className="whatsapp-float-title">
-              {t("Start on WhatsApp", "ابدأ عبر واتساب")}
+              {t("Contact us on WhatsApp", "تواصل معنا عبر واتساب")}
             </span>
           </span>
         </a>

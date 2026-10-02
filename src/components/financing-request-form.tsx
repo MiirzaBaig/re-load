@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { WhatsAppLogo } from "@/components/phone-frame";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { getWhatsAppStartUrl } from "@/lib/whatsapp";
+import { getWhatsAppContactUrl } from "@/lib/whatsapp";
 import { smoothAnchorClick } from "@/lib/smooth-scroll";
 import { useLanguage } from "@/components/language-provider";
 import { Tone } from "@/components/heading-accent";
@@ -229,13 +229,13 @@ export function FinancingSection({
               </p>
               <div className="mt-7 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
                 <a
-                  href={getWhatsAppStartUrl()}
+                  href={getWhatsAppContactUrl()}
                   target="_blank"
                   rel="noreferrer"
                   className="fin-wa-button"
                 >
                   <WhatsAppLogo className="size-4 !text-current" />
-                  {t("Try Reload on WhatsApp", "جرّب ريلود على واتساب")}
+                  {t("Contact our team on WhatsApp", "تواصل مع فريقنا عبر واتساب")}
                 </a>
                 <Button onClick={reset} variant="ghost" className="h-11 rounded-xl">
                   {t("Send another", "إرسال طلب آخر")}
