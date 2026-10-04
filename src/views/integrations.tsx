@@ -76,7 +76,14 @@ export function IntegrationsPage() {
   }, [loadConnection, onboardingToken, router, searchParams, t]);
 
   const connect = async () => {
-    if (!supabase || !workspace || !user) return;
+    if (!supabase || !user) {
+      toast.error(t("Sign in before connecting a store.", "سجّل الدخول قبل ربط المتجر."));
+      return;
+    }
+    if (!workspace) {
+      toast.error(t("No store workspace is linked to this account.", "لا توجد مساحة عمل لمتجر مرتبطة بهذا الحساب."));
+      return;
+    }
     setAction("connect");
     const { data, error } = await supabase.functions.invoke("salla-oauth-start", {
       body: {
@@ -178,6 +185,7 @@ export function IntegrationsPage() {
         <Card className="overflow-hidden rounded-3xl border-border/70 shadow-[0_22px_70px_-42px_hsl(var(--foreground)/0.28)]">
           <CardContent className="p-0">
             <div className="flex flex-col gap-7 p-5 sm:p-8">
+              {user && !workspace && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-foreground">{t("This account has no store workspace. Restore its workspace before connecting Salla.", "لا توجد مساحة عمل لمتجر في هذا الحساب. استعد مساحة العمل قبل ربط سلة.")}</p>}
               <div className="flex items-start gap-4">
                 <div className="shrink-0 rounded-2xl bg-[#004d5a] p-2 shadow-sm"><Image src="/salla-logo.png" alt="" width={44} height={44} className="rounded-xl" /></div>
                 <div>

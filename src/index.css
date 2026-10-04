@@ -557,6 +557,12 @@ html[dir="rtl"] .font-mono {
   animation: fade-in 0.5s ease-out forwards;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .admin-dashboard .animate-fade-in {
+    animation: none;
+  }
+}
+
 .animate-scale-in {
   animation: scale-in 0.4s ease-out forwards;
 }
