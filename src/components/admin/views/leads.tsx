@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   DndContext,
@@ -61,13 +61,30 @@ export function LeadsView(props: Props) {
   const filtered = !!(filters.query || filters.source || filters.mine || filters.platform);
 
   return <div className="space-y-5">
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="relative min-w-[200px] flex-1 sm:max-w-sm">
+    <div className="space-y-3">
+    <div className="flex items-center gap-2">
+      <div className="relative min-w-0 flex-1 sm:max-w-sm">
         <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input id="admin-lead-search" className="h-9 rounded-xl ps-9 pe-10" value={filters.query} onChange={(event) => onFilters({ ...filters, query: event.target.value })} placeholder={t("Search store, person or source", "ابحث عن متجر أو شخص أو مصدر")} />
+        <Input id="admin-lead-search" className="h-9 rounded-xl ps-9 pe-10" value={filters.query} onChange={(event) => onFilters({ ...filters, query: event.target.value })} placeholder={t("Search leads", "ابحث في العملاء")} />
         {filters.query ? <button type="button" onClick={() => onFilters({ ...filters, query: "" })} className="absolute end-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" aria-label={t("Clear search", "مسح البحث")}><X className="size-3.5" /></button>
           : <Kbd className="absolute end-2.5 top-1/2 hidden -translate-y-1/2 sm:inline-flex">/</Kbd>}
       </div>
+      <div className="ms-auto flex shrink-0 items-center gap-2">
+        {canEdit && <>
+          <Button variant="outline" size="sm" className="hidden rounded-xl sm:inline-flex" onClick={onImport}><Upload className="size-4" />{t("Import", "استيراد")}</Button>
+          <Button variant="outline" size="sm" className="hidden rounded-xl sm:inline-flex" asChild><a href="/api/admin/leads/export"><Download className="size-4" />{t("Export", "تصدير")}</a></Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><button type="button" className="grid size-9 place-items-center rounded-xl border border-border text-muted-foreground transition-colors active:bg-muted data-[state=open]:bg-muted sm:hidden" aria-label={t("More actions", "إجراءات أخرى")}><MoreHorizontal className="size-4" /></button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem onSelect={onImport}><Upload className="size-4" />{t("Import CSV", "استيراد CSV")}</DropdownMenuItem>
+              <DropdownMenuItem asChild><a href="/api/admin/leads/export"><Download className="size-4" />{t("Export CSV", "تصدير CSV")}</a></DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </>}
+        <Segmented label={t("Layout", "طريقة العرض")} value={layout} onChange={onLayout} options={[{ value: "board", label: <span className="sr-only sm:not-sr-only">{t("Board", "اللوحة")}</span>, icon: Columns3 }, { value: "table", label: <span className="sr-only sm:not-sr-only">{t("Table", "الجدول")}</span>, icon: Rows3 }]} />
+      </div>
+    </div>
+    <div className="admin-scroll-row flex flex-wrap items-center gap-2">
       <DropdownMenu>
         <DropdownMenuTrigger asChild><button type="button" className={cn("inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-medium transition-colors duration-200", filters.source ? "border-foreground bg-foreground text-background" : "border-border text-muted-foreground hover:text-foreground")}><Filter className="size-3.5" /><span className="max-w-[140px] truncate">{filters.source ?? t("All sources", "كل المصادر")}</span></button></DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
@@ -94,13 +111,7 @@ export function LeadsView(props: Props) {
       </DropdownMenu>
       <FilterChip active={filters.mine} onClick={() => onFilters({ ...filters, mine: !filters.mine })}>{t("Mine", "الخاصة بي")}</FilterChip>
       {filtered && <button type="button" onClick={() => onFilters({ query: "", source: null, mine: false, platform: null })} className="h-9 px-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t("Reset", "إعادة ضبط")}</button>}
-      <div className="ms-auto flex flex-wrap items-center gap-2">
-        {canEdit && <>
-          <Button variant="outline" size="sm" className="rounded-xl" onClick={onImport}><Upload className="size-4" /><span className="hidden sm:inline">{t("Import", "استيراد")}</span></Button>
-          <Button variant="outline" size="sm" className="rounded-xl" asChild><a href="/api/admin/leads/export"><Download className="size-4" /><span className="hidden sm:inline">{t("Export", "تصدير")}</span></a></Button>
-        </>}
-        <Segmented label={t("Layout", "طريقة العرض")} value={layout} onChange={onLayout} options={[{ value: "board", label: t("Board", "اللوحة"), icon: Columns3 }, { value: "table", label: t("Table", "الجدول"), icon: Rows3 }]} />
-      </div>
+    </div>
     </div>
 
     {layout === "board" ? <Board {...props} /> : <Table {...props} />}
@@ -129,6 +140,36 @@ function Board({ leads, labels, canEdit, currentUserId, selectedId, onOpen, upda
     useSensor(KeyboardSensor, { keyboardCodes: { start: ["Space"], cancel: ["Escape"], end: ["Space", "Enter"] } }),
   );
   const columns = useMemo(() => STATUSES.map((status) => ({ status, items: leads.filter((lead) => lead.status === status) })), [leads]);
+  // Phones show one column at a time: stage tabs above the board say where
+  // you are and jump between columns.
+  const railRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState<string>(STATUSES[0]);
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    let frame = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const edge = rail.getBoundingClientRect();
+        let best: HTMLElement | null = null;
+        let distance = Infinity;
+        for (const col of rail.querySelectorAll<HTMLElement>("[data-status]")) {
+          const r = col.getBoundingClientRect();
+          const d = Math.abs((r.left + r.right) / 2 - (edge.left + edge.right) / 2);
+          if (d < distance) { distance = d; best = col; }
+        }
+        if (best?.dataset.status) setVisible(best.dataset.status);
+      });
+    };
+    rail.addEventListener("scroll", onScroll, { passive: true });
+    return () => { rail.removeEventListener("scroll", onScroll); cancelAnimationFrame(frame); };
+  }, []);
+  const jump = (status: string) => {
+    if (collapsed[status]) setCollapsed((current) => ({ ...current, [status]: false }));
+    setVisible(status);
+    requestAnimationFrame(() => railRef.current?.querySelector<HTMLElement>(`[data-status="${status}"]`)?.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" }));
+  };
   const active = activeId ? leads.find((lead) => lead.id === activeId) : undefined;
 
   const move = (lead: Lead, status: string) => {
@@ -144,7 +185,16 @@ function Board({ leads, labels, canEdit, currentUserId, selectedId, onOpen, upda
 
   return <DndContext id={dndId} sensors={sensors} collisionDetection={collision} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}
     accessibility={{ screenReaderInstructions: { draggable: t("Press space to pick up a lead, use arrow keys to move it to another stage, and space again to drop it.", "اضغط المسافة لالتقاط العميل، واستخدم الأسهم لنقله، ثم المسافة لإفلاته.") } }}>
-    <div className="admin-board -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 sm:-mx-8 sm:px-8 lg:mx-0 lg:px-0">
+    <div role="tablist" aria-label={t("Pipeline stages", "مراحل المسار")} className="admin-scroll-row mb-3 flex gap-1.5 lg:hidden">
+      {columns.map(({ status, items }) => {
+        const active = visible === status;
+        return <button key={status} type="button" role="tab" aria-selected={active} onClick={() => jump(status)} className={cn("relative inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors duration-200", active ? "text-background" : "text-muted-foreground")}>
+          {active && <motion.span layoutId="board-stage" transition={QUICK} className="absolute inset-0 -z-0 rounded-full bg-foreground" />}
+          <StatusDot status={status} className="relative size-1.5" /><span className="relative">{labels.status(status)}</span><span className={cn("relative tabular-nums", active ? "text-background/70" : "text-muted-foreground/70")}>{items.length}</span>
+        </button>;
+      })}
+    </div>
+    <div ref={railRef} className="admin-board -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 sm:-mx-8 sm:px-8 lg:mx-0 lg:px-0">
       {columns.map(({ status, items }) => <Column key={status} status={status} count={items.length} labels={labels} collapsed={!!collapsed[status]} dragging={!!activeId} canDrop={canEdit} onToggle={() => setCollapsed((current) => ({ ...current, [status]: !current[status] }))}>
         <AnimatePresence initial={false}>
           {items.map((lead) => <motion.div key={lead.id} layout="position" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={QUICK}>
@@ -164,14 +214,14 @@ function Column({ status, count, labels, collapsed, dragging, canDrop, onToggle,
   const { t } = labels;
   const { setNodeRef, isOver } = useDroppable({ id: status, disabled: !canDrop });
   if (collapsed) {
-    return <button ref={setNodeRef} type="button" onClick={onToggle} aria-label={t(`Show ${labels.status(status)}`, `إظهار ${labels.status(status)}`)} className={cn("flex w-12 shrink-0 snap-start flex-col items-center gap-3 rounded-2xl border border-border bg-muted/30 py-4 transition-[background-color,border-color] duration-200 hover:bg-muted/60", isOver && "border-foreground/30 bg-muted")}>
+    return <button ref={setNodeRef} data-status={status} type="button" onClick={onToggle} aria-label={t(`Show ${labels.status(status)}`, `إظهار ${labels.status(status)}`)} className={cn("flex w-12 shrink-0 snap-start flex-col items-center gap-3 rounded-2xl border border-border bg-muted/30 py-4 transition-[background-color,border-color] duration-200 hover:bg-muted/60", isOver && "border-foreground/30 bg-muted")}>
       <StatusDot status={status} />
       <span className="text-xs font-medium text-muted-foreground [writing-mode:vertical-rl]">{labels.status(status)}</span>
       <span className="text-[11px] tabular-nums text-muted-foreground">{count}</span>
       <ChevronsLeftRight className="mt-auto size-3.5 text-muted-foreground" />
     </button>;
   }
-  return <section ref={setNodeRef} aria-label={labels.status(status)} className={cn("flex w-[84vw] max-w-[300px] shrink-0 snap-start flex-col rounded-2xl border bg-muted/30 transition-[background-color,border-color,box-shadow] duration-200 sm:w-[288px]", isOver ? "border-foreground/30 bg-muted/70 shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--foreground)_10%,transparent)]" : dragging ? "border-dashed border-border" : "border-border")}>
+  return <section ref={setNodeRef} data-status={status} aria-label={labels.status(status)} className={cn("flex w-[84vw] max-w-[300px] shrink-0 snap-start flex-col rounded-2xl border bg-muted/30 transition-[background-color,border-color,box-shadow] duration-200 sm:w-[288px]", isOver ? "border-foreground/30 bg-muted/70 shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--foreground)_10%,transparent)]" : dragging ? "border-dashed border-border" : "border-border")}>
     <header className="flex items-center gap-2 px-3.5 pb-2 pt-3.5">
       <StatusDot status={status} />
       <h3 className="text-[13px] font-semibold">{labels.status(status)}</h3>
@@ -239,11 +289,34 @@ function Table({ leads, allLeads, status, labels, canEdit, selectedId, onOpen, o
   </th>;
 
   return <div className="space-y-3">
-    <div className="flex flex-wrap gap-2">
+    <div className="admin-scroll-row flex flex-wrap gap-2">
       <FilterChip active={!status} onClick={() => onStatus(null)} count={leads.length}>{t("All", "الكل")}</FilterChip>
       {STATUSES.map((option) => <FilterChip key={option} active={status === option} onClick={() => onStatus(status === option ? null : option)} count={leads.filter((lead) => lead.status === option).length}><StatusDot status={option} className="size-1.5" />{labels.status(option)}</FilterChip>)}
     </div>
-    <div className="admin-card overflow-hidden rounded-2xl border border-border bg-card">
+    {/* Phones: the same rows as cards (a wide table only scrolls sideways there). */}
+    <ul className="space-y-2 md:hidden">
+      <AnimatePresence initial={false}>
+        {rows.map((lead) => <motion.li key={lead.id} layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={QUICK}>
+          <div role="button" tabIndex={0} onClick={() => onOpen(lead.id)} onKeyDown={(event) => { if (event.key === "Enter") onOpen(lead.id); }} className={cn("admin-card flex items-start gap-3 rounded-2xl border bg-card p-3.5 outline-none transition-[background-color,transform] duration-150 active:scale-[.99] focus-visible:ring-2 focus-visible:ring-ring/60", selectedId === lead.id ? "border-foreground/40" : "border-border")}>
+            <Initial name={lead.store_name} className="size-10 rounded-xl" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0"><strong className="block truncate text-sm font-semibold" dir="auto">{lead.store_name}</strong><span className="block truncate text-xs text-muted-foreground" dir="auto">{lead.contact_name}</span></div>
+                <div onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()} className="shrink-0">{canEdit ? <StatusMenu status={lead.status} labels={labels} align="end" onChange={(next) => void update(lead.id, { status: next }, { message: t(`${lead.store_name} → ${labels.status(next)}`, `${lead.store_name} ← ${labels.status(next)}`), undoable: true })} /> : <StatusPill status={lead.status} label={labels.status(lead.status)} />}</div>
+              </div>
+              <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                <PlatformTag value={lead.store_platform} labels={labels} />
+                <span className="max-w-[140px] truncate rounded-md bg-muted px-1.5 py-0.5" dir="auto">{lead.source_label}</span>
+                {lead.next_follow_up_at && <span className={cn("inline-flex items-center gap-1 rounded-md px-1.5 py-0.5", isDue(lead) ? "bg-review-muted font-medium text-review" : "bg-muted")}><CalendarClock className="size-3" />{labels.relative(lead.next_follow_up_at)}</span>}
+                <span className="ms-auto tabular-nums">{labels.age(lead.created_at)}</span>
+              </div>
+            </div>
+          </div>
+        </motion.li>)}
+      </AnimatePresence>
+    </ul>
+    {!rows.length && allLeads.length > 0 && <div className="admin-card rounded-2xl border border-border bg-card md:hidden"><EmptyState title={t("No leads in this view", "لا يوجد عملاء في هذا العرض")} /></div>}
+    <div className="admin-card hidden overflow-hidden rounded-2xl border border-border bg-card md:block">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[820px] text-sm">
           <thead className="sticky top-0 border-b border-border bg-muted/40 text-xs text-muted-foreground">

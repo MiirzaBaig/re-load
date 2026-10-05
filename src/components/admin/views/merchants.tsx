@@ -25,11 +25,13 @@ export function MerchantsView({ merchants, labels, selectedId, onOpen }: { merch
   const live = merchants.filter((m) => steps(m).every(Boolean)).length;
 
   return <div className="space-y-5">
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="relative min-w-[200px] flex-1 sm:max-w-sm"><Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="h-9 rounded-xl ps-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search stores", "ابحث عن متجر")} /></div>
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+      <div className="relative min-w-0 flex-1 sm:max-w-sm"><Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="h-9 rounded-xl ps-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search stores", "ابحث عن متجر")} /></div>
+      <div className="admin-scroll-row flex flex-wrap gap-2">
       <FilterChip active={stage === "all"} onClick={() => setStage("all")} count={merchants.length}>{t("All", "الكل")}</FilterChip>
       <FilterChip active={stage === "setup"} onClick={() => setStage("setup")} count={merchants.length - live}>{t("In setup", "قيد الإعداد")}</FilterChip>
       <FilterChip active={stage === "live"} onClick={() => setStage("live")} count={live}>{t("Fully set up", "مكتمل")}</FilterChip>
+      </div>
     </div>
     <p className="max-w-2xl text-xs leading-5 text-muted-foreground">{t("Read-only. A test channel is shown as a test, never as a live customer channel.", "للقراءة فقط. تُعرض القناة التجريبية كتجربة، لا كقناة عملاء فعّالة.")}</p>
     <div className="admin-card overflow-hidden rounded-2xl border border-border bg-card">

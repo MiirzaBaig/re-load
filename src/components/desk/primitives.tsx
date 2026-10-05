@@ -99,21 +99,21 @@ export function Metric({ label, value, suffix, note, delta, series, icon: Icon, 
 }) {
   const body = <>
     <div className="flex items-center justify-between gap-3">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      {Icon && <span className="grid size-7 place-items-center rounded-lg bg-muted text-muted-foreground transition-colors duration-200 group-hover:text-foreground"><Icon className="size-3.5" /></span>}
+      <span className="truncate text-xs font-medium text-muted-foreground">{label}</span>
+      {Icon && <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground transition-colors duration-200 group-hover:text-foreground"><Icon className="size-3.5" /></span>}
     </div>
-    <div className="mt-4 flex items-end justify-between gap-4">
+    <div className="mt-3 flex items-end justify-between gap-4 sm:mt-4">
       <div>
-        <span className="block font-display text-[34px] font-semibold leading-none tracking-[-.05em]"><CountUp value={value} />{suffix && <span className="ms-0.5 text-[22px] text-muted-foreground">{suffix}</span>}</span>
-        <span className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+        <span className="block font-display text-[28px] font-semibold leading-none tracking-[-.05em] sm:text-[34px]"><CountUp value={value} />{suffix && <span className="ms-0.5 text-[22px] text-muted-foreground">{suffix}</span>}</span>
+        <span className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-4 text-muted-foreground sm:text-xs">
           {delta && <span className={cn("rounded-md px-1.5 py-0.5 font-medium", tone === "review" ? "bg-review-muted text-review" : "bg-brand-accent-soft text-brand-accent")}>{delta}</span>}
           {note}
         </span>
       </div>
-      {series && series.some(Boolean) && <Sparkline data={series} className={cn("max-w-[96px]", tone === "review" ? "text-review" : "text-brand-accent")} />}
+      {series && series.some(Boolean) && <Sparkline data={series} className={cn("hidden max-w-[96px] sm:block", tone === "review" ? "text-review" : "text-brand-accent")} />}
     </div>
   </>;
-  const cls = "admin-card group block w-full rounded-2xl border border-border bg-card p-5 text-start";
+  const cls = "admin-card group block w-full rounded-2xl border border-border bg-card p-4 text-start sm:p-5";
   return onClick
     ? <button type="button" onClick={onClick} className={cn(cls, "admin-lift")}>{body}</button>
     : <div className={cls}>{body}</div>;

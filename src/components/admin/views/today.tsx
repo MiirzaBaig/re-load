@@ -2,8 +2,8 @@
 
 import { useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, ArrowRight, BellRing, CalendarCheck2, CheckCheck, ChevronRight, Clock3, Inbox, Sparkles } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Activity, ArrowRight, BellRing, CalendarCheck2, Check, CheckCheck, ChevronRight, Clock3, Inbox, MoreHorizontal, Sparkles } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { EmptyState, Metric, Panel, QUICK, STATUS_COLOR, StatusDot, StatusPill } from "@/components/desk/primitives";
 import { STATUSES, type AdminData, type Lead, type LeadChanges, type Merchant } from "@/components/admin/types";
 import type { View } from "@/components/admin/use-admin-state";
@@ -61,7 +61,7 @@ export function TodayView({ data, leads, merchants, issues, labels, canEdit, que
   ];
 
   return <div className="space-y-6">
-    <div className="desk-stagger grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="desk-stagger grid grid-cols-2 gap-3 xl:grid-cols-4">
       <Metric icon={Inbox} label={t("New leads", "عملاء جدد")} value={stats.newLeads} delta={t(`+${stats.addedThisWeek} this week`, `+${stats.addedThisWeek} هذا الأسبوع`)} note={t("awaiting a reply", "بانتظار رد")} series={stats.leadSeries} onClick={() => onGo("leads", { layout: "table", status: "new" })} />
       <Metric icon={BellRing} label={t("Follow-ups due", "متابعات مستحقة")} value={stats.due} note={stats.due ? t("today or overdue", "اليوم أو متأخرة") : t("you're caught up", "لا شيء متأخر")} tone="review" onClick={() => onGo("leads", { layout: "board" })} />
       <Metric icon={CalendarCheck2} label={t("Demos booked", "عروض محجوزة")} value={stats.demos} note={t(`${stats.customers} became customers`, `${stats.customers} أصبحوا عملاء`)} onClick={() => onGo("leads", { layout: "table", status: "demo_booked" })} />
@@ -149,7 +149,15 @@ function QueueRow({ lead, labels, canEdit, onOpen, update }: { lead: Lead; label
       </span>
     </button>
     <StatusPill status={lead.status} label={labels.status(lead.status)} className="hidden md:inline-flex" />
-    {canEdit && <div className="flex shrink-0 items-center gap-1 transition-opacity duration-150 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+    {canEdit && <DropdownMenu>
+      <DropdownMenuTrigger asChild><button type="button" className="grid size-9 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors active:bg-muted data-[state=open]:bg-muted sm:hidden" aria-label={t(`Actions for ${lead.store_name}`, `إجراءات ${lead.store_name}`)}><MoreHorizontal className="size-4" /></button></DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        {lead.status === "new" && <><DropdownMenuItem onSelect={() => void update(lead.id, { status: "contacted" }, { message: t(`${lead.store_name} marked contacted.`, `تم التواصل مع ${lead.store_name}.`), undoable: true })}><Check className="size-4" />{t("Mark contacted", "تم التواصل")}</DropdownMenuItem><DropdownMenuSeparator /></>}
+        <DropdownMenuLabel className="text-[11px] font-medium text-muted-foreground">{t("Snooze", "تأجيل")}</DropdownMenuLabel>
+        {[{ d: 1, l: t("Tomorrow", "غدًا") }, { d: 3, l: t("In 3 days", "بعد 3 أيام") }, { d: 7, l: t("Next week", "الأسبوع القادم") }].map(({ d, l }) => <DropdownMenuItem key={d} onSelect={() => snooze(d, l)}><Clock3 className="size-4" />{l}</DropdownMenuItem>)}
+      </DropdownMenuContent>
+    </DropdownMenu>}
+    {canEdit && <div className="hidden shrink-0 items-center gap-1 transition-opacity duration-150 sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
       {lead.status === "new" && <button type="button" onClick={() => void update(lead.id, { status: "contacted" }, { message: t(`${lead.store_name} marked contacted.`, `تم التواصل مع ${lead.store_name}.`), undoable: true })} className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs font-medium transition-[background-color,transform] duration-150 hover:bg-muted active:scale-[.98]">{t("Contacted", "تم التواصل")}</button>}
       <DropdownMenu>
         <DropdownMenuTrigger asChild><button type="button" className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs font-medium transition-colors duration-150 hover:bg-muted data-[state=open]:bg-muted">{t("Snooze", "تأجيل")}</button></DropdownMenuTrigger>
@@ -158,6 +166,6 @@ function QueueRow({ lead, labels, canEdit, onOpen, update }: { lead: Lead; label
         </DropdownMenuContent>
       </DropdownMenu>
     </div>}
-    <ChevronRight className="size-4 shrink-0 text-muted-foreground rtl:rotate-180" />
+    <ChevronRight className="hidden size-4 shrink-0 text-muted-foreground sm:block rtl:rotate-180" />
   </div>;
 }

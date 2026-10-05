@@ -5024,3 +5024,25 @@ html[data-admin-welcome="play"] .admin-grow { transform: scaleX(0); }
 @media (prefers-reduced-motion: reduce) {
   .desk-stagger > *, .desk-rise { animation: none; }
 }
+
+/* ── Desk on touch screens ───────────────────────────────────────────────── */
+:is(.admin-desk, .merchant-workspace) { -webkit-tap-highlight-color: transparent; }
+@media (hover: none) {
+  :is(.admin-desk, .merchant-workspace) :is(button, a, [role="button"]):active { transition-duration: 80ms; }
+  .admin-desk .admin-lead-card:active { transform: scale(0.985); }
+}
+/* A row of chips that swipes sideways on phones (fading at the far edge),
+   and wraps normally from tablet up. */
+.admin-scroll-row { scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.admin-scroll-row::-webkit-scrollbar { display: none; }
+@media (max-width: 639px) {
+  .admin-scroll-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+  [dir="rtl"] .admin-scroll-row { mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }
+  .admin-scroll-row > * { flex-shrink: 0; }
+}

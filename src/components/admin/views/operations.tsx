@@ -115,7 +115,7 @@ export function FeedbackView({ data, labels, storeName }: Base) {
   const rows = data.reports.filter((r) => type === "all" || (type === "BUG" ? r.report_type === "BUG" : r.report_type !== "BUG"));
   const bugs = data.reports.filter((r) => r.report_type === "BUG").length;
   return <div className="space-y-5">
-    <div className="flex flex-wrap gap-2">
+    <div className="admin-scroll-row flex flex-wrap gap-2">
       <FilterChip active={type === "all"} onClick={() => setType("all")} count={data.reports.length}>{t("All", "الكل")}</FilterChip>
       <FilterChip active={type === "BUG"} onClick={() => setType("BUG")} count={bugs}>{t("Problems", "مشكلات")}</FilterChip>
       <FilterChip active={type === "FEEDBACK"} onClick={() => setType("FEEDBACK")} count={data.reports.length - bugs}>{t("Feedback", "ملاحظات")}</FilterChip>
@@ -143,18 +143,28 @@ export function ActivityView({ data, labels, storeName, currentUserId }: Base & 
     ...data.merchantAudit.map((e) => ({ id: `m-${e.id}`, kind: "merchant" as const, title: labels.code(e.event_type), detail: `${storeName(e.store_id)} · ${labels.code(e.entity_type)}`, at: e.created_at })),
     ...data.adminAudit.map((e) => ({ id: `a-${e.id}`, kind: "team" as const, title: labels.code(e.event_type), detail: `${e.actor_user_id === currentUserId ? t("You", "أنت") : (() => { const member = data.team.find((m) => m.user_id === e.actor_user_id); return member ? memberName(member) : t("Former teammate", "زميل سابق"); })()} · ${labels.code(e.entity_type)}`, at: e.created_at })),
   ].filter((e) => scope === "all" || e.kind === scope).sort((a, b) => b.at.localeCompare(a.at)), [data, scope, labels, storeName, currentUserId, t]);
+  // Back-to-back repeats (e.g. a dozen "Dashboard viewed") collapse into one
+  // row with a count and a time range, so the log stays readable.
   const days = useMemo(() => {
-    const map = new Map<string, typeof events>();
+    const map = new Map<string, Array<(typeof events)[number] & { count: number; firstAt: string }>>();
     for (const e of events) {
       const key = labels.date(e.at);
-      map.set(key, [...(map.get(key) ?? []), e]);
+      const list = map.get(key) ?? [];
+      const last = list[list.length - 1];
+      if (last && last.kind === e.kind && last.title === e.title && last.detail === e.detail) {
+        last.count += 1;
+        last.firstAt = e.at;
+      } else {
+        list.push({ ...e, count: 1, firstAt: e.at });
+      }
+      map.set(key, list);
     }
     return [...map.entries()];
   }, [events, labels]);
   const time = (value: string) => new Intl.DateTimeFormat(labels.isArabic ? "ar-SA" : "en-US", { timeStyle: "short" }).format(new Date(value));
 
   return <div className="space-y-5">
-    <div className="flex flex-wrap gap-2">
+    <div className="admin-scroll-row flex flex-wrap gap-2">
       <FilterChip active={scope === "all"} onClick={() => setScope("all")}>{t("Everything", "الكل")}</FilterChip>
       <FilterChip active={scope === "merchant"} onClick={() => setScope("merchant")} count={data.merchantAudit.length}>{t("Merchants", "التجار")}</FilterChip>
       <FilterChip active={scope === "team"} onClick={() => setScope("team")} count={data.adminAudit.length}>{t("Team", "الفريق")}</FilterChip>
@@ -165,8 +175,8 @@ export function ActivityView({ data, labels, storeName, currentUserId }: Base & 
         <ol className="relative space-y-1 border-s border-border ms-2">
           {items.map((e) => <li key={e.id} className="relative flex items-start gap-3 rounded-lg py-2 ps-5 transition-colors hover:bg-muted/30">
             <span className={cn("absolute -start-[9px] top-2.5 grid size-[17px] place-items-center rounded-full border-2 border-card", e.kind === "team" ? "bg-foreground text-background" : "bg-muted text-muted-foreground")}>{e.kind === "team" ? <UserRound className="size-2.5" /> : <span className="size-1.5 rounded-full bg-current" />}</span>
-            <div className="min-w-0 flex-1"><p className="text-sm font-medium">{e.title}</p><p className="truncate text-xs text-muted-foreground" dir="auto">{e.detail}</p></div>
-            <span className="shrink-0 pt-0.5 text-[11px] tabular-nums text-muted-foreground">{time(e.at)}</span>
+            <div className="min-w-0 flex-1"><p className="flex items-center gap-2 text-sm font-medium">{e.title}{e.count > 1 && <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">×{e.count}</span>}</p><p className="truncate text-xs text-muted-foreground" dir="auto">{e.detail}</p></div>
+            <span className="shrink-0 pt-0.5 text-[11px] tabular-nums text-muted-foreground">{e.count > 1 && time(e.firstAt) !== time(e.at) ? `${time(e.firstAt)} – ${time(e.at)}` : time(e.at)}</span>
           </li>)}
         </ol>
       </section>)}
