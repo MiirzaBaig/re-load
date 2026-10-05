@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
-import { AdminDashboard } from "@/components/admin-dashboard";
+import { redirect } from "next/navigation";
+import { AdminShell } from "@/components/admin/shell";
+import { parseDeskState, type DeskQuery } from "@/components/admin/desk-state";
 import { AdminMfaGate } from "@/components/admin-mfa-gate";
+import { AdminNoAccess } from "@/components/admin/no-access";
 import { createClient } from "@/lib/supabase/server";
 import { ADMIN_REQUIRE_MFA } from "@/lib/admin-access";
 
@@ -10,22 +12,28 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/admin/login");
 
-  const { data: access } = await supabase.from("platform_admins")
+  let { data: access } = await supabase.from("platform_admins")
     .select("role").eq("user_id", user.id).maybeSingle();
-  if (!access) notFound();
+  if (!access) {
+    // First sign-in of an invited teammate: turn their invite into access.
+    const { data: claimed } = await supabase.rpc("claim_platform_invite");
+    if (claimed) access = { role: claimed as string };
+  }
+  if (!access) return <AdminNoAccess email={user.email ?? ""} />;
 
   if (ADMIN_REQUIRE_MFA) {
     const { data: assurance } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     if (assurance?.currentLevel !== "aal2") return <AdminMfaGate />;
   }
 
-  const [leads, stores, memberships, policies, commerce, whatsapp, decisions, cases, messages, events, reports, merchantAudit, adminAudit] = await Promise.all([
-    supabase.from("leads").select("id,store_name,contact_name,interest,status,source_type,source_label,created_at,next_follow_up_at,owner_user_id,store_id").order("created_at", { ascending: false }).limit(500),
+  const [team, leads, stores, memberships, policies, commerce, whatsapp, decisions, cases, messages, events, reports, merchantAudit, adminAudit] = await Promise.all([
+    supabase.rpc("list_platform_team"),
+    supabase.from("leads").select("id,store_name,contact_name,store_platform,interest,status,source_type,source_label,created_at,next_follow_up_at,owner_user_id,store_id").order("created_at", { ascending: false }).limit(500),
     supabase.from("stores").select("id,name,created_at").order("created_at", { ascending: false }).limit(500),
     supabase.from("memberships").select("store_id,user_id,role").limit(1000),
     supabase.from("policy_versions").select("store_id,published_at").order("published_at", { ascending: false }).limit(1000),
@@ -39,7 +47,7 @@ export default async function AdminPage() {
     supabase.from("audit_events").select("id,store_id,event_type,entity_type,created_at").order("created_at", { ascending: false }).limit(100),
     supabase.from("platform_admin_events").select("id,actor_user_id,event_type,entity_type,created_at").order("created_at", { ascending: false }).limit(100),
   ]);
-  const results = [leads, stores, memberships, policies, commerce, whatsapp, decisions, cases, messages, events, reports, merchantAudit, adminAudit];
+  const results = [team, leads, stores, memberships, policies, commerce, whatsapp, decisions, cases, messages, events, reports, merchantAudit, adminAudit];
   if (results.some((result) => result.error)) {
     console.error("admin_dashboard_load_failed", results.filter((result) => result.error).map((result) => result.error?.code));
     throw new Error("Could not load the team desk.");
@@ -50,11 +58,20 @@ export default async function AdminPage() {
   });
   if (auditError) throw new Error("Could not record admin access.");
 
-  return <AdminDashboard
+  // Read the view from the URL on the server, so the first paint is the right
+  // view (refresh and shared links land where they should, with no flash).
+  const query = Object.fromEntries(Object.entries(await searchParams).filter(([, value]) => typeof value === "string")) as DeskQuery;
+
+  const teamIds = new Set((team.data ?? []).map((member: { user_id: string }) => member.user_id));
+
+  return <AdminShell
+    initial={parseDeskState(query)}
     role={access.role}
     currentUserId={user.id}
     leads={leads.data ?? []}
-    stores={stores.data ?? []}
+    // Team members' own accounts come with a store (every sign-up used to get
+    // one); they're Reload staff, not merchants, so keep them out of the counts.
+    stores={(stores.data ?? []).filter((store) => !(memberships.data ?? []).some((m) => m.store_id === store.id && teamIds.has(m.user_id)))}
     memberships={memberships.data ?? []}
     policies={policies.data ?? []}
     commerce={commerce.data ?? []}
@@ -66,5 +83,6 @@ export default async function AdminPage() {
     reports={reports.data ?? []}
     merchantAudit={merchantAudit.data ?? []}
     adminAudit={adminAudit.data ?? []}
+    team={team.data ?? []}
   />;
 }

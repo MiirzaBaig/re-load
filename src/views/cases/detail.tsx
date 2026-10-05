@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -9,6 +10,7 @@ import {
   CircleHelp,
   FileText,
   Lock,
+  Maximize2,
   Package,
   Scale,
   ShieldCheck,
@@ -39,6 +41,8 @@ import {
   type ReceiptRule,
 } from "@/lib/decision-receipt";
 import { supabase } from "@/lib/supabase";
+import { setCaseStatus } from "@/lib/workspace-data";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 type CaseData = {
@@ -69,7 +73,22 @@ const NEEDS_CONFIRM = new Set<CaseStatus>(["RESOLVED", "CANCELLED"]);
 export function CaseDetailPage() {
   const { caseId } = useParams<{ caseId: string }>();
   const router = useRouter();
+  return <CaseDetail caseId={caseId} variant="page" onBack={() => router.push("/app/cases")} />;
+}
+
+/**
+ * One case's decision receipt and status. Renders as the full case page, or
+ * inside the case drawer (single column, status first, with a link out to
+ * the full page).
+ */
+export function CaseDetail({ caseId, variant, onBack, onClose }: {
+  caseId: string;
+  variant: "page" | "drawer";
+  onBack?: () => void;
+  onClose?: () => void;
+}) {
   const { t, isArabic } = useLanguage();
+  const drawer = variant === "drawer";
   const [data, setData] = useState<CaseData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<CaseStatus | null>(null);
@@ -77,6 +96,7 @@ export function CaseDetailPage() {
 
   const load = async () => {
     if (!supabase || !caseId) return setLoading(false);
+    setLoading(true);
     const result = await supabase
       .from("return_cases")
       .select(
@@ -114,6 +134,7 @@ export function CaseDetailPage() {
     setConfirming(null);
     if (error) return toast.error(t("Could not update this case.", "تعذّر تحديث الحالة."));
     setData({ ...data, status });
+    setCaseStatus(data.id, status);
     toast.success(t(`Marked as ${statusLabel(status, t).toLowerCase()}`, `تم التحديث إلى: ${statusLabel(status, t)}`));
   };
 
@@ -121,7 +142,7 @@ export function CaseDetailPage() {
     NEEDS_CONFIRM.has(status) ? setConfirming(status) : void updateStatus(status);
 
   if (loading)
-    return (
+    return drawer ? <CaseDrawerSkeleton /> : (
       <div className="flex justify-center py-24">
         <Spinner />
       </div>
@@ -133,8 +154,8 @@ export function CaseDetailPage() {
         <p className="text-sm text-muted-foreground">
           {t("Case not found.", "لم يتم العثور على الحالة.")}
         </p>
-        <Button variant="outline" onClick={() => router.push("/app/cases")}>
-          {t("Back to cases", "العودة إلى الطلبات")}
+        <Button variant="outline" onClick={drawer ? onClose : onBack}>
+          {drawer ? t("Close", "إغلاق") : t("Back to cases", "العودة إلى الطلبات")}
         </Button>
       </div>
     );
@@ -167,21 +188,23 @@ export function CaseDetailPage() {
           );
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <div className={cn("flex w-full flex-col", drawer ? "gap-5" : "mx-auto max-w-5xl gap-6")}>
       {/* Header */}
       <div className="flex items-start gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="mt-0.5 shrink-0"
-          onClick={() => router.push("/app/cases")}
-          aria-label={t("Back to cases", "العودة إلى الطلبات")}
-        >
-          <ArrowLeft className={cn("size-4", isArabic && "rotate-180")} />
-        </Button>
-        <div className="min-w-0">
+        {!drawer && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mt-0.5 shrink-0"
+            onClick={onBack}
+            aria-label={t("Back to cases", "العودة إلى الطلبات")}
+          >
+            <ArrowLeft className={cn("size-4", isArabic && "rotate-180")} />
+          </Button>
+        )}
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="font-display text-2xl font-semibold tracking-tight">
+            <h1 className={cn("font-display font-semibold tracking-tight", drawer ? "text-xl" : "text-2xl")}>
               <bdi>{data.orderId}</bdi>
             </h1>
             <OutcomeBadge outcome={data.outcome} size="sm" />
@@ -193,9 +216,22 @@ export function CaseDetailPage() {
             {t("Policy", "السياسة")} <bdi>{versionLabel}</bdi>
           </p>
         </div>
+        {drawer && (
+          <div className="flex shrink-0 items-center gap-1">
+            <Button variant="ghost" size="sm" asChild className="h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground">
+              <Link href={`/app/cases/${data.id}`}>
+                <Maximize2 className="size-3.5" />
+                <span className="hidden sm:inline">{t("Full page", "صفحة كاملة")}</span>
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label={t("Close", "إغلاق")}>
+              <X className="size-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className={cn("grid gap-5", !drawer && "lg:grid-cols-[minmax(0,1fr)_300px]")}>
         {/* The receipt */}
         <ol className="receipt">
           <Station
@@ -282,7 +318,7 @@ export function CaseDetailPage() {
         </ol>
 
         {/* Status */}
-        <aside className="receipt-side h-fit">
+        <aside className={cn("receipt-side h-fit", drawer && "order-first")}>
           <p className="text-sm font-semibold">{t("Case status", "حالة الطلب")}</p>
           <ol className="status-path mt-4">
             {PATH.map((step, i) => {
@@ -455,5 +491,16 @@ function RuleRow({ rule, t }: { rule: ReceiptRule; t: (en: string, ar: string) =
         )}
       </div>
     </li>
+  );
+}
+
+function CaseDrawerSkeleton() {
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="space-y-2"><Skeleton className="h-7 w-40" /><Skeleton className="h-4 w-64" /></div>
+      <Skeleton className="h-44 rounded-2xl" />
+      <Skeleton className="h-36 rounded-2xl" />
+      <Skeleton className="h-28 rounded-2xl" />
+    </div>
   );
 }

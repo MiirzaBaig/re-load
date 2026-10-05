@@ -1,4 +1,5 @@
 import { getAdminAccess, logAdminEvent } from "@/lib/admin-access";
+import { isPlatform } from "@/lib/platforms";
 
 type Context = { params: Promise<{ id: string }> };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -27,7 +28,8 @@ export async function PATCH(request: Request, context: Context) {
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return Response.json({ error: "Invalid JSON" }, { status: 400 }); }
   const keys = Object.keys(body);
-  if (!keys.length || keys.some((key) => !["status", "next_follow_up_at", "owner_user_id"].includes(key))) return Response.json({ error: "Invalid fields" }, { status: 400 });
+  if (!keys.length || keys.some((key) => !["status", "next_follow_up_at", "owner_user_id", "store_platform"].includes(key))) return Response.json({ error: "Invalid fields" }, { status: 400 });
+  if (body.store_platform !== undefined && body.store_platform !== null && !isPlatform(body.store_platform)) return Response.json({ error: "Invalid platform" }, { status: 400 });
   if (body.status !== undefined && (typeof body.status !== "string" || !STATUSES.has(body.status))) return Response.json({ error: "Invalid status" }, { status: 400 });
   if (body.owner_user_id !== undefined && body.owner_user_id !== null && body.owner_user_id !== access.user.id) return Response.json({ error: "Invalid owner" }, { status: 400 });
   if (body.next_follow_up_at !== undefined && body.next_follow_up_at !== null && (typeof body.next_follow_up_at !== "string" || !Number.isFinite(Date.parse(body.next_follow_up_at)))) return Response.json({ error: "Invalid date" }, { status: 400 });

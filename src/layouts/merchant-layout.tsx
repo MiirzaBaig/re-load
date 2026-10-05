@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemo, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { MotionConfig, motion } from "framer-motion";
 import { ReloadMark } from "@/components/reload-logo";
 import { PageTransition } from "@/components/page-transition";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -35,9 +36,13 @@ import {
   Link2,
   Globe,
   MessageSquareWarning,
+  Ellipsis,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { services } from "@/lib/services";
+import { needsDecision, refreshWorkspace, useWorkspaceData, workspaceKey } from "@/lib/workspace-data";
+import { TWEEN } from "@/components/desk/primitives";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/components/auth-provider";
 import { LanguageToggle } from "@/components/language-toggle";
 import { CommandPalette } from "@/components/command-palette";
@@ -51,16 +56,19 @@ export function MerchantLayout({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const { t, isArabic } = useLanguage();
 
-  const openCaseCount = useMemo(
-    () =>
-      services
-        .getCases()
-        .filter((c) => c.caseStatus === "OPEN" || c.outcome === "MANUAL_REVIEW")
-        .length,
-    [],
-  );
-  const draftCount = useMemo(() => services.getDrafts().length, []);
+  // Live counts from Supabase (these used to read the browser-only demo store).
+  const live = useWorkspaceData(workspaceKey(auth));
+  const openCaseCount = useMemo(() => needsDecision(live.cases).length, [live.cases]);
+  const draftCount = live.draftCount;
   const storeName = auth.workspace?.storeName ?? services.getStoreName();
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  // Coming back to the tab picks up returns that arrived meanwhile.
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === "visible") void refreshWorkspace(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
 
   const primaryNav = [
     {
@@ -112,7 +120,12 @@ export function MerchantLayout({ children }: { children: ReactNode }) {
     animationDelay: `${60 + index * 45}ms`,
   });
 
+  const tabs = [primaryNav[0], primaryNav[2], primaryNav[1]];
+  const moreItems = [primaryNav[3], ...secondaryNav];
+  const moreActive = moreItems.some((item) => isActive(item.href));
+
   return (
+    <MotionConfig reducedMotion="user">
     <SidebarProvider>
       <Sidebar collapsible="icon" side={isArabic ? "right" : "left"}>
         <SidebarHeader className="gap-3 px-3 pt-3 pb-2 group-data-[collapsible=icon]:px-2">
@@ -164,10 +177,14 @@ export function MerchantLayout({ children }: { children: ReactNode }) {
                     className="sidebar-nav-enter"
                     style={navEnterStyle(2 + index)}
                   >
+                    {isActive(item.href, item.end) && (
+                      <motion.span layoutId="merchant-nav" transition={TWEEN} className="pointer-events-none absolute inset-0 rounded-md bg-sidebar-accent" aria-hidden="true" />
+                    )}
                     <SidebarMenuButton
                       isActive={isActive(item.href, item.end)}
                       onClick={() => router.push(item.href)}
                       tooltip={item.label}
+                      className="relative data-[active=true]:bg-transparent"
                     >
                       <item.icon />
                       <span>{item.label}</span>
@@ -195,10 +212,14 @@ export function MerchantLayout({ children }: { children: ReactNode }) {
                     className="sidebar-nav-enter"
                     style={navEnterStyle(5 + index)}
                   >
+                    {isActive(item.href) && (
+                      <motion.span layoutId="merchant-nav" transition={TWEEN} className="pointer-events-none absolute inset-0 rounded-md bg-sidebar-accent" aria-hidden="true" />
+                    )}
                     <SidebarMenuButton
                       isActive={isActive(item.href)}
                       onClick={() => router.push(item.href)}
                       tooltip={item.label}
+                      className="relative data-[active=true]:bg-transparent"
                     >
                       <item.icon />
                       <span>{item.label}</span>
@@ -267,11 +288,57 @@ export function MerchantLayout({ children }: { children: ReactNode }) {
             <ModeToggle className="size-8" />
           </div>
         </header>
-        <div className="mx-auto w-full max-w-[1280px] px-4 py-6 sm:px-8 sm:py-9 lg:px-10">
+        <div className="mx-auto w-full max-w-[1280px] px-4 pb-28 pt-6 sm:px-8 sm:pt-9 md:pb-9 lg:px-10">
           <PageTransition>{children}</PageTransition>
         </div>
+
+        {/* Bottom tabs on phones: the sidebar is one tap further away there. */}
+        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden" aria-label={t("Workspace navigation", "التنقل في مساحة العمل")}>
+          <ul className="mx-auto grid max-w-lg grid-cols-4">
+            {tabs.map((item) => {
+              const active = isActive(item.href, "end" in item ? item.end : undefined);
+              return (
+                <li key={item.href}>
+                  <button type="button" onClick={() => router.push(item.href)} aria-current={active ? "page" : undefined} className={cn("relative flex h-16 w-full flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors duration-200", active ? "text-foreground" : "text-muted-foreground")}>
+                    {active && <motion.span layoutId="merchant-tab" transition={TWEEN} className="absolute top-0 h-0.5 w-8 rounded-full bg-foreground" />}
+                    <span className="relative">
+                      <item.icon className="size-5" />
+                      {item.badge !== undefined && <span className="absolute -end-2.5 -top-1.5 min-w-4 rounded-full bg-foreground px-1 text-center text-[9px] leading-4 tabular-nums text-background">{item.badge}</span>}
+                    </span>
+                    <span className="max-w-full truncate px-1">{item.label}</span>
+                  </button>
+                </li>
+              );
+            })}
+            <li>
+              <button type="button" onClick={() => setMoreOpen(true)} className={cn("relative flex h-16 w-full flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors", moreActive ? "text-foreground" : "text-muted-foreground")}>
+                {moreActive && <motion.span layoutId="merchant-tab" transition={TWEEN} className="absolute top-0 h-0.5 w-8 rounded-full bg-foreground" />}
+                <Ellipsis className="size-5" />{t("More", "المزيد")}
+              </button>
+            </li>
+          </ul>
+        </nav>
+        <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+          <SheetContent side="bottom" className="rounded-t-3xl px-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 md:hidden">
+            <SheetTitle className="px-3 pt-2 text-sm">{t("More", "المزيد")}</SheetTitle>
+            <SheetDescription className="sr-only">{t("Other pages", "صفحات أخرى")}</SheetDescription>
+            <ul className="grid gap-1">
+              {moreItems.map((item) => (
+                <li key={item.href}>
+                  <button type="button" onClick={() => { setMoreOpen(false); router.push(item.href); }} className={cn("flex h-12 w-full items-center gap-3 rounded-xl px-3 text-sm transition-colors", isActive(item.href) ? "bg-foreground text-background" : "hover:bg-muted")}>
+                    <item.icon className="size-4" />{item.label}
+                  </button>
+                </li>
+              ))}
+              <li><button type="button" onClick={() => { setMoreOpen(false); router.push("/return"); }} className="flex h-12 w-full items-center gap-3 rounded-xl px-3 text-sm text-muted-foreground hover:bg-muted"><Link2 className="size-4" />{t("Customer return", "إرجاع العميل")}</button></li>
+              <li><button type="button" onClick={() => { setMoreOpen(false); router.push("/"); }} className="flex h-12 w-full items-center gap-3 rounded-xl px-3 text-sm text-muted-foreground hover:bg-muted"><Globe className="size-4" />{t("Public site", "الموقع العام")}</button></li>
+              <li><button type="button" onClick={() => { setMoreOpen(false); void handleSignOut(); }} className="flex h-12 w-full items-center gap-3 rounded-xl px-3 text-sm text-muted-foreground hover:bg-muted"><LogOut className="size-4 rtl:-scale-x-100" />{t("Sign out", "تسجيل الخروج")}</button></li>
+            </ul>
+          </SheetContent>
+        </Sheet>
       </SidebarInset>
     </SidebarProvider>
+    </MotionConfig>
   );
 }
 

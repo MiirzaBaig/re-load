@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import Script from "next/script";
 import { Providers } from "./providers";
+import { WELCOME_BOOTSTRAP } from "@/components/admin/welcome-script";
 import { fontClassNames, manrope } from "@/lib/fonts";
 import { LOCALE_COOKIE, resolveRequestLocale } from "@/lib/locale-server";
 import "./globals.css";
@@ -60,6 +61,8 @@ export default async function RootLayout({
             __html: `(function(){try{var d=document.documentElement;var play=location.pathname==="/"&&!location.hash&&!location.search&&!sessionStorage.getItem("reload-intro-seen")&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches;d.setAttribute("data-intro",play?"play":"skip");}catch(e){}})();`,
           }}
         />
+        {/* Same idea for the team desk's post-sign-in welcome (only on /admin). */}
+        <script dangerouslySetInnerHTML={{ __html: WELCOME_BOOTSTRAP }} />
       </head>
       <body className={`${fontClassNames} ${manrope.className} antialiased`}>
         <noscript>

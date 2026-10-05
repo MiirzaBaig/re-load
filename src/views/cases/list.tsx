@@ -16,7 +16,8 @@ import { Search, ArrowRight, PackageOpen, AlertCircle, X, Calendar, Bookmark, Pl
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/language-provider";
 import { useAuth } from "@/components/auth-provider";
-import { supabase } from "@/lib/supabase";
+import { useWorkspaceData, workspaceKey } from "@/lib/workspace-data";
+import { CaseDrawer, useOpenCase } from "@/components/case-drawer";
 
 interface SavedView {
   id: string;
@@ -33,7 +34,7 @@ const DEFAULT_VIEWS: SavedView[] = [
 
 export function CaseListPage() {
   const { t, isArabic, locale } = useLanguage();
-  const { workspace } = useAuth();
+  const auth = useAuth();
   // Default view names are declared outside the component; translate them by id at render time.
   const defaultViewNames: Record<string, string> = {
     all: t("All cases", "كل الحالات"),
@@ -41,7 +42,6 @@ export function CaseListPage() {
     open: t("Open", "مفتوحة"),
     resolved: t("Resolved", "مغلقة"),
   };
-  const [allCases, setAllCases] = useState<ReturnCase[]>([]);
   const [search, setSearch] = useState("");
   const [outcomeFilter, setOutcomeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -51,36 +51,21 @@ export function CaseListPage() {
   const [showSaveView, setShowSaveView] = useState(false);
   const [newViewName, setNewViewName] = useState("");
   const delayPassed = useDelayedLoad(300);
-  // The skeleton used to lift after a fixed 300ms, so a slow fetch briefly
-  // showed "No cases match your filters" before the real cases arrived.
-  const [fetched, setFetched] = useState(false);
-  const loaded = delayPassed && fetched;
+  // Cases come from the shared workspace store (also used by Overview and the
+  // sidebar badge). The skeleton waits for real data, so a slow fetch never
+  // flashes "No cases match your filters".
+  const workspaceData = useWorkspaceData(workspaceKey(auth));
+  const allCases = workspaceData.cases;
+  const loaded = delayPassed && workspaceData.ready;
+  const [openCase, setOpenCase] = useOpenCase();
+  /** A plain click opens the drawer; modified clicks keep the link's
+   *  default (new tab / window) behaviour. */
+  const openInDrawer = (event: React.MouseEvent, id: string) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    setOpenCase(id);
+  };
   const searchRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    let active = true;
-    if (!supabase) { setFetched(true); return; }
-    if (!workspace) return;
-    void supabase.from("return_cases").select("id, order_id, status, customer_snapshot, item_snapshot, created_at, updated_at, eligibility_decisions(outcome, reason_codes, order_facts_snapshot, policy_snapshot, evaluated_at, policy_versions(version_label))")
-      .eq("store_id", workspace.storeId).order("created_at", { ascending: false }).then(({ data }: { data: unknown }) => {
-        if (!active) return;
-        setFetched(true);
-        setAllCases(((data ?? []) as Array<Record<string, any>>).map((row) => {
-          const decision = row.eligibility_decisions ?? {};
-          const customer = row.customer_snapshot ?? {};
-          const item = row.item_snapshot ?? {};
-          const policy = decision.policy_versions ?? {};
-          return {
-            id: String(row.id), orderId: String(row.order_id), customerName: String(customer.name ?? "Customer"), customerEmail: String(customer.email ?? ""),
-            itemId: String(item.id ?? ""), itemName: String(item.name ?? "Item"), quantity: Number(item.quantity ?? 1), reason: item.reason ?? "defective", condition: item.condition ?? "new_unopened",
-            outcome: decision.outcome, caseStatus: row.status, createdAt: row.created_at, updatedAt: row.updated_at,
-            decision: { outcome: decision.outcome, reasonCodes: decision.reason_codes ?? [], explanation: "", appliedRules: decision.policy_snapshot?.rules_snapshot?.map((rule: any) => ({ rule, passed: true, evaluatedValue: "", reasonCode: "" })) ?? [], policyVersionId: "", policyVersionLabel: policy.version_label ?? "—", evaluatedAt: decision.evaluated_at, relevantFacts: [] },
-            events: [], notes: [],
-          } as ReturnCase;
-        }));
-      });
-    return () => { active = false; };
-  }, [workspace]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -334,11 +319,11 @@ export function CaseListPage() {
               </thead>
               <tbody>
                 {filtered.map((c, i) => (
-                  <tr key={c.id} className="cases-row" data-review={needsReview(c) || undefined} style={{ ["--i" as string]: Math.min(i, 12) }}>
+                  <tr key={c.id} className="cases-row" data-review={needsReview(c) || undefined} data-selected={openCase === c.id || undefined} style={{ ["--i" as string]: Math.min(i, 12) }}>
                     <td>
                       {/* The link stretches over the whole row, so rows are
                           reachable by Tab/Enter and open in a new tab. */}
-                      <Link href={`/app/cases/${c.id}`} className="cases-row-link">
+                      <Link href={`/app/cases/${c.id}`} className="cases-row-link" onClick={(event) => openInDrawer(event, c.id)}>
                         <bdi className="font-medium text-foreground">{c.orderId}</bdi>
                       </Link>
                       <div className="mt-0.5 text-xs text-muted-foreground" title={formatDateTime(c.createdAt)}>{ago(c.createdAt)}</div>
@@ -365,6 +350,7 @@ export function CaseListPage() {
               <Link
                 key={c.id}
                 href={`/app/cases/${c.id}`}
+                onClick={(event) => openInDrawer(event, c.id)}
                 className="cases-card"
                 data-review={needsReview(c) || undefined}
               >
@@ -382,6 +368,7 @@ export function CaseListPage() {
           </div>
         </>
       )}
+      <CaseDrawer caseId={openCase} onOpenChange={setOpenCase} />
     </div>
   );
 }

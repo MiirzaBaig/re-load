@@ -1,4 +1,5 @@
 import { getAdminAccess, logAdminEvent } from "@/lib/admin-access";
+import { platformOf } from "@/lib/platforms";
 
 function parseCsv(input: string): string[][] {
   const rows: string[][] = [];
@@ -53,7 +54,10 @@ export async function POST(request: Request) {
     if ((email && known.has(email)) || (normalizedPhone && known.has(normalizedPhone))) { skipped++; continue; }
     if (email) known.add(email);
     if (normalizedPhone) known.add(normalizedPhone);
-    incoming.push({ store_name: store, contact_name: contact, email: email || null, phone: phone || null, source_type: "event", source_label: body.sourceLabel.trim(), contact_consent: false, marketing_consent: false, partner_sharing_consent: false });
+    // "platform" or "store_platform" column: any spelling ("zid", "سلة") is
+    // stored as one of the desk's four platforms.
+    const platform = platformOf(get("platform") || get("store_platform"));
+    incoming.push({ store_name: store, contact_name: contact, email: email || null, phone: phone || null, store_platform: platform, source_type: "event", source_label: body.sourceLabel.trim(), contact_consent: false, marketing_consent: false, partner_sharing_consent: false });
   }
   if (incoming.length) {
     const { error } = await access.supabase.from("leads").insert(incoming);

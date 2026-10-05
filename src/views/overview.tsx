@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useDelayedLoad } from "@/hooks/use-delayed-load";
 import { OverviewPageSkeleton } from "@/components/merchant-skeletons";
 import { Button } from "@/components/ui/button";
 import { OutcomeBadge, CaseStatusBadge } from "@/components/outcome-badge";
 import { services } from "@/lib/services";
+import { needsDecision, useWorkspaceData, workspaceKey } from "@/lib/workspace-data";
+import { useAuth } from "@/components/auth-provider";
+import { CaseDrawer, useOpenCase } from "@/components/case-drawer";
+import { EmptyState, Metric, Panel, QUICK } from "@/components/desk/primitives";
+import { dailySeries } from "@/components/admin/use-labels";
+import { AnimatePresence, motion } from "framer-motion";
 import { formatDate } from "@/lib/domain";
 import {
   AlertCircle,
@@ -24,23 +30,30 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/language-provider";
 import { StoreIdentity } from "@/components/store-identity";
 import { Tone } from "@/components/heading-accent";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type SetupStepId = "policy" | "store" | "return";
 
 export function OverviewPage() {
   const router = useRouter();
   const { t, isArabic } = useLanguage();
-  const loaded = useDelayedLoad(280);
+  const delayPassed = useDelayedLoad(280);
+  const auth = useAuth();
+  const { workspace } = auth;
+  // Live data from Supabase, shared with the sidebar and the case list.
+  // (This page used to read the browser-only demo store.)
+  const live = useWorkspaceData(workspaceKey(auth));
+  const loaded = delayPassed && live.ready;
+  const [openCase, setOpenCase] = useOpenCase();
 
-  const cases = useMemo(() => services.getCases(), []);
-  const policy = useMemo(() => services.getPublishedPolicy(), []);
-  const connections = useMemo(() => services.getConnections(), []);
-  const drafts = useMemo(() => services.getDrafts(), []);
-  const storeName = services.getStoreName();
+  const cases = live.cases;
+  const policy = live.policy;
+  const draftCount = live.draftCount;
+  const storeName = workspace?.storeName ?? services.getStoreName();
 
-  const sallaConn = connections.find((c) => c.platformId === "salla");
-  const storeConnected = sallaConn?.state === "connected";
+  const sallaConn = live.salla;
+  const storeConnected = sallaConn?.status === "CONNECTED";
+  const queue = useMemo(() => needsDecision(cases), [cases]);
+  const caseSeries = useMemo(() => dailySeries(cases.map((c) => c.createdAt)), [cases]);
   const hasPolicy = Boolean(policy);
   const setupComplete = hasPolicy;
 
@@ -82,10 +95,10 @@ export function OverviewPage() {
         "Turn your rules into decisions customers can trust.",
         "حوّل قواعدك إلى قرارات يثق بها العملاء.",
       ),
-      cta: drafts.length
+      cta: draftCount
         ? t("Review drafts", "مراجعة المسودات")
         : t("Create policy", "إنشاء سياسة"),
-      href: drafts.length ? "/app/policies" : "/app/policies/new",
+      href: draftCount ? "/app/policies" : "/app/policies/new",
       icon: FileText,
     },
     {
@@ -279,76 +292,16 @@ export function OverviewPage() {
         </section>
       )}
 
-      {/* Attention — live only when there is something to do */}
-      {manualReviewCases.length > 0 && (
-        <button
-          type="button"
-          onClick={() => router.push("/app/cases")}
-          className="group flex w-full items-center gap-3.5 rounded-2xl border border-review/25 bg-review-muted/80 px-4 py-4 text-start transition-colors duration-200 hover:border-review/40 sm:gap-4 sm:px-5"
-        >
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-review text-review-foreground">
-            <AlertCircle className="size-4.5" strokeWidth={2} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-foreground">
-              {manualReviewCases.length === 1
-                ? t("1 case needs a closer look", "حالة واحدة تحتاج مراجعة أدق")
-                : t(
-                    `${manualReviewCases.length} cases need a closer look`,
-                    `${manualReviewCases.length} حالات تحتاج مراجعة أدق`,
-                  )}
-            </span>
-            <span className="mt-0.5 block text-xs text-muted-foreground">
-              {t(
-                "Review missing information before deciding",
-                "راجع المعلومات الناقصة قبل اتخاذ القرار",
-              )}
-            </span>
-          </span>
-          <ArrowRight
-            className={cn(
-              "size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5",
-              isArabic && "rotate-180 group-hover:-translate-x-0.5 group-hover:translate-x-0",
-            )}
-          />
-        </button>
-      )}
-
       {/* KPIs — only once cases exist */}
       {caseTotal > 0 && (
         <section
           aria-label={t("Return metrics", "مؤشرات الإرجاع")}
-          className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4"
+          className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2 xl:grid-cols-4"
         >
-          <StatTile
-            label={t("Open", "مفتوحة")}
-            value={openCases.length}
-            icon={Package}
-          />
-          <StatTile
-            label={t("Needs review", "تحتاج مراجعة")}
-            hint={t(
-              "Open cases missing order data. Reload sent them to you instead of guessing.",
-              "حالات مفتوحة تنقصها بيانات الطلب، فأحالها ريلود إليك بدلًا من التخمين.",
-            )}
-            value={manualReviewCases.length}
-            icon={AlertCircle}
-            emphasis={manualReviewCases.length > 0 ? "review" : undefined}
-          />
-          <StatTile
-            label={t("Resolved", "مغلقة")}
-            value={resolvedCases.length}
-            icon={ShieldCheck}
-          />
-          <StatTile
-            label={t("Eligibility", "الأهلية")}
-            hint={t(
-              "Share of all return cases that met your published policy.",
-              "نسبة حالات الإرجاع التي استوفت سياستك المنشورة.",
-            )}
-            value={eligiblePct === null ? "—" : `${eligiblePct}%`}
-            icon={Circle}
-          />
+          <Metric icon={Package} label={t("Open", "مفتوحة")} value={openCases.length} note={t(`${caseTotal} cases in total`, `${caseTotal} حالة إجمالًا`)} series={caseSeries} onClick={() => router.push("/app/cases")} />
+          <Metric icon={AlertCircle} label={t("Needs review", "تحتاج مراجعة")} value={manualReviewCases.length} tone="review" note={manualReviewCases.length ? t("missing order data, sent to you", "تنقصها بيانات، أُحيلت إليك") : t("nothing waiting", "لا شيء بانتظارك")} onClick={() => router.push("/app/cases")} />
+          <Metric icon={ShieldCheck} label={t("Resolved", "مغلقة")} value={resolvedCases.length} note={t("closed cases", "حالات مغلقة")} />
+          <Metric icon={Circle} label={t("Eligibility", "الأهلية")} value={eligiblePct ?? 0} suffix="%" note={t("met your published policy", "استوفت سياستك المنشورة")} />
         </section>
       )}
 
@@ -362,10 +315,10 @@ export function OverviewPage() {
             icon={FileText}
             label={t("Policies", "السياسات")}
             hint={
-              drafts.length
+              draftCount
                 ? t(
-                    `${drafts.length} draft${drafts.length > 1 ? "s" : ""}`,
-                    `${drafts.length} مسودة`,
+                    `${draftCount} draft${draftCount > 1 ? "s" : ""}`,
+                    `${draftCount} مسودة`,
                   )
                 : t("Published rules", "قواعد منشورة")
             }
@@ -395,6 +348,44 @@ export function OverviewPage() {
 
       {/* Main + side */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-7">
+        <div className="min-w-0 space-y-7">
+        {caseTotal > 0 && (
+          <Panel
+            title={t("Needs your decision", "بانتظار قرارك")}
+            subtitle={t("Manual reviews first, then open cases, oldest first.", "المراجعات اليدوية أولًا، ثم الحالات المفتوحة، الأقدم أولًا.")}
+            bodyClassName="px-2 pb-2 pt-3 sm:px-3"
+            action={queue.length > 0 ? <span className="rounded-full bg-review-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-review">{queue.length}</span> : undefined}
+          >
+            {queue.length ? (
+              <ul>
+                <AnimatePresence initial={false}>
+                  {queue.slice(0, 6).map((c) => (
+                    <motion.li key={c.id} layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={QUICK} className="overflow-hidden">
+                      <button type="button" onClick={() => setOpenCase(c.id)} className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start transition-colors duration-150 hover:bg-muted/50">
+                        <span className={cn("grid size-9 shrink-0 place-items-center rounded-xl", c.outcome === "MANUAL_REVIEW" ? "bg-review-muted text-review" : c.outcome === "ELIGIBLE" ? "bg-eligible-muted text-eligible" : "bg-not-eligible-muted text-not-eligible")}>
+                          {c.outcome === "MANUAL_REVIEW" ? <AlertCircle className="size-4" /> : <Package className="size-4" strokeWidth={1.75} />}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold"><bdi>{c.orderId}</bdi><span className="font-normal text-muted-foreground"> · {c.customerName}</span></span>
+                          <span className="block truncate text-xs text-muted-foreground">{c.caseStatus === "RECEIVED" ? t("Item received, ready to close", "استُلم المنتج، جاهزة للإغلاق") : c.outcome === "MANUAL_REVIEW" ? t("Order data incomplete, your call", "بيانات الطلب ناقصة، القرار لك") : c.itemName}</span>
+                        </span>
+                        <span className="hidden shrink-0 sm:block"><OutcomeBadge outcome={c.outcome} size="sm" /></span>
+                        <ArrowRight className={cn("size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5", isArabic && "rotate-180 group-hover:-translate-x-0.5 group-hover:translate-x-0")} />
+                      </button>
+                    </motion.li>
+                  ))}
+                </AnimatePresence>
+              </ul>
+            ) : (
+              <EmptyState icon={Check} title={t("Nothing waiting on you", "لا شيء بانتظارك")} text={t("Every open case has a next step. New ones show up here.", "كل الحالات المفتوحة لها خطوة تالية. تظهر الجديدة هنا.")} />
+            )}
+            {queue.length > 6 && (
+              <button type="button" onClick={() => router.push("/app/cases")} className="mt-1 w-full rounded-xl py-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground">
+                {t(`${queue.length - 6} more in Cases`, `${queue.length - 6} أخرى في الحالات`)}
+              </button>
+            )}
+          </Panel>
+        )}
         <section className="min-w-0 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-display text-base font-semibold text-foreground">
@@ -472,7 +463,7 @@ export function OverviewPage() {
                 <li key={c.id}>
                   <button
                     type="button"
-                    onClick={() => router.push(`/app/cases/${c.id}`)}
+                    onClick={() => setOpenCase(c.id)}
                     className="group flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3.5 py-3 text-start transition-colors duration-200 hover:border-primary/25 hover:bg-muted/20 sm:gap-3.5 sm:px-4"
                   >
                     <span
@@ -517,6 +508,8 @@ export function OverviewPage() {
             </ul>
           )}
         </section>
+
+        </div>
 
         <aside className="flex flex-col gap-3 sm:grid sm:grid-cols-2 sm:gap-3 lg:flex lg:flex-col">
           {caseTotal > 0 && (
@@ -563,17 +556,17 @@ export function OverviewPage() {
                     </p>
                     <p className="mt-1.5 text-xs text-muted-foreground">
                       {t(
-                        `${policy.rules.length} active rules`,
-                        `${policy.rules.length} قاعدة مفعّلة`,
+                        `${policy.ruleCount} active rules`,
+                        `${policy.ruleCount} قاعدة مفعّلة`,
                       )}
                     </p>
                   </div>
                 </div>
-                {drafts.length > 0 && (
+                {draftCount > 0 && (
                   <p className="text-xs text-review">
                     {t(
-                      `${drafts.length} draft${drafts.length > 1 ? "s" : ""} pending`,
-                      `${drafts.length} مسودة بانتظار المراجعة`,
+                      `${draftCount} draft${draftCount > 1 ? "s" : ""} pending`,
+                      `${draftCount} مسودة بانتظار المراجعة`,
                     )}
                   </p>
                 )}
@@ -599,11 +592,11 @@ export function OverviewPage() {
                   className="w-full"
                   onClick={() =>
                     router.push(
-                      drafts.length ? "/app/policies" : "/app/policies/new",
+                      draftCount ? "/app/policies" : "/app/policies/new",
                     )
                   }
                 >
-                  {drafts.length
+                  {draftCount
                     ? t("Review drafts", "مراجعة المسودات")
                     : t("Create policy", "إنشاء سياسة")}
                 </Button>
@@ -612,7 +605,6 @@ export function OverviewPage() {
           </SideCard>
 
           <SideCard title={t("Store", "المتجر")}>
-            {sallaConn ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2.5">
@@ -627,7 +619,7 @@ export function OverviewPage() {
                       <Plug className="size-4" strokeWidth={1.75} />
                     </span>
                     <span className="truncate text-sm font-medium text-foreground">
-                      {sallaConn.platformName}
+                      {sallaConn?.storeName ? `Salla · ${sallaConn.storeName}` : "Salla"}
                     </span>
                   </div>
                   <span
@@ -654,14 +646,11 @@ export function OverviewPage() {
                     : t("Connect", "ربط")}
                 </Button>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                {t("No platforms available.", "لا توجد منصات متاحة.")}
-              </p>
-            )}
+
           </SideCard>
         </aside>
       </div>
+      <CaseDrawer caseId={openCase} onOpenChange={setOpenCase} />
     </div>
   );
 }
@@ -714,58 +703,6 @@ function SetupProgress({ done, total }: { done: number; total: number }) {
       <span className="text-xs font-medium tabular-nums text-muted-foreground">
         {done}/{total}
       </span>
-    </div>
-  );
-}
-
-function StatTile({
-  label,
-  hint,
-  value,
-  icon: Icon,
-  emphasis,
-}: {
-  label: string;
-  /** Shown on hover; the label gets a dotted underline to signal it. */
-  hint?: string;
-  value: string | number;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-  emphasis?: "review";
-}) {
-  return (
-    <div
-      className={cn(
-        "stat-tile rounded-xl border border-border bg-card px-3.5 py-3.5 sm:px-4",
-        emphasis === "review" && "border-review/25 bg-review-muted/40",
-      )}
-    >
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Icon className="size-3.5" strokeWidth={1.75} />
-        {hint ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button type="button" className="term-hint text-[11px] font-medium uppercase tracking-wide">
-                {label}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[240px] text-center leading-relaxed">
-              {hint}
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          <span className="text-[11px] font-medium uppercase tracking-wide">
-            {label}
-          </span>
-        )}
-      </div>
-      <p
-        className={cn(
-          "mt-2 font-display text-2xl font-semibold tabular-nums tracking-tight text-foreground",
-          emphasis === "review" && "text-review",
-        )}
-      >
-        <CountUp value={value} />
-      </p>
     </div>
   );
 }
@@ -858,30 +795,3 @@ function OutcomeRow({
   );
 }
 
-/** Counts a stat up from zero on first render ("62%" counts too). Numbers that
- *  aren't numeric ("—") render as they are. */
-function CountUp({ value }: { value: string | number }) {
-  const match = typeof value === "number" ? null : /^(\d+)(\D*)$/.exec(value);
-  const target = typeof value === "number" ? value : match ? Number(match[1]) : null;
-  const suffix = match ? match[2] : "";
-  const [shown, setShown] = useState(0);
-  useEffect(() => {
-    if (target === null) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setShown(target);
-      return;
-    }
-    let frame = 0;
-    const start = performance.now();
-    const duration = Math.min(900, 420 + target * 12);
-    const tick = (now: number) => {
-      const p = Math.min(1, (now - start) / duration);
-      setShown(Math.round(target * (1 - Math.pow(1 - p, 3))));
-      if (p < 1) frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [target]);
-  if (target === null) return <>{value}</>;
-  return <>{shown}{suffix}</>;
-}

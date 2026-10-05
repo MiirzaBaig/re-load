@@ -4405,6 +4405,9 @@ html[dir="rtl"] .cases-row-chevron { transform: translateX(4px); }
    property, so adding translate here would double the offset. */
 @keyframes palette-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: none; } }
 .palette-list { max-height: min(60vh, 380px); }
+/* The search box lives inside the palette's own frame, so it skips the global
+   focus ring (it drew a purple box inside the dialog). */
+.palette [cmdk-input]:focus-visible { outline: none; }
 .palette-item { gap: 10px; min-height: 40px; border-radius: 9px; transition: background-color 90ms ease; }
 .palette-item[data-selected="true"] { box-shadow: inset 2px 0 0 var(--ring); }
 html[dir="rtl"] .palette-item[data-selected="true"] { box-shadow: inset -2px 0 0 var(--ring); }
@@ -4858,4 +4861,166 @@ html[data-intro="landed"] [data-intro-word] { transition: none; }
 }
 @media (max-width: 420px) {
   .intro-ar { width: min(265px, 80vw); }
+}
+
+/* Event kit QR preview: dots rise from the symbol outward, once, then stay
+   still. The order follows distance from the centre (--d, in ms). */
+.qr-preview .qr-frame {
+  animation: qr-frame-in 420ms var(--ease-brand) both;
+}
+.qr-preview .qr-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: qr-dot-in 460ms var(--ease-brand) both;
+  animation-delay: calc(120ms + var(--d) * 1ms);
+}
+@keyframes qr-frame-in {
+  from { opacity: 0; transform: scale(0.97); }
+}
+@keyframes qr-dot-in {
+  from { opacity: 0; transform: scale(0.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qr-preview .qr-frame,
+  .qr-preview .qr-dot { animation: none; }
+}
+
+/* ── Team desk (admin) motion ──────────────────────────────────────────────
+   One easing, short durations, no bounce or glow (Brand System 3.0). Every
+   effect plays once on arrival, then the desk stays still. */
+:is(.admin-desk, .merchant-workspace) .admin-card {
+  transition: border-color 200ms var(--ease-brand), box-shadow 200ms var(--ease-brand), transform 200ms var(--ease-brand);
+}
+:is(.admin-desk, .merchant-workspace) .admin-lift:hover {
+  border-color: color-mix(in oklab, var(--foreground) 18%, var(--border));
+  box-shadow: 0 10px 30px -22px rgba(15, 15, 18, 0.35);
+}
+:is(.admin-desk, .merchant-workspace) .admin-lift:active { transform: scale(0.995); }
+.admin-desk .admin-lead-card:hover {
+  border-color: color-mix(in oklab, var(--foreground) 20%, var(--border));
+  box-shadow: 0 8px 24px -18px rgba(15, 15, 18, 0.4);
+}
+/* Lifted card while dragging: a little larger and casting a shadow. */
+.admin-drag-overlay {
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in oklab, var(--foreground) 25%, var(--border));
+  background: var(--card);
+  box-shadow: 0 24px 48px -20px rgba(15, 15, 18, 0.45);
+  transform: scale(1.02);
+  cursor: grabbing;
+}
+.admin-spark-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: admin-draw 900ms var(--ease-brand) 120ms forwards; }
+.admin-spark-area { opacity: 0; animation: admin-fade-in 600ms var(--ease-brand) 500ms forwards; }
+.admin-grow { transform-origin: left center; animation: admin-grow 700ms var(--ease-brand) both; }
+[dir="rtl"] .admin-grow { transform-origin: right center; }
+.admin-fade { animation: admin-rise 280ms var(--ease-brand) both; }
+.admin-donut { stroke-dashoffset: 0; animation: admin-fade-in 500ms var(--ease-brand) both; }
+.admin-board { scrollbar-width: thin; scroll-padding-inline: 1rem; }
+@media (min-width: 1024px) { .admin-board { scroll-snap-type: none; } }
+@keyframes admin-draw { to { stroke-dashoffset: 0; } }
+@keyframes admin-fade-in { to { opacity: 1; } }
+@keyframes admin-grow { from { transform: scaleX(0); } }
+@keyframes admin-rise { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) {
+  .admin-spark-line { stroke-dashoffset: 0; animation: none; }
+  .admin-spark-area { opacity: 1; animation: none; }
+  .admin-grow, .admin-fade, .admin-donut { animation: none; }
+  :is(.admin-desk, .merchant-workspace) :is(.admin-card, .admin-lift:active) { transition: none; transform: none; }
+}
+
+/* Event kit QR tile: a solid block, not a flat card. Layered shadow (a tight
+   contact shadow plus a wide soft one), a lit top edge and a darker bottom
+   edge for thickness, and a faint light from above. On desktop it tilts up to
+   6° toward the pointer and eases back flat. Only the tile moves; the code
+   inside is untouched. No glow (Brand System 3.0). */
+.qr-stage { perspective: 900px; }
+.qr-tile {
+  --rx: 0deg; --ry: 0deg; --sx: 0px; --sy: 0px;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transform-style: preserve-3d;
+  transition: transform 520ms var(--ease-brand), box-shadow 520ms var(--ease-brand);
+}
+.qr-tile[data-tilting] { transition-duration: 140ms; }
+.qr-tile[data-theme="ink"] {
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(15, 15, 18, 0.07),
+    0 3px 0 #dddbd5,
+    calc(var(--sx) * 0.3) calc(4px + var(--sy) * 0.3) 6px rgba(15, 15, 18, 0.16),
+    var(--sx) calc(26px + var(--sy)) 48px -14px rgba(15, 15, 18, 0.32);
+}
+.qr-tile[data-theme="inverted"] {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    0 3px 0 #050506,
+    calc(var(--sx) * 0.3) calc(4px + var(--sy) * 0.3) 6px rgba(0, 0, 0, 0.3),
+    var(--sx) calc(26px + var(--sy)) 48px -14px rgba(0, 0, 0, 0.55);
+}
+/* Light from above: brightest at the top edge, gone by mid-tile. */
+.qr-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 45%);
+}
+.qr-tile[data-theme="ink"]::after {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent 40%);
+  mix-blend-mode: soft-light;
+}
+@media (prefers-reduced-motion: reduce) {
+  .qr-tile { transition: none; transform: none; }
+}
+
+/* The case open in the drawer stays marked in the list underneath. */
+.cases-row[data-selected] td { background: color-mix(in oklab, var(--muted) 75%, transparent); }
+
+/* ── Team desk welcome (components/admin/welcome.tsx) ──────────────────────
+   Hidden unless the pre-paint script marks html[data-admin-welcome="play"].
+   Fail-safe: gone after 6s even if a script never runs. */
+.admin-welcome { display: none; }
+html[data-admin-welcome="play"] .admin-welcome,
+html[data-admin-welcome="lift"] .admin-welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  color: #f8f7f4;
+  animation: intro-failsafe 0s 6s forwards;
+}
+html[data-admin-welcome="lift"] .admin-welcome { pointer-events: none; }
+.admin-welcome-curtain { position: absolute; inset: 0; background: #0f0f12; }
+.admin-welcome-stack { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 26px; padding: 0 24px; text-align: center; }
+.admin-welcome-mark { width: 64px; height: 62.4px; }
+.admin-welcome-b { animation: intro-rise 560ms var(--ease-brand) 60ms both; }
+.admin-welcome-a { animation: intro-drop 560ms var(--ease-brand) 240ms both; }
+.admin-welcome-text { animation: admin-rise 440ms var(--ease-brand) 560ms both; }
+.admin-welcome-greeting { font-family: var(--font-display); font-size: 30px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; }
+.admin-welcome-summary { margin-top: 8px; font-size: 14px; color: rgba(248, 247, 244, 0.62); }
+[dir="rtl"] .admin-welcome-greeting { font-family: var(--font-arabic-display); letter-spacing: 0; }
+/* The header symbol stays hidden until the flying one lands on it. */
+html[data-admin-welcome="play"] .admin-desk header :is([data-intro-mark], [data-intro-lockup]),
+html[data-admin-welcome="lift"] .admin-desk header :is([data-intro-mark], [data-intro-lockup]) {
+  opacity: 0;
+  animation: intro-restore 0s 6s forwards;
+}
+
+/* Desk entrance, every visit: sections rise in sequence. While the welcome
+   plays it waits (animation: none), then starts fresh as the curtain lifts. */
+.desk-stagger > * { animation: admin-rise 440ms var(--ease-brand) both; animation-delay: calc(var(--desk-base, 0ms) + 40ms); }
+.desk-stagger > :nth-child(2) { animation-delay: calc(var(--desk-base, 0ms) + 110ms); }
+.desk-stagger > :nth-child(3) { animation-delay: calc(var(--desk-base, 0ms) + 180ms); }
+.desk-stagger > :nth-child(4) { animation-delay: calc(var(--desk-base, 0ms) + 250ms); }
+.desk-stagger > :nth-child(n + 5) { animation-delay: calc(var(--desk-base, 0ms) + 320ms); }
+.desk-rise { animation: admin-rise 440ms var(--ease-brand) both; }
+html[data-admin-welcome="play"] :is(.desk-stagger > *, .desk-rise) { animation: none; opacity: 0; }
+html[data-admin-welcome="play"] .admin-spark-line,
+html[data-admin-welcome="play"] .admin-spark-area,
+html[data-admin-welcome="play"] .admin-grow { animation: none; }
+html[data-admin-welcome="play"] .admin-grow { transform: scaleX(0); }
+@media (prefers-reduced-motion: reduce) {
+  .desk-stagger > *, .desk-rise { animation: none; }
 }
