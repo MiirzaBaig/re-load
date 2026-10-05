@@ -184,7 +184,7 @@ export function SpeedComparison() {
           <h2 id="speed-heading" className="speed-title">
             {/* Previous: "From return request to refund in the customer's hands." */}
             {t("14 days, ", "14 يوم، ")}
-            <Tone>{t("or 1.5.", "أو يوم ونص.")}</Tone>
+            <Tone>{t("or 1.5", "أو يوم ونص")}</Tone>
           </h2>
           <p className="speed-sub">
             {t(
