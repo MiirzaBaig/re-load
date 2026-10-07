@@ -203,7 +203,6 @@ function FooterPanel({
               <span className="footer-made">
                 <HeartMark />
                 {t("Proudly built in Saudi Arabia", "صُنع بفخر في السعودية")}
-                <SaudiTime />
               </span>
             </div>
           </motion.div>
@@ -269,21 +268,6 @@ function HeartMark() {
       <path pathLength={1} d="M12 20.5s-7.3-4.5-9.3-9C1.3 8.3 3.2 4.6 6.8 4.6c2.1 0 3.5 1.1 5.2 3.1 1.7-2 3.1-3.1 5.2-3.1 3.6 0 5.5 3.7 4.1 6.9-2 4.5-9.3 9-9.3 9z" />
     </svg>
   );
-}
-
-/** Current time in Saudi Arabia, a small "we're here" detail. Rendered after
- *  mount so server and browser clocks can't disagree. */
-function SaudiTime() {
-  const { isArabic } = useLanguage();
-  const [now, setNow] = useState<Date | null>(null);
-  useEffect(() => {
-    setNow(new Date());
-    const timer = window.setInterval(() => setNow(new Date()), 30_000);
-    return () => window.clearInterval(timer);
-  }, []);
-  if (!now) return null;
-  const time = new Intl.DateTimeFormat(isArabic ? "ar-SA-u-nu-latn" : "en-US", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Riyadh" }).format(now);
-  return <span className="footer-time"><span aria-hidden="true">·</span><time dateTime={now.toISOString()}>{time}</time></span>;
 }
 
 function FooterLetter({
