@@ -62,10 +62,10 @@ function LegalPage({
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Write to{" "}
           <a
-            href="mailto:mujebteem@gmail.com"
+            href="mailto:info@reload.sa"
             className="font-medium text-primary underline-offset-4 hover:underline"
           >
-            mujebteem@gmail.com
+            info@reload.sa
           </a>{" "}
           and we will respond.
         </p>

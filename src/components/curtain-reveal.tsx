@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   motion,
   useReducedMotion,
@@ -10,7 +10,8 @@ import {
   useTransform,
   type MotionValue,
 } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, Copy, Mail } from "lucide-react";
+import { ReloadMark } from "@/components/reload-logo";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/language-provider";
 import { cn } from "@/lib/utils";
@@ -45,20 +46,44 @@ function FooterPanel({
   const router = useRouter();
   const { t, isArabic } = useLanguage();
   const wordmark = t("Reload", "ريلود");
-  const footerLinks = [
-    { label: t("Product", "المنتج"), href: "/#product" },
-    { label: t("How it works", "كيف يعمل"), href: "/#how-it-works" },
-    { label: t("Workspace", "مساحة العمل"), href: "/app" },
-    { label: t("Start a return", "بدء طلب إرجاع"), href: "/return" },
+  const footerColumns = [
+    {
+      title: t("Product", "المنتج"),
+      links: [
+        { label: t("Overview", "نظرة عامة"), href: "/#product" },
+        { label: t("How it works", "كيف يعمل"), href: "/#how-it-works" },
+        { label: t("Returns financing", "تمويل المرتجعات"), href: "/#returns-financing" },
+        { label: t("Start a return", "بدء طلب إرجاع"), href: "/return" },
+      ],
+    },
+    {
+      title: t("Company", "الشركة"),
+      links: [
+        { label: t("About", "عن ريلود"), href: "/#product" },
+        { label: t("Contact", "تواصل معنا"), href: "/#contact" },
+        { label: t("Merchant sign in", "دخول التجار"), href: "/app" },
+      ],
+    },
+    {
+      title: t("Legal", "قانوني"),
+      links: [
+        { label: t("Privacy", "الخصوصية"), href: "/privacy" },
+        { label: t("Terms", "الشروط"), href: "/terms" },
+      ],
+    },
   ];
-  const companyLinks = [
-    { label: t("About", "عن ريلود"), href: "/#product" },
-    { label: t("Contact", "تواصل معنا"), href: "/#contact" },
-  ];
-  const legalLinks = [
-    { label: t("Privacy", "الخصوصية"), href: "/privacy" },
-    { label: t("Terms", "الشروط"), href: "/terms" },
-  ];
+  // Columns and the heart play their entrance once, when the footer is seen.
+  const revealRef = useRef<HTMLDivElement>(null);
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    const el = revealRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setRevealed(true); observer.disconnect(); }
+    }, { threshold: 0.25 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const taglineOpacity = useTransform(progress, [0.3, 0.55], [0, 1]);
   const taglineY = useTransform(progress, [0.3, 0.55], [18, 0]);
   const ctaOpacity = useTransform(progress, [0.4, 0.65], [0, 1]);
@@ -133,46 +158,53 @@ function FooterPanel({
           </motion.div>
 
           <motion.div
-            className="mt-10 w-full max-w-[1030px] text-start sm:mt-20"
+            className="mt-14 w-full max-w-[1080px] text-start sm:mt-24"
             style={
               reduceMotion ? undefined : { opacity: linksOpacity, y: linksY }
             }
           >
-            <nav
-              aria-label={t("Footer product navigation", "روابط المنتج في التذييل")}
-              className="flex flex-wrap items-center justify-center gap-x-7 gap-y-1 text-center text-sm text-footer-fg sm:gap-8"
-            >
-              {footerLinks.map((link) => (
-                <FooterLink key={link.label} {...link} />
+            <div ref={revealRef} className={cn("footer-grid", revealed && "is-in")}>
+              <div className="footer-brand">
+                <Link href="/" className="footer-logo inline-flex items-center gap-2.5 text-footer-fg" aria-label={wordmark}>
+                  <span className="footer-logo-mark"><ReloadMark className="size-7" /></span>
+                  <span className="font-display text-xl font-semibold tracking-[-0.02em]">{wordmark}</span>
+                </Link>
+                <p className="mt-4 max-w-[280px] text-sm leading-6 text-footer-muted">
+                  {t(
+                    "Return decisions in minutes, from your own policy. Built for online stores in Saudi Arabia.",
+                    "قرارات الإرجاع في دقائق، من سياستك أنت. صُمم للمتاجر الإلكترونية في السعودية.",
+                  )}
+                </p>
+                <EmailChip t={t} />
+              </div>
+              {footerColumns.map((column, index) => (
+                <nav key={column.title} aria-label={column.title} className="footer-column" style={{ ["--c" as string]: index + 1 }}>
+                  <h3 className="footer-heading">{column.title}</h3>
+                  <ul className="mt-4 space-y-1">
+                    {column.links.map((link, index) => (
+                      <li key={link.label} className="footer-item" style={{ ["--n" as string]: index }}>
+                        <FooterLink {...link} start />
+                      </li>
+                    ))}
+                  </ul>
+                </nav>
               ))}
-            </nav>
+            </div>
 
-            <div className="mt-7 flex flex-col-reverse items-center justify-between gap-4 border-t border-footer-subtle pt-6 text-xs text-footer-muted sm:mt-8 sm:flex-row sm:gap-5">
+            <div className={cn("footer-bottom", revealed && "is-in")}>
               {/* Arabic leads with the words and closes with the year so bidi
-                  never has to reorder a trailing "©" or full stop. */}
+                  never has to reorder a trailing "©". */}
               <span>
                 {t(
                   `© ${new Date().getFullYear()} Reload. All rights reserved.`,
                   `جميع الحقوق محفوظة لريلود © ${new Date().getFullYear()}`,
                 )}
               </span>
-              <nav aria-label={t("Footer company navigation", "روابط الشركة في التذييل")} className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-                {/* dir="ltr" keeps the address intact: bidi would otherwise
-                    reorder the dots and @ inside an RTL line. */}
-                <a
-                  href="mailto:mujebteem@gmail.com"
-                  dir="ltr"
-                  className="footer-link"
-                >
-                  mujebteem@gmail.com
-                </a>
-                {companyLinks.map((link) => (
-                  <FooterLink key={link.label} {...link} />
-                ))}
-                {legalLinks.map((link) => (
-                  <FooterLink key={link.label} {...link} />
-                ))}
-              </nav>
+              <span className="footer-made">
+                <HeartMark />
+                {t("Proudly built in Saudi Arabia", "صُنع بفخر في السعودية")}
+                <SaudiTime />
+              </span>
             </div>
           </motion.div>
         </div>
@@ -181,20 +213,77 @@ function FooterPanel({
   );
 }
 
-function FooterLink({ label, href }: { label: string; href: string }) {
+function FooterLink({ label, href, start }: { label: string; href: string; start?: boolean }) {
+  const className = cn("footer-link", start && "footer-link-start");
   if (href.startsWith("mailto:")) {
     return (
-      <a href={href} className="footer-link">
+      <a href={href} className={className}>
         {label}
       </a>
     );
   }
 
   return (
-    <Link href={href} className="footer-link">
-      {label}
+    <Link href={href} className={className}>
+      <span className="footer-link-text">{label}</span>
+      {start && <ArrowUpRight aria-hidden="true" className="footer-link-arrow size-3.5" />}
     </Link>
   );
+}
+
+const CONTACT_EMAIL = "info@reload.sa";
+
+/** The contact address, with a copy button that confirms in place. */
+function EmailChip({ t }: { t: (en: string, ar: string) => string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(CONTACT_EMAIL);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      window.location.href = `mailto:${CONTACT_EMAIL}`;
+    }
+  };
+  return (
+    <div className="footer-email">
+      {/* dir="ltr" keeps the address intact inside RTL text. */}
+      <a href={`mailto:${CONTACT_EMAIL}`} dir="ltr" className="footer-email-link">
+        <Mail className="size-4" />
+        {CONTACT_EMAIL}
+      </a>
+      <button type="button" onClick={() => void copy()} className="footer-email-copy" aria-label={t("Copy email address", "نسخ البريد الإلكتروني")}>
+        <span className={cn("footer-email-icon", copied && "is-hidden")}><Copy className="size-3.5" /></span>
+        <span className={cn("footer-email-icon", !copied && "is-hidden")}><Check className="size-3.5" /></span>
+      </button>
+      <span role="status" aria-live="polite" className={cn("footer-email-toast", copied && "is-shown")}>{t("Copied", "تم النسخ")}</span>
+    </div>
+  );
+}
+
+/** A green heart, in place of a flag: Saudi green. It draws itself once as
+ *  the footer comes into view, then beats once on hover. */
+function HeartMark() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="footer-heart">
+      <path pathLength={1} d="M12 20.5s-7.3-4.5-9.3-9C1.3 8.3 3.2 4.6 6.8 4.6c2.1 0 3.5 1.1 5.2 3.1 1.7-2 3.1-3.1 5.2-3.1 3.6 0 5.5 3.7 4.1 6.9-2 4.5-9.3 9-9.3 9z" />
+    </svg>
+  );
+}
+
+/** Current time in Saudi Arabia, a small "we're here" detail. Rendered after
+ *  mount so server and browser clocks can't disagree. */
+function SaudiTime() {
+  const { isArabic } = useLanguage();
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  if (!now) return null;
+  const time = new Intl.DateTimeFormat(isArabic ? "ar-SA-u-nu-latn" : "en-US", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Riyadh" }).format(now);
+  return <span className="footer-time"><span aria-hidden="true">·</span><time dateTime={now.toISOString()}>{time}</time></span>;
 }
 
 function FooterLetter({
