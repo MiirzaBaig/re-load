@@ -154,7 +154,18 @@ export function AdminShell({ initial, ...data }: AdminData & { initial: DeskStat
     const { error } = await client.functions.invoke("whatsapp-connection", { body: { storeId, action } });
     setChannelBusy(null);
     if (error) {
-      toast.error(t("Could not update the WhatsApp channel. Check that the store and policy are ready.", "تعذّر تحديث قناة واتساب. تحقق من ربط المتجر ونشر سياسته."));
+      const response = "context" in error ? error.context : null;
+      const payload = response instanceof Response ? await response.json().catch(() => null) : null;
+      const code = payload?.error;
+      const messages: Record<string, [string, string]> = {
+        platform_owner_required: ["A Reload owner with two-factor sign-in must activate this channel.", "تفعيل القناة يتطلب دخول مالك ريلود بالتحقق الثنائي."],
+        store_setup_incomplete: ["Connect the store and publish its return policy first.", "اربط المتجر وانشر سياسة الإرجاع أولًا."],
+        number_assigned_to_another_store: ["This number is active for another pilot store. Disconnect it there first.", "هذا الرقم مفعّل لمتجر آخر. افصله من المتجر السابق أولًا."],
+        meta_number_not_ready: ["The WhatsApp number is not ready in Meta yet.", "رقم واتساب غير جاهز في ميتا بعد."],
+        meta_number_unavailable: ["Could not reach the registered WhatsApp number. Check the Meta connection.", "تعذّر الوصول إلى رقم واتساب المسجل. تحقق من ربط ميتا."],
+      };
+      const message = messages[code] ?? ["Could not update WhatsApp. Please try again.", "تعذّر تحديث واتساب. حاول مرة أخرى."];
+      toast.error(t(message[0], message[1]));
       return;
     }
     toast.success(action === "connect" ? t("WhatsApp is active for this store.", "تم تفعيل واتساب لهذا المتجر.") : t("WhatsApp was disconnected from this store.", "تم فصل واتساب عن هذا المتجر."));
