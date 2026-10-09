@@ -38,7 +38,9 @@ type ZidConnection = {
 
 type Action = "connect" | "test" | "disconnect" | null;
 
-export function ZidConnectCard({ onChange }: { onChange?: () => void }) {
+/** `embedded` renders just the connect flow and actions, for the
+ *  integrations side panel (which shows its own header and share card). */
+export function ZidConnectCard({ onChange, embedded = false }: { onChange?: () => void; embedded?: boolean }) {
   const { workspace } = useAuth();
   const { t, locale } = useLanguage();
   const [connection, setConnection] = useState<ZidConnection | null>(null);
@@ -150,14 +152,15 @@ export function ZidConnectCard({ onChange }: { onChange?: () => void }) {
     ? (withTime ? formatDateTimeString(value, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }, locale) : formatDateString(value, { year: "numeric", month: "short", day: "numeric" }, locale))
     : null;
 
+  if (loading && embedded) return <div className="space-y-3"><Skeleton className="h-24 rounded-2xl" /><Skeleton className="h-24 rounded-2xl" /><Skeleton className="h-28 rounded-2xl" /></div>;
   if (loading) return <Card className="rounded-3xl border-border/70"><CardContent className="space-y-4 p-6 sm:p-8"><div className="flex gap-4"><Skeleton className="size-[60px] rounded-2xl" /><div className="flex-1 space-y-2 pt-1"><Skeleton className="h-6 w-32" /><Skeleton className="h-4 w-2/3" /></div></div><Skeleton className="h-28 rounded-2xl" /></CardContent></Card>;
 
+  const Shell = embedded ? EmbeddedShell : CardShell;
   return (
-    <Card className="zid-card overflow-hidden rounded-3xl border-border/70 shadow-[0_22px_70px_-42px_hsl(var(--foreground)/0.25)]">
-      <CardContent className="p-0">
-        <div className="flex flex-col gap-7 p-5 sm:p-8">
+    <Shell>
+        <div className={cn("flex flex-col gap-7", !embedded && "p-5 sm:p-8")}>
           {/* Header */}
-          <div className="flex items-start gap-4">
+          {!embedded && <div className="flex items-start gap-4">
             <motion.div className="relative shrink-0" animate={justConnected ? { scale: [1, 1.06, 1] } : { scale: 1 }} transition={{ duration: 0.5, ease: [0.2, 0, 0, 1] }}>
               <Image src="/zid-logo.png" alt="" width={60} height={60} className="size-[60px] rounded-2xl shadow-sm" />
               <AnimatePresence>
@@ -186,7 +189,7 @@ export function ZidConnectCard({ onChange }: { onChange?: () => void }) {
                 <span>{t(`Last checked ${date(connection?.last_synced_at ?? null, true) ?? "not yet"}`, `آخر تحقق ${date(connection?.last_synced_at ?? null, true) ?? "لم يتم بعد"}`)}</span>
               </div>}
             </div>
-          </div>
+          </div>}
 
           {/* Guided connect */}
           <AnimatePresence initial={false} mode="wait">
@@ -243,7 +246,7 @@ export function ZidConnectCard({ onChange }: { onChange?: () => void }) {
         </div>
 
         {/* Promises */}
-        <div className="grid border-t border-border/60 bg-muted/20 sm:grid-cols-3">
+        <div className={cn("grid sm:grid-cols-3", embedded ? "mt-6 overflow-hidden rounded-2xl border border-border/60 bg-muted/20" : "border-t border-border/60 bg-muted/20")}>
           <div className="flex items-center gap-3 p-4 text-sm"><ShieldCheck className="size-4 text-[#7c3aed] dark:text-[#b070ff]" /><span>{t("Encrypted link", "رابط مشفّر")}</span></div>
           <div className="flex items-center gap-3 border-y border-border/60 p-4 text-sm sm:border-x sm:border-y-0"><Link2 className="size-4 text-[#7c3aed] dark:text-[#b070ff]" /><span>{t("Orders and returns only", "الطلبات والمرتجعات فقط")}</span></div>
           <div className="flex items-center gap-3 p-4 text-sm"><Clock className="size-4 text-[#7c3aed] dark:text-[#b070ff]" /><span>{t("Disconnect anytime", "إمكانية فصل الربط في أي وقت")}</span></div>
@@ -251,7 +254,7 @@ export function ZidConnectCard({ onChange }: { onChange?: () => void }) {
 
         {/* Return link, once connected */}
         <AnimatePresence initial={false}>
-          {connected && returnPath && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={QUICK} className="overflow-hidden border-t border-border/60">
+          {!embedded && connected && returnPath && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={QUICK} className="overflow-hidden border-t border-border/60">
             <div className="p-5 sm:p-6">
               <div className="flex flex-col gap-4 rounded-2xl border border-[#7c3aed]/15 bg-[#7c3aed]/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div><p className="text-sm font-semibold">{t("Customer return page", "صفحة إرجاع العملاء")}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{t("Customers enter their Zid order number and the phone or email on the order.", "يدخل العميل رقم طلبه في زد والجوال أو البريد المسجل في الطلب.")}</p></div>
@@ -260,7 +263,6 @@ export function ZidConnectCard({ onChange }: { onChange?: () => void }) {
             </div>
           </motion.div>}
         </AnimatePresence>
-      </CardContent>
 
       <AlertDialog open={confirmDisconnect} onOpenChange={setConfirmDisconnect}>
         <AlertDialogContent>
@@ -274,8 +276,16 @@ export function ZidConnectCard({ onChange }: { onChange?: () => void }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </Shell>
   );
+}
+
+function CardShell({ children }: { children: React.ReactNode }) {
+  return <Card className="zid-card overflow-hidden rounded-3xl border-border/70 shadow-[0_22px_70px_-42px_hsl(var(--foreground)/0.25)]"><CardContent className="p-0">{children}</CardContent></Card>;
+}
+
+function EmbeddedShell({ children }: { children: React.ReactNode }) {
+  return <div className="zid-card">{children}</div>;
 }
 
 /** One step of the guided connect: number → check when done, highlighted when current. */

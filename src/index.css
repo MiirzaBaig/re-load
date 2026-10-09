@@ -5213,3 +5213,25 @@ html[data-admin-welcome="play"] .admin-grow { transform: scaleX(0); }
   .footer-made:hover .footer-heart, .footer-logo:hover .footer-logo-mark { animation: none; transform: none; }
   .footer-link-text, .footer-link-arrow { transition: none; }
 }
+
+/* ── Integrations hub (views/integrations.tsx) ─────────────────────────────
+   A faint dot texture on the hero that fades out downward (texture, not glow),
+   tiles that lift and nudge their arrow, quick press feedback. */
+.integrations-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 1px 1px, color-mix(in oklab, var(--foreground) 9%, transparent) 1px, transparent 0);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 75%);
+}
+.store-tile { transition: border-color 200ms var(--ease-brand), box-shadow 200ms var(--ease-brand), transform 160ms var(--ease-brand); }
+.store-tile .store-tile-cta svg { transition: transform 240ms var(--ease-brand); }
+.store-tile:hover .store-tile-cta svg { transform: translateX(3px); }
+[dir="rtl"] .store-tile:hover .store-tile-cta svg { transform: rotate(180deg) translateX(3px); }
+.store-tile:active:not([aria-disabled]) { transform: scale(0.99); }
+.store-tile:focus-visible { outline: 2px solid color-mix(in srgb, var(--ring) 70%, transparent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .store-tile, .store-tile .store-tile-cta svg { transition: none; }
+}

@@ -38,9 +38,11 @@ export const DOT_R = 0.44;
 const LOGO_SPAN = 9;
 
 export function createBrandQr(text = EVENT_QR_URL): BrandQr {
-  // Version 4 (33×33) rather than the minimum: finer dots read as a texture
-  // and leave room for the symbol without crowding the data.
-  const qr = QRCode.create(text, { errorCorrectionLevel: "H", version: 4 });
+  // At least version 4 (33×33) rather than the minimum: finer dots read as a
+  // texture and leave room for the symbol. Longer text (e.g. a store's return
+  // link) needs a bigger version, so let the library grow it from there.
+  const fitted = QRCode.create(text, { errorCorrectionLevel: "H" });
+  const qr = fitted.version >= 4 ? fitted : QRCode.create(text, { errorCorrectionLevel: "H", version: 4 });
   const n = qr.modules.size;
   const size = n + QUIET * 2;
   const centre = (n - 1) / 2;
