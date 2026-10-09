@@ -421,7 +421,8 @@ async function handleMessage(phoneNumberId: string, message: MetaMessage, profil
   if (!messageId || !waId) return;
   const admin = adminClient();
   const publicEntry = textOf(message).trim().toLowerCase() === "reload";
-  if (publicEntry) {
+  const { data: connection } = await admin.from("whatsapp_connections").select("store_id").eq("phone_number_id", phoneNumberId).eq("status", "CONNECTED").maybeSingle();
+  if (publicEntry || !connection) {
     if (!await claim(admin, null, messageId, "PUBLIC_WEBSITE_ENTRY")) return;
     try {
       const body = [
@@ -442,8 +443,6 @@ async function handleMessage(phoneNumberId: string, message: MetaMessage, profil
       throw error;
     }
   }
-  const { data: connection } = await admin.from("whatsapp_connections").select("store_id").eq("phone_number_id", phoneNumberId).eq("status", "CONNECTED").maybeSingle();
-  if (!connection) throw new Error("whatsapp_connection_not_found");
   if (!await claim(admin, connection.store_id, messageId, `MESSAGE_${String(message.type ?? "unknown").toUpperCase()}`)) return;
   try {
     const { data: store, error: storeError } = await admin.from("stores").select("id,name,return_code").eq("id", connection.store_id).single();
