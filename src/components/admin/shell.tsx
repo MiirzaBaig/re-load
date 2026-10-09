@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { MotionConfig, motion } from "framer-motion";
 import {
   Activity, ClipboardList, Ellipsis, FileText, LayoutDashboard, LogOut, MessageSquareWarning,
@@ -48,6 +49,7 @@ export function AdminShell({ initial, ...data }: AdminData & { initial: DeskStat
   const [importOpen, setImportOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [channelBusy, setChannelBusy] = useState<string | null>(null);
   const canEdit = data.role !== "viewer";
   const me = data.team.find((member) => member.user_id === data.currentUserId);
 
@@ -143,6 +145,20 @@ export function AdminShell({ initial, ...data }: AdminData & { initial: DeskStat
   const signOut = async () => {
     await getSupabaseBrowserClient()?.auth.signOut();
     window.location.href = "/admin/login";
+  };
+
+  const updateChannel = async (storeId: string, action: "connect" | "disconnect") => {
+    const client = getSupabaseBrowserClient();
+    if (!client) return;
+    setChannelBusy(storeId);
+    const { error } = await client.functions.invoke("whatsapp-connection", { body: { storeId, action } });
+    setChannelBusy(null);
+    if (error) {
+      toast.error(t("Could not update the WhatsApp channel. Check that the store and policy are ready.", "تعذّر تحديث قناة واتساب. تحقق من ربط المتجر ونشر سياسته."));
+      return;
+    }
+    toast.success(action === "connect" ? t("WhatsApp is active for this store.", "تم تفعيل واتساب لهذا المتجر.") : t("WhatsApp was disconnected from this store.", "تم فصل واتساب عن هذا المتجر."));
+    router.refresh();
   };
 
   const drawerSequence = state.view === "leads" ? visibleLeads.map((lead) => lead.id) : state.view === "today" ? queue.map((lead) => lead.id) : leads.map((lead) => lead.id);
@@ -281,7 +297,7 @@ export function AdminShell({ initial, ...data }: AdminData & { initial: DeskStat
 
     <LeadDrawer team={data.team} leadId={state.lead} lead={leads.find((lead) => lead.id === state.lead)} sequence={drawerSequence} labels={labels} canEdit={canEdit} currentUserId={data.currentUserId}
       saveState={state.lead ? saveState[state.lead] : undefined} update={update} onNavigate={(id) => go({ lead: id }, { push: false })} />
-    <MerchantDrawer merchant={merchants.find((m) => m.id === state.merchant)} data={data} labels={labels} onClose={() => go({ merchant: null }, { push: false })} />
+    <MerchantDrawer merchant={merchants.find((m) => m.id === state.merchant)} data={data} labels={labels} onClose={() => go({ merchant: null }, { push: false })} canManageChannel={data.role === "owner"} channelBusy={channelBusy === state.merchant} onUpdateChannel={updateChannel} />
     <ImportDialog open={importOpen} onOpenChange={setImportOpen} labels={labels} onImported={() => router.refresh()} />
     <AdminCommand open={paletteOpen} onOpenChange={setPaletteOpen} nav={nav} leads={leads} merchants={merchants} labels={labels} canEdit={canEdit}
       onView={(view) => openView(view)} onLead={(id) => openLead(id, "leads")} onMerchant={(id) => go({ view: "merchants", merchant: id })} onImport={() => setImportOpen(true)} onShortcuts={() => setHelpOpen(true)} />

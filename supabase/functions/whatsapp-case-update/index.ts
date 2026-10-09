@@ -1,7 +1,7 @@
 import { sha256 } from "../_shared/crypto.ts";
 import { json } from "../_shared/http.ts";
 import { adminClient } from "../_shared/supabase.ts";
-import { sendWhatsAppText, sentMessageId } from "../_shared/whatsapp.ts";
+import { sendWhatsAppTemplate, sendWhatsAppText, sentMessageId } from "../_shared/whatsapp.ts";
 
 type CaseStatus = "AWAITING_ITEM" | "RECEIVED" | "RESOLVED" | "CANCELLED";
 
@@ -15,13 +15,20 @@ const copy: Record<CaseStatus, { en: string; ar: string }> = {
     ar: "استلم المتجر المنتج المرتجع. المبلغ المسترد بانتظار التأكيد النهائي.",
   },
   RESOLVED: {
-    en: "Your return is complete and the merchant has confirmed the refund.",
-    ar: "اكتمل طلب الإرجاع وأكد المتجر عملية استرداد المبلغ.",
+    en: "The store marked your return complete. Please check with the store for the refund timing.",
+    ar: "أكمل المتجر طلب الإرجاع. لمعرفة موعد استرداد المبلغ، تواصل مع المتجر.",
   },
   CANCELLED: {
     en: "Your return case was cancelled. Reply to this message if you need help.",
     ar: "تم إلغاء طلب الإرجاع. أرسل رداً على هذه الرسالة إذا كنت بحاجة إلى مساعدة.",
   },
+};
+
+const templateName: Record<CaseStatus, string> = {
+  AWAITING_ITEM: "reload_return_approved",
+  RECEIVED: "reload_return_item_received",
+  RESOLVED: "reload_return_completed",
+  CANCELLED: "reload_return_cancelled",
 };
 
 Deno.serve(async (request) => {
@@ -31,13 +38,16 @@ Deno.serve(async (request) => {
     const body = await request.json();
     const caseId = typeof body?.caseId === "string" ? body.caseId : "";
     const status = typeof body?.status === "string" ? body.status as CaseStatus : null;
-    const changedAt = typeof body?.changedAt === "string" ? body.changedAt : "";
     if (!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(caseId) || !status || !copy[status]) {
       return json({ error: "invalid_request" }, 400);
     }
 
     const admin = adminClient();
-    const externalEventId = `case-update:${caseId}:${status}:${changedAt}`;
+    const { data: currentCase } = await admin.from("return_cases").select("store_id,status,updated_at").eq("id", caseId).maybeSingle();
+    if (!currentCase || currentCase.status !== status || currentCase.updated_at !== body?.changedAt) {
+      return json({ error: "stale_case_update" }, 409);
+    }
+    const externalEventId = `case-update:${caseId}:${status}:${currentCase.updated_at}`;
     const { data: claimed, error: claimError } = await admin.from("integration_events").insert({
       provider: "whatsapp",
       external_event_id: externalEventId,
@@ -46,9 +56,18 @@ Deno.serve(async (request) => {
       status: "PROCESSING",
       attempts: 1,
     }).select("id").maybeSingle();
-    if (claimError?.code === "23505") return json({ received: true, duplicate: true });
-    if (claimError || !claimed) throw claimError ?? new Error("notification_claim_failed");
-    eventId = claimed.id;
+    if (claimError?.code === "23505") {
+      const { data: existing } = await admin.from("integration_events").select("id,status,attempts,received_at")
+        .eq("provider", "whatsapp").eq("external_event_id", externalEventId).maybeSingle();
+      if (!existing || existing.status === "PROCESSED") return json({ received: true, duplicate: true });
+      if (existing.status === "PROCESSING" && Date.now() - new Date(existing.received_at).getTime() < 60_000) return json({ received: true, processing: true });
+      const { error: retryError } = await admin.from("integration_events").update({ status: "PROCESSING", attempts: Number(existing.attempts) + 1, last_error: null })
+        .eq("id", existing.id);
+      if (retryError) throw retryError;
+      eventId = existing.id;
+    }
+    if (claimError?.code !== "23505" && (claimError || !claimed)) throw claimError ?? new Error("notification_claim_failed");
+    if (!eventId && claimed) eventId = claimed.id;
 
     const { data: conversation, error: conversationError } = await admin
       .from("whatsapp_conversations")
@@ -67,16 +86,6 @@ Deno.serve(async (request) => {
       return json({ sent: false, reason: "no_whatsapp_conversation" });
     }
 
-    if (!conversation.service_window_expires_at || new Date(conversation.service_window_expires_at) <= new Date()) {
-      await admin.from("integration_events").update({
-        store_id: conversation.store_id,
-        status: "FAILED",
-        processed_at: new Date().toISOString(),
-        last_error: "service_window_expired_template_required",
-      }).eq("id", eventId);
-      return json({ sent: false, reason: "template_required" });
-    }
-
     const contact = Array.isArray(conversation.whatsapp_contacts)
       ? conversation.whatsapp_contacts[0]
       : conversation.whatsapp_contacts;
@@ -84,7 +93,11 @@ Deno.serve(async (request) => {
     if (!recipient) throw new Error("whatsapp_contact_missing");
     const language = conversation.language === "en" ? "en" : "ar";
     const message = copy[status][language];
-    const result = await sendWhatsAppText(recipient, message);
+    const outsideWindow = !conversation.service_window_expires_at || new Date(conversation.service_window_expires_at) <= new Date();
+    const reference = `RL-${caseId.slice(0, 8).toUpperCase()}`;
+    const result = outsideWindow
+      ? await sendWhatsAppTemplate(recipient, templateName[status], language, [reference])
+      : await sendWhatsAppText(recipient, message);
     const messageId = sentMessageId(result);
 
     await admin.from("whatsapp_messages").insert({
@@ -92,7 +105,8 @@ Deno.serve(async (request) => {
       conversation_id: conversation.id,
       external_message_id: messageId,
       direction: "OUTBOUND",
-      message_type: "TEXT",
+      message_type: outsideWindow ? "TEMPLATE" : "TEXT",
+      template_name: outsideWindow ? templateName[status] : null,
       body: message,
       status: "SENT",
       safe_metadata: { case_id: caseId, case_status: status },

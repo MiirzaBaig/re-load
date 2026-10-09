@@ -43,6 +43,44 @@ export async function sendWhatsAppText(to: string, body: string) {
   });
 }
 
+export async function sendWhatsAppTemplate(to: string, name: string, language: "ar" | "en", values: string[]) {
+  return metaRequest({
+    recipient_type: "individual",
+    to: digits(to),
+    type: "template",
+    template: {
+      name,
+      language: { code: language === "ar" ? "ar" : "en_US" },
+      components: [{
+        type: "body",
+        parameters: values.map((value) => ({ type: "text", text: value.slice(0, 1024) })),
+      }],
+    },
+  });
+}
+
+export async function downloadWhatsAppImage(mediaId: string) {
+  const token = env("WHATSAPP_ACCESS_TOKEN");
+  const metadata = await fetch(
+    `https://graph.facebook.com/${GRAPH_VERSION}/${encodeURIComponent(mediaId)}?phone_number_id=${encodeURIComponent(env("WHATSAPP_PHONE_NUMBER_ID"))}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (!metadata.ok) throw new Error(`whatsapp_media_lookup_${metadata.status}`);
+  const details = await metadata.json() as { url?: string; mime_type?: string; file_size?: number };
+  if (!details.url || !["image/jpeg", "image/png"].includes(details.mime_type ?? "") || Number(details.file_size) > 5_242_880) {
+    throw new Error("whatsapp_image_unsupported");
+  }
+  const url = new URL(details.url);
+  if (url.protocol !== "https:" || !["facebook.com", "fbsbx.com", "fbcdn.net"].some((host) => url.hostname === host || url.hostname.endsWith(`.${host}`))) {
+    throw new Error("whatsapp_media_url_invalid");
+  }
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!response.ok) throw new Error(`whatsapp_media_download_${response.status}`);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (!bytes.length || bytes.length > 5_242_880) throw new Error("whatsapp_image_size_invalid");
+  return { bytes, mimeType: details.mime_type as "image/jpeg" | "image/png" };
+}
+
 export async function sendWhatsAppButtons(
   to: string,
   body: string,

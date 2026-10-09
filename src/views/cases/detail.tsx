@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   Check,
   CircleHelp,
+  ImageIcon,
   FileText,
   Lock,
   Maximize2,
@@ -54,6 +55,8 @@ type CaseData = {
   customer: Record<string, unknown>;
   item: Record<string, unknown>;
   decision: Record<string, any>;
+  evidence: { assessment: Record<string, unknown>; review_required: boolean; storage_path: string } | null;
+  photoUrl: string | null;
 };
 
 const transitions: Record<CaseStatus, CaseStatus[]> = {
@@ -105,7 +108,14 @@ export function CaseDetail({ caseId, variant, onBack, onClose }: {
       .eq("id", caseId)
       .maybeSingle();
     const row = result.data as Record<string, any> | null;
-    if (row)
+    if (row) {
+      const evidenceResult = await supabase.from("return_evidence")
+        .select("assessment, review_required, storage_path")
+        .eq("case_id", caseId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      const evidence = evidenceResult.data as CaseData["evidence"];
+      const signed = evidence?.storage_path
+        ? await supabase.storage.from("return-evidence").createSignedUrl(evidence.storage_path, 300)
+        : null;
       setData({
         id: row.id,
         orderId: row.order_id,
@@ -115,7 +125,10 @@ export function CaseDetail({ caseId, variant, onBack, onClose }: {
         customer: row.customer_snapshot ?? {},
         item: row.item_snapshot ?? {},
         decision: row.eligibility_decisions ?? {},
+        evidence: evidence ?? null,
+        photoUrl: signed?.data?.signedUrl ?? null,
       });
+    }
     setLoading(false);
   };
   useEffect(() => {
@@ -248,6 +261,26 @@ export function CaseDetail({ caseId, variant, onBack, onClose }: {
               <Fact label={t("Reason", "السبب")} value={reasonLabel(String(data.item.reason ?? "—"), t)} />
               <Fact label={t("Condition", "الحالة")} value={conditionLabel(String(data.item.condition ?? "—"), t)} />
             </dl>
+            {data.evidence && <div className="mt-5 overflow-hidden rounded-xl border border-border bg-muted/20">
+              {data.photoUrl ? <img src={data.photoUrl} alt={t("Photo sent by the customer", "الصورة التي أرسلها العميل")} className="max-h-80 w-full bg-muted object-contain" />
+                : <div className="flex min-h-28 items-center justify-center gap-2 text-sm text-muted-foreground"><ImageIcon className="size-4" />{t("Photo unavailable", "الصورة غير متاحة")}</div>}
+              <div className="flex flex-wrap items-start gap-3 border-t border-border px-4 py-3">
+                <ImageIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">{t("Customer photo", "صورة العميل")}</p>
+                  <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{data.evidence.assessment.state === "pending" || data.evidence.assessment.state === "processing"
+                    ? t("Photo saved. Image review is in progress; please check it yourself before acting.", "حُفظت الصورة. جارٍ فحصها، وراجعها بنفسك قبل اتخاذ أي إجراء.")
+                    : data.evidence.review_required
+                      ? t("Please check the photo before confirming the next step. An image cannot prove the item's history or authenticity.", "راجع الصورة قبل تأكيد الخطوة التالية. لا يمكن للصورة إثبات تاريخ استخدام المنتج أو أصالته.")
+                      : t("Photo saved with this case. Check it alongside the order and policy details.", "الصورة محفوظة مع الطلب. راجعها مع بيانات الطلب والسياسة.")}</p>
+                  {data.evidence.assessment.state === "reviewed" && <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
+                    <span className="rounded-full border border-border px-2 py-1">{data.evidence.assessment.clarity === "clear" ? t("Clear image", "صورة واضحة") : t("Image unclear", "الصورة غير واضحة")}</span>
+                    <span className="rounded-full border border-border px-2 py-1">{data.evidence.assessment.visibleItem === true ? t("Item visible", "المنتج ظاهر") : t("Item not clear", "المنتج غير واضح")}</span>
+                    {data.evidence.assessment.visibleDamage === "yes" && <span className="rounded-full border border-border px-2 py-1">{t("Visible damage to review", "تلف ظاهر يحتاج مراجعة")}</span>}
+                  </div>}
+                </div>
+              </div>
+            </div>}
           </Station>
 
           <Station

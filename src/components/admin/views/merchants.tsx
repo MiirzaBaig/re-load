@@ -33,7 +33,7 @@ export function MerchantsView({ merchants, labels, selectedId, onOpen }: { merch
       <FilterChip active={stage === "live"} onClick={() => setStage("live")} count={live}>{t("Fully set up", "مكتمل")}</FilterChip>
       </div>
     </div>
-    <p className="max-w-2xl text-xs leading-5 text-muted-foreground">{t("Read-only. A test channel is shown as a test, never as a live customer channel.", "للقراءة فقط. تُعرض القناة التجريبية كتجربة، لا كقناة عملاء فعّالة.")}</p>
+    <p className="max-w-2xl text-xs leading-5 text-muted-foreground">{t("One Reload WhatsApp number serves the current pilot store. Open a merchant to review or manage its channel.", "رقم واتساب ريلود مخصص حاليًا لمتجر تجريبي واحد. افتح المتجر لمراجعة قناته أو إدارتها.")}</p>
     <div className="admin-card overflow-hidden rounded-2xl border border-border bg-card">
       <div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_120px_80px_24px] gap-4 border-b border-border bg-muted/40 px-5 py-3 text-xs font-medium text-muted-foreground md:grid">
         <span>{t("Store", "المتجر")}</span><span>{t("Setup", "الإعداد")}</span><span>{t("WhatsApp", "واتساب")}</span><span className="text-end">{t("Cases", "الحالات")}</span><span />
@@ -65,7 +65,7 @@ function ConnectionBadge({ status, labels }: { status?: string; labels: Labels }
   </span>;
 }
 
-export function MerchantDrawer({ merchant, data, labels, onClose }: { merchant: Merchant | undefined; data: AdminData; labels: Labels; onClose: () => void }) {
+export function MerchantDrawer({ merchant, data, labels, onClose, canManageChannel, channelBusy, onUpdateChannel }: { merchant: Merchant | undefined; data: AdminData; labels: Labels; onClose: () => void; canManageChannel: boolean; channelBusy: boolean; onUpdateChannel: (storeId: string, action: "connect" | "disconnect") => Promise<void> }) {
   const { t, isArabic } = labels;
   const cases = merchant ? data.cases.filter((row) => row.store_id === merchant.id) : [];
   const decisions = merchant ? data.decisions.filter((row) => row.store_id === merchant.id) : [];
@@ -102,6 +102,12 @@ export function MerchantDrawer({ merchant, data, labels, onClose }: { merchant: 
               {merchant.commerce?.last_synced_at && <p className="px-1 text-xs text-muted-foreground">{t("Last synced", "آخر مزامنة")} {labels.datetime(merchant.commerce.last_synced_at)}</p>}
               <div className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-3"><span className="text-sm">WhatsApp</span><ConnectionBadge status={merchant.whatsapp?.status} labels={labels} /></div>
               {merchant.whatsapp?.last_webhook_at && <p className="px-1 text-xs text-muted-foreground">{t("Last message event", "آخر حدث رسائل")} {labels.datetime(merchant.whatsapp.last_webhook_at)}</p>}
+              {canManageChannel && <div className="pt-1">
+                <Button variant="outline" size="sm" disabled={channelBusy || (merchant.whatsapp?.status !== "CONNECTED" && (!merchant.policy || merchant.commerce?.status !== "CONNECTED"))} onClick={() => void onUpdateChannel(merchant.id, merchant.whatsapp?.status === "CONNECTED" ? "disconnect" : "connect")}>
+                  {channelBusy ? t("Updating…", "جارٍ التحديث…") : merchant.whatsapp?.status === "CONNECTED" ? t("Disconnect WhatsApp", "فصل واتساب") : t("Activate WhatsApp", "تفعيل واتساب")}
+                </Button>
+                {merchant.whatsapp?.status !== "CONNECTED" && (!merchant.policy || merchant.commerce?.status !== "CONNECTED") && <p className="mt-2 text-xs leading-5 text-muted-foreground">{t("Connect the store and publish its policy before activation.", "اربط المتجر وانشر سياسته قبل تفعيل القناة.")}</p>}
+              </div>}
             </div>
           </section>
           <section className="space-y-3"><SectionLabel>{t("Returns", "المرتجعات")}</SectionLabel>

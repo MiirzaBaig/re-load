@@ -1,13 +1,12 @@
 import { sha256 } from "../_shared/crypto.ts";
 import { env, json } from "../_shared/http.ts";
 import { adminClient } from "../_shared/supabase.ts";
-import { sendWhatsAppButtons, sendWhatsAppList, sendWhatsAppText, sentMessageId, verifyWhatsAppSignature, type WhatsAppSendResult } from "../_shared/whatsapp.ts";
-import { discoverPolicy, extractPolicy, fetchPolicyUrl } from "../_shared/policy.ts";
+import { downloadWhatsAppImage, sendWhatsAppButtons, sendWhatsAppList, sendWhatsAppText, sentMessageId, verifyWhatsAppSignature, type WhatsAppSendResult } from "../_shared/whatsapp.ts";
 
 type Admin = ReturnType<typeof adminClient>;
-type MetaMessage = { id?: string; from?: string; timestamp?: string; type?: string; text?: { body?: string }; interactive?: { button_reply?: { id?: string }; list_reply?: { id?: string } } };
+type MetaMessage = { id?: string; from?: string; timestamp?: string; type?: string; text?: { body?: string }; image?: { id?: string; mime_type?: string; caption?: string }; interactive?: { button_reply?: { id?: string }; list_reply?: { id?: string } } };
 type Item = { id: string; name: string; sku: string; quantity: number; price: number };
-type Context = { verificationToken?: string; order?: { orderId: string; customerName: string; items: Item[] }; itemId?: string; quantity?: number; reason?: string; condition?: string; decisionId?: string; onboardingToken?: string; draftId?: string; ruleIndex?: number; policyUrl?: string; policyText?: string; reportType?: "BUG" | "FEEDBACK"; reportMessage?: string };
+type Context = { verificationToken?: string; order?: { orderId: string; customerName: string; items: Item[] }; itemId?: string; quantity?: number; reason?: string; condition?: string; photoEvidenceId?: string; photoReviewRequired?: boolean; decisionId?: string; reportType?: "BUG" | "FEEDBACK"; reportMessage?: string };
 type Conversation = { id: string; language: string; contact_id: string; return_case_id: string | null };
 type Store = { id: string; name: string; return_code: string };
 
@@ -104,7 +103,7 @@ async function menu(to: string, language: "ar" | "en", profileName?: string) {
 }
 
 async function reasons(to: string, language: "ar" | "en") {
-  const body = language === "ar" ? "3 من 4 · وش سبب الإرجاع؟" : "3 of 4 · What’s the reason for the return?";
+  const body = language === "ar" ? "3 من 5 · وش سبب الإرجاع؟" : "3 of 5 · What’s the reason for the return?";
   const values = language === "ar"
     ? [["defective", "المنتج معيب"], ["wrong_item", "منتج غير صحيح"], ["not_as_described", "غير مطابق للوصف"], ["changed_mind", "تغيير الرأي"], ["damaged_in_transit", "تضرر أثناء الشحن"]]
     : [["defective", "Defective"], ["wrong_item", "Wrong item"], ["not_as_described", "Not as described"], ["changed_mind", "Changed my mind"], ["damaged_in_transit", "Damaged in transit"]];
@@ -144,61 +143,40 @@ function decisionExplanation(decision: { explanation?: string; reasonCodes?: str
 
 async function itemPrompt(to: string, language: "ar" | "en", order: NonNullable<Context["order"]>) {
   const body = language === "ar"
-    ? `2 من 4 · تم التحقق من الطلب ${order.orderId}. اختر المنتج اللي تبي ترجعه.`
-    : `2 of 4 · Order ${order.orderId} is verified. Which item would you like to return?`;
+    ? `2 من 5 · تم التحقق من الطلب ${order.orderId}. اختر المنتج اللي تبي ترجعه.`
+    : `2 of 5 · Order ${order.orderId} is verified. Which item would you like to return?`;
   return { body, result: await sendWhatsAppList(to, body, language === "ar" ? "اختيار المنتج" : "Choose item", order.items.slice(0, 10).map((item) => ({ id: `item:${item.id}`, title: item.name, description: `${item.sku || "SKU —"} · Qty ${item.quantity}` }))), type: "INTERACTIVE" as const };
 }
 
-function policyMethodPrompt(to: string, language: "ar" | "en", foundUrl?: string) {
-  const body = foundUrl
-    ? language === "ar" ? `لقينا سياسة إرجاع منشورة في متجرك:\n${foundUrl}\n\nتبغى نستخدمها؟ ما راح ننشر أي قاعدة قبل موافقتك.` : `We found a return policy on your store:\n${foundUrl}\n\nWould you like us to use it? Nothing becomes active without your approval.`
-    : language === "ar" ? "ما لقينا سياسة إرجاع واضحة في المتجر، ولا راح نخمن. اختر الطريقة الأنسب لك ونكمل من هنا." : "We couldn’t find a readable return policy, so we won’t guess. Choose the easiest way to continue.";
-  const rows = foundUrl
-    ? language === "ar" ? [{ id: "policy_import_found", title: "استخدام السياسة", description: "نحوّلها لمسودة للمراجعة" }, { id: "policy_url", title: "إرسال رابط آخر" }, { id: "policy_text", title: "لصق نص السياسة" }, { id: "policy_starter", title: "إنشاء سياسة مبدئية" }]
-      : [{ id: "policy_import_found", title: "Use this policy", description: "Turn it into a draft for review" }, { id: "policy_url", title: "Send another URL" }, { id: "policy_text", title: "Paste policy text" }, { id: "policy_starter", title: "Create a starter policy" }]
-    : language === "ar" ? [{ id: "policy_url", title: "إرسال رابط السياسة" }, { id: "policy_text", title: "لصق نص السياسة" }, { id: "policy_starter", title: "إنشاء سياسة مبدئية" }]
-      : [{ id: "policy_url", title: "Send policy URL" }, { id: "policy_text", title: "Paste policy text" }, { id: "policy_starter", title: "Create starter policy" }];
-  return { body, rows };
-}
-
-async function createPolicyDraft(admin: Admin, storeId: string, sourceText: string, language: "ar" | "en") {
-  const extracted = await extractPolicy(sourceText);
-  const { data: owner } = await admin.from("memberships").select("user_id").eq("store_id", storeId).in("role", ["owner", "admin"]).order("created_at", { ascending: true }).limit(1).maybeSingle();
-  if (!owner?.user_id) throw new Error("store_owner_required");
-  const { data: draft, error } = await admin.from("policy_drafts").insert({ store_id: storeId, name: language === "ar" ? "سياسة الإرجاع" : "Returns Policy", source_text: sourceText, rules: extracted.rules, extraction_state: "ready", created_by: owner.user_id }).select("id,rules").single();
+async function saveReturnPhoto(admin: Admin, store: Store, conversation: Conversation, message: MetaMessage, context: Context) {
+  if (!message.id || !message.image?.id) throw new Error("whatsapp_image_missing");
+  const { data: existing } = await admin.from("return_evidence")
+    .select("id,review_required").eq("external_message_id", message.id).maybeSingle();
+  if (existing) return { id: existing.id as string, reviewRequired: Boolean(existing.review_required) };
+  const { bytes, mimeType } = await downloadWhatsAppImage(message.image.id);
+  const path = `${store.id}/${conversation.id}/${message.id}.${mimeType === "image/png" ? "png" : "jpg"}`;
+  const uploaded = await admin.storage.from("return-evidence").upload(path, bytes, { contentType: mimeType, upsert: false });
+  if (uploaded.error) throw uploaded.error;
+  const { data, error } = await admin.from("return_evidence").insert({
+    store_id: store.id, conversation_id: conversation.id, external_message_id: message.id,
+    storage_path: path, mime_type: mimeType,
+    assessment: { state: "pending", itemName: context.order?.items.find((entry) => entry.id === context.itemId)?.name ?? "item", statedCondition: context.condition ?? "not stated" },
+    review_required: true,
+  }).select("id,review_required").single();
   if (error) throw error;
-  return { draftId: draft.id as string, rules: draft.rules as Array<Record<string, unknown>>, publisherId: owner.user_id as string };
+  return { id: data.id as string, reviewRequired: Boolean(data.review_required) };
 }
 
-async function rulePrompt(admin: Admin, to: string, language: "ar" | "en", conversationId: string, context: Context) {
-  const { data: draft } = await admin.from("policy_drafts").select("rules").eq("id", context.draftId).maybeSingle();
-  const rules = (draft?.rules ?? []) as Array<Record<string, unknown>>;
-  const index = Math.max(0, context.ruleIndex ?? 0);
-  const rule = rules[index];
-  if (!rule) {
-    await setFlow(admin, conversationId, "AWAITING_POLICY_PUBLISH", { ...context, ruleIndex: rules.length });
-    const body = language === "ar" ? `راجعنا ${rules.length} قواعد معك. كل شيء جاهز للنشر. بعد النشر، تصبح هذه القواعد هي المرجع الفعلي لقرارات الإرجاع.` : `You’ve reviewed all ${rules.length} rules. Everything is ready to publish. Once published, these rules become the source used for return decisions.`;
-    return { body, result: await sendWhatsAppButtons(to, body, language === "ar" ? [{ id: "policy_publish", title: "نشر السياسة" }, { id: "policy_review_again", title: "مراجعة مرة أخرى" }, { id: "onboarding_later", title: "أكمل لاحقًا" }] : [{ id: "policy_publish", title: "Publish policy" }, { id: "policy_review_again", title: "Review again" }, { id: "onboarding_later", title: "Do this later" }]), type: "INTERACTIVE" as const };
-  }
-  const body = language === "ar" ? `القاعدة ${index + 1} من ${rules.length}\n\n*${String(rule.name)}*\n${String(rule.description)}\n\nمن نص سياستك:\n“${String(rule.sourceExcerpt)}”` : `Rule ${index + 1} of ${rules.length}\n\n*${String(rule.name)}*\n${String(rule.description)}\n\nFrom your policy:\n“${String(rule.sourceExcerpt)}”`;
-  return { body, result: await sendWhatsAppButtons(to, body, language === "ar" ? [{ id: "rule_approve", title: "اعتماد" }, { id: "rule_edit", title: "تعديل" }, { id: "onboarding_later", title: "أكمل لاحقًا" }] : [{ id: "rule_approve", title: "Approve" }, { id: "rule_edit", title: "Change" }, { id: "onboarding_later", title: "Do this later" }]), type: "INTERACTIVE" as const };
+async function discardUnsubmittedPhoto(admin: Admin, store: Store, conversation: Conversation, evidenceId?: string) {
+  if (!evidenceId) return;
+  const { data } = await admin.from("return_evidence").select("storage_path")
+    .eq("id", evidenceId).eq("store_id", store.id).eq("conversation_id", conversation.id).is("case_id", null).maybeSingle();
+  if (!data?.storage_path) return;
+  await admin.from("return_evidence").delete().eq("id", evidenceId).is("case_id", null);
+  await admin.storage.from("return-evidence").remove([data.storage_path]);
 }
 
-function editedRuleValue(category: string, input: string) {
-  const text = input.trim().toLowerCase();
-  if (category === "window" || category === "quantity") return text.match(/\d{1,4}/)?.[0] ?? null;
-  if (category === "fallback") return "manual_review";
-  if (category === "exclusions") return input.split(",").map((part) => part.trim()).filter(Boolean).join(",") || null;
-  const maps: Record<string, Array<[RegExp, string]>> = {
-    reasons: [[/defect|عيب|معيب/, "defective"], [/wrong|خطأ|غير صحيح/, "wrong_item"], [/describ|وصف|مطابق/, "not_as_described"], [/mind|رأي/, "changed_mind"], [/damage|تلف|تضرر/, "damaged_in_transit"]],
-    conditions: [[/unopened|غير مفتوح|جديد/, "new_unopened"], [/unused|دون استخدام|غير مستخدم/, "opened_unused"], [/used|مستخدم/, "used"]],
-    order_status: [[/deliver|تسليم|تم التوصيل/, "delivered"], [/ship|شحن/, "shipped"], [/process|تجهيز/, "processing"], [/cancel|إلغاء|ملغي/, "cancelled"]],
-  };
-  const values = (maps[category] ?? []).filter(([pattern]) => pattern.test(text)).map(([, value]) => value);
-  return [...new Set(values)].join(",") || null;
-}
-
-async function processFlow(admin: Admin, store: Store, conversation: Conversation, to: string, input: string, profileName?: string) {
+async function processFlow(admin: Admin, store: Store, conversation: Conversation, to: string, input: string, profileName?: string, message?: MetaMessage) {
   let language: "ar" | "en" = conversation.language === "en" ? "en" : "ar";
   const normalized = input.trim().toLowerCase();
   const flow = await getFlow(admin, conversation.id);
@@ -270,145 +248,9 @@ async function processFlow(admin: Admin, store: Store, conversation: Conversatio
     const body = language === "ar" ? `إعداد المتجر وإدارة السياسة تتم من مساحة عمل ريلود:\n${link}\n\nواتساب مخصص لطلبات العملاء ومتابعتها.` : `Store setup and policy management are handled in the Reload workspace:\n${link}\n\nWhatsApp is reserved for customer returns and status updates.`;
     return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
   }
-  if (normalized === "onboarding_later") {
-    await setFlow(admin, conversation.id, "ONBOARDING_PAUSED", flow.context);
-    const body = language === "ar" ? "تم حفظ تقدمك. لما تكون جاهز، اكتب «متابعة الإعداد» ونرجع لنفس الخطوة." : "Your progress is saved. When you’re ready, type CONTINUE SETUP and we’ll pick up here.";
-    return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
-  }
-  if (["policy_continue", "continue setup", "متابعة الإعداد"].includes(normalized)) {
-    const { data: connection } = await admin.from("commerce_connections").select("public_store_url,status").eq("store_id", store.id).eq("platform", "salla").maybeSingle();
-    if (connection?.status !== "CONNECTED") {
-      const body = language === "ar" ? "قبل إعداد السياسة، نحتاج نربط متجرك في سلة. اختر «ربط متجر» من القائمة." : "Before setting up the policy, connect your Salla store from the main menu.";
-      return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
-    }
-    let found: { url: string; sourceText: string } | null = null;
-    try { if (connection.public_store_url) found = await discoverPolicy(connection.public_store_url); } catch { /* offer safe fallbacks */ }
-    const context = { ...flow.context, policyUrl: found?.url, policyText: found?.sourceText };
-    await setFlow(admin, conversation.id, "AWAITING_POLICY_METHOD", context);
-    const prompt = policyMethodPrompt(to, language, found?.url);
-    return { body: prompt.body, result: await sendWhatsAppList(to, prompt.body, language === "ar" ? "اختر الطريقة" : "Choose a method", prompt.rows), type: "INTERACTIVE" as const };
-  }
-  if (flow.step === "AWAITING_POLICY_METHOD") {
-    if (normalized === "policy_url") {
-      await setFlow(admin, conversation.id, "AWAITING_POLICY_URL", flow.context);
-      const body = language === "ar" ? "أرسل رابط صفحة سياسة الإرجاع. لازم يكون رابطًا عامًا يبدأ بـ https://" : "Send the public return-policy page URL. It should begin with https://";
-      return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
-    }
-    if (normalized === "policy_text") {
-      await setFlow(admin, conversation.id, "AWAITING_POLICY_TEXT", flow.context);
-      const body = language === "ar" ? "الصق نص سياسة الإرجاع هنا. بنحوّله إلى مسودة، وبعدها تراجع كل قاعدة قبل النشر." : "Paste your return-policy text here. We’ll create a draft, then you’ll review every rule before anything is published.";
-      return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
-    }
-    if (normalized === "policy_starter") {
-      await setFlow(admin, conversation.id, "AWAITING_POLICY_WINDOW", flow.context);
-      const body = language === "ar" ? "نبدأ بالأساس: كم يوم تسمح بالإرجاع بعد تسليم الطلب؟ أرسل رقمًا مثل 14." : "Let’s start with the essential rule. How many days after delivery can a customer request a return? Send a number such as 14.";
-      return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
-    }
-    if (normalized === "policy_import_found" && flow.context.policyText) {
-      try {
-        const draft = await createPolicyDraft(admin, store.id, flow.context.policyText, language);
-        const context = { ...flow.context, draftId: draft.draftId, ruleIndex: 0, policyText: undefined };
-        await setFlow(admin, conversation.id, "REVIEWING_POLICY_RULE", context);
-        return rulePrompt(admin, to, language, conversation.id, context);
-      } catch { /* handled below */ }
-    }
-    const body = language === "ar" ? "ما قدرنا نجهّز المسودة من هذا المصدر. اختر رابطًا آخر، الصق النص، أو أنشئ سياسة مبدئية." : "We couldn’t prepare a draft from that source. Try another URL, paste the text, or create a starter policy.";
-    const prompt = policyMethodPrompt(to, language);
-    return { body, result: await sendWhatsAppList(to, body, language === "ar" ? "طريقة أخرى" : "Another method", prompt.rows), type: "INTERACTIVE" as const };
-  }
-  if (flow.step === "AWAITING_POLICY_URL") {
-    try {
-      const source = await fetchPolicyUrl(input);
-      const draft = await createPolicyDraft(admin, store.id, source.sourceText, language);
-      const context = { ...flow.context, draftId: draft.draftId, ruleIndex: 0, policyUrl: source.url };
-      await setFlow(admin, conversation.id, "REVIEWING_POLICY_RULE", context);
-      return rulePrompt(admin, to, language, conversation.id, context);
-    } catch {
-      const body = language === "ar" ? "ما قدرنا نقرأ هذا الرابط. تأكد أنه عام ويبدأ بـ https://، أو اكتب «القائمة» واختر لصق النص." : "We couldn’t read that page. Check that it’s public and begins with https://, or type MENU and choose to paste the text.";
-      return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
-    }
-  }
-  if (flow.step === "AWAITING_POLICY_TEXT" || flow.step === "AWAITING_POLICY_WINDOW") {
-    let sourceText = input.trim();
-    if (flow.step === "AWAITING_POLICY_WINDOW") {
-      const days = Number(input.match(/\d{1,3}/)?.[0]);
-      if (!Number.isInteger(days) || days < 1 || days > 365) {
-        const body = language === "ar" ? "أرسل عدد الأيام بين 1 و365، مثل 14." : "Send a number from 1 to 365, such as 14.";
-        return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
-      }
-      sourceText = language === "ar" ? `يمكن للعميل طلب إرجاع المنتجات المؤهلة خلال ${days} يومًا من تاريخ التسليم. إذا كانت بيانات التسليم غير متوفرة، تتم مراجعة الطلب يدويًا.` : `Customers may request a return for eligible items within ${days} days of delivery. If delivery information is unavailable, the request must be reviewed manually.`;
-    }
-    if (sourceText.length < 40) {
-      const body = language === "ar" ? "النص قصير جدًا. أرسل بند السياسة كاملًا عشان نستخرج القواعد بدقة." : "That text is too short. Send the complete policy wording so we can propose accurate rules.";
-      return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
-    }
-    try {
-      const draft = await createPolicyDraft(admin, store.id, sourceText, language);
-      const context = { ...flow.context, draftId: draft.draftId, ruleIndex: 0 };
-      await setFlow(admin, conversation.id, "REVIEWING_POLICY_RULE", context);
-      return rulePrompt(admin, to, language, conversation.id, context);
-    } catch {
-      const body = language === "ar" ? "تعذّر تحليل السياسة الآن، لكن ما فقدنا محادثتك. جرّب مرة ثانية أو اكتب «القائمة» لاختيار طريقة أخرى." : "We couldn’t analyse the policy just now, but your conversation is safe. Try again or type MENU to choose another method.";
-      return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
-    }
-  }
-  if (flow.step === "REVIEWING_POLICY_RULE") {
-    if (normalized === "rule_edit") {
-      await setFlow(admin, conversation.id, "AWAITING_RULE_EDIT", flow.context);
-      const body = language === "ar" ? "اكتب القيمة الصحيحة لهذه القاعدة. مثال: «30 يومًا» لمدة الإرجاع، أو اكتب الأسباب المقبولة مفصولة بفواصل." : "Send the corrected value. For example, “30 days” for a return window, or list the accepted reasons separated by commas.";
-      return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
-    }
-    if (normalized !== "rule_approve") return rulePrompt(admin, to, language, conversation.id, flow.context);
-    const { data: draft } = await admin.from("policy_drafts").select("rules").eq("id", flow.context.draftId).maybeSingle();
-    const rules = [...((draft?.rules ?? []) as Array<Record<string, unknown>>)];
-    const index = flow.context.ruleIndex ?? 0;
-    if (!rules[index]) throw new Error("policy_rule_missing");
-    rules[index] = { ...rules[index], approvalState: "approved" };
-    const { error } = await admin.from("policy_drafts").update({ rules, updated_at: new Date().toISOString() }).eq("id", flow.context.draftId);
-    if (error) throw error;
-    const context = { ...flow.context, ruleIndex: index + 1 };
-    await setFlow(admin, conversation.id, "REVIEWING_POLICY_RULE", context);
-    return rulePrompt(admin, to, language, conversation.id, context);
-  }
-  if (flow.step === "AWAITING_RULE_EDIT") {
-    const { data: draft } = await admin.from("policy_drafts").select("rules").eq("id", flow.context.draftId).maybeSingle();
-    const rules = [...((draft?.rules ?? []) as Array<Record<string, unknown>>)];
-    const index = flow.context.ruleIndex ?? 0;
-    const rule = rules[index];
-    if (!rule) throw new Error("policy_rule_missing");
-    const value = editedRuleValue(String(rule.category), input);
-    if (!value) {
-      const body = language === "ar" ? "ما قدرنا نفهم القيمة بشكل آمن. جرّب صياغة أوضح، أو اكتب «القائمة» واحفظ الإعداد لوقت لاحق." : "We couldn’t interpret that safely. Try a clearer value, or type MENU and continue later.";
-      return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
-    }
-    rules[index] = { ...rule, value, description: input.trim().slice(0, 500), approvalState: "edited", creator: "merchant" };
-    const { error } = await admin.from("policy_drafts").update({ rules, updated_at: new Date().toISOString() }).eq("id", flow.context.draftId);
-    if (error) throw error;
-    const context = { ...flow.context, ruleIndex: index + 1 };
-    await setFlow(admin, conversation.id, "REVIEWING_POLICY_RULE", context);
-    return rulePrompt(admin, to, language, conversation.id, context);
-  }
-  if (flow.step === "AWAITING_POLICY_PUBLISH") {
-    if (normalized === "policy_review_again") {
-      const context = { ...flow.context, ruleIndex: 0 };
-      await setFlow(admin, conversation.id, "REVIEWING_POLICY_RULE", context);
-      return rulePrompt(admin, to, language, conversation.id, context);
-    }
-    if (normalized !== "policy_publish") {
-      const body = language === "ar" ? "اختر «نشر السياسة» لما تكون جاهز، أو «مراجعة مرة أخرى»." : "Choose Publish policy when you’re ready, or Review again.";
-      return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
-    }
-    const { data: owner } = await admin.from("memberships").select("user_id").eq("store_id", store.id).in("role", ["owner", "admin"]).order("created_at", { ascending: true }).limit(1).maybeSingle();
-    if (!owner?.user_id) throw new Error("store_owner_required");
-    const { data: published, error } = await admin.rpc("publish_policy_draft_as_service", { p_draft_id: flow.context.draftId, p_published_by: owner.user_id });
-    if (error || !published?.[0]) throw error ?? new Error("policy_publish_failed");
-    if (flow.context.onboardingToken) {
-      await admin.rpc("advance_whatsapp_onboarding_token", { p_token_hash: await sha256(flow.context.onboardingToken), p_expected_stage: "POLICY_PENDING", p_next_stage: "TEST_PENDING", p_extend_until: new Date(Date.now() + 24 * 60 * 60_000).toISOString() });
-    }
+  if (["ONBOARDING_PAUSED", "POLICY_READY", "AWAITING_POLICY_METHOD", "AWAITING_POLICY_URL", "AWAITING_POLICY_TEXT", "AWAITING_POLICY_WINDOW", "REVIEWING_POLICY_RULE", "AWAITING_RULE_EDIT", "AWAITING_POLICY_PUBLISH"].includes(flow.step)) {
     await setFlow(admin, conversation.id, "MENU");
-    const version = published[0].version_label;
-    const body = language === "ar" ? `تم نشر سياسة الإرجاع ${version} ✅\n\nأصبحت القواعد معتمدة ومزامنة مع مساحة العمل. ريلود جاهز الآن للتحقق من الطلبات وإعطاء قرارات إرجاع واضحة.` : `Return policy ${version} is now live ✅\n\nThe approved rules are synced with your workspace. Reload is ready to verify orders and give customers clear return decisions.`;
-    return { body, result: await sendWhatsAppButtons(to, body, language === "ar" ? [{ id: "start_return", title: "بدء أول تجربة" }, { id: "menu", title: "القائمة الرئيسية" }] : [{ id: "start_return", title: "Run first test" }, { id: "menu", title: "Main menu" }]), type: "INTERACTIVE" as const };
+    return menu(to, language, profileName);
   }
   if (normalized === "check_status") {
     if (!conversation.return_case_id) {
@@ -428,7 +270,7 @@ async function processFlow(admin: Admin, store: Store, conversation: Conversatio
   if (normalized === "start_return") {
     await setFlow(admin, conversation.id, "AWAITING_ORDER");
     await admin.from("whatsapp_conversations").update({ state: "VERIFYING_ORDER" }).eq("id", conversation.id);
-    const body = language === "ar" ? `1 من 4 · خلّنا نبدأ برقم الطلب من ${store.name}.\n\nأرسله مثل ما هو ظاهر في تأكيد الطلب، وإحنا نتحقق منه بأمان.` : `1 of 4 · Let’s start with your ${store.name} order number.\n\nSend it exactly as it appears in your order confirmation.`;
+    const body = language === "ar" ? `1 من 5 · خلّنا نبدأ برقم الطلب من ${store.name}.\n\nأرسله مثل ما هو ظاهر في تأكيد الطلب، وإحنا نتحقق منه بأمان.` : `1 of 5 · Let’s start with your ${store.name} order number.\n\nSend it exactly as it appears in your order confirmation.`;
     return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
   }
   if (flow.step === "AWAITING_ORDER") {
@@ -472,7 +314,7 @@ async function processFlow(admin: Admin, store: Store, conversation: Conversatio
     const reason = normalized.startsWith("reason:") ? input.slice(7) : "";
     if (!["defective", "wrong_item", "not_as_described", "changed_mind", "damaged_in_transit"].includes(reason)) return reasons(to, language);
     await setFlow(admin, conversation.id, "AWAITING_CONDITION", { ...flow.context, reason });
-    const body = language === "ar" ? "4 من 4 · وش حالة المنتج الآن؟" : "4 of 4 · What condition is the item in?";
+    const body = language === "ar" ? "4 من 5 · وش حالة المنتج الآن؟" : "4 of 5 · What condition is the item in?";
     const buttons = language === "ar"
       ? [{ id: "condition:new_unopened", title: "جديد وغير مفتوح" }, { id: "condition:opened_unused", title: "مفتوح دون استخدام" }, { id: "condition:used", title: "مستخدم" }]
       : [{ id: "condition:new_unopened", title: "New, unopened" }, { id: "condition:opened_unused", title: "Opened, unused" }, { id: "condition:used", title: "Used" }];
@@ -485,17 +327,36 @@ async function processFlow(admin: Admin, store: Store, conversation: Conversatio
       return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
     }
     const context = { ...flow.context, condition };
+    await setFlow(admin, conversation.id, "AWAITING_PHOTO", context);
+    const body = language === "ar"
+      ? "5 من 5 · أرسل صورة واضحة للمنتج نفسه. إذا فيه عيب أو تلف، خلّه ظاهر في الصورة."
+      : "5 of 5 · Send a clear photo of the item. If there’s damage or a defect, please show it in the photo.";
+    return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
+  }
+  if (flow.step === "AWAITING_PHOTO") {
+    if (message?.type !== "image" || !message.image?.id) {
+      const body = language === "ar" ? "أرسل الصورة كصورة واتساب، وبعدها نراجع التفاصيل معك." : "Please send the photo as a WhatsApp image. Then we’ll review the details with you.";
+      return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
+    }
+    let evidence: { id: string; reviewRequired: boolean };
+    try {
+      evidence = await saveReturnPhoto(admin, store, conversation, message, flow.context);
+    } catch {
+      const body = language === "ar" ? "ما قدرنا نحفظ الصورة. أرسلها مرة ثانية بصيغة JPG أو PNG، وحجمها أقل من 5 ميجابايت." : "We couldn’t save that photo. Please try again with a JPG or PNG under 5 MB.";
+      return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
+    }
+    const context = { ...flow.context, photoEvidenceId: evidence.id, photoReviewRequired: evidence.reviewRequired };
     await setFlow(admin, conversation.id, "AWAITING_CONFIRMATION", context);
     const item = context.order?.items.find((entry) => entry.id === context.itemId);
     const body = language === "ar" ? [
-      "راجع التفاصيل قبل نرسل الطلب:", "", `الطلب: ${context.order?.orderId ?? "—"}`,
+      "وصلتنا الصورة. راجع التفاصيل قبل نرسل الطلب:", "", `الطلب: ${context.order?.orderId ?? "—"}`,
       `المنتج: ${item?.name ?? "—"}`, `الكمية: ${context.quantity ?? 1}`,
-      `السبب: ${reasonLabel(context.reason ?? "", language)}`, `حالة المنتج: ${conditionLabel(condition, language)}`,
+      `السبب: ${reasonLabel(context.reason ?? "", language)}`, `حالة المنتج: ${conditionLabel(context.condition ?? "", language)}`,
       "", "إذا كل شيء صحيح، اختر «تأكيد وإرسال».",
     ].join("\n") : [
-      "Please review before we submit:", "", `Order: ${context.order?.orderId ?? "—"}`,
+      "Photo received. Please review before we submit:", "", `Order: ${context.order?.orderId ?? "—"}`,
       `Item: ${item?.name ?? "—"}`, `Quantity: ${context.quantity ?? 1}`,
-      `Reason: ${reasonLabel(context.reason ?? "", language)}`, `Condition: ${conditionLabel(condition, language)}`,
+      `Reason: ${reasonLabel(context.reason ?? "", language)}`, `Condition: ${conditionLabel(context.condition ?? "", language)}`,
       "", "If everything looks right, choose “Confirm and submit”.",
     ].join("\n");
     const buttons = language === "ar"
@@ -505,10 +366,12 @@ async function processFlow(admin: Admin, store: Store, conversation: Conversatio
   }
   if (flow.step === "AWAITING_CONFIRMATION") {
     if (normalized === "edit_return" && flow.context.order) {
+      await discardUnsubmittedPhoto(admin, store, conversation, flow.context.photoEvidenceId);
       await setFlow(admin, conversation.id, "AWAITING_ITEM", { order: flow.context.order, verificationToken: flow.context.verificationToken });
       return itemPrompt(to, language, flow.context.order);
     }
     if (normalized === "cancel_return") {
+      await discardUnsubmittedPhoto(admin, store, conversation, flow.context.photoEvidenceId);
       await setFlow(admin, conversation.id, "MENU");
       const body = language === "ar" ? "تم، ألغينا العملية وما أرسلنا أي طلب." : "Done. Nothing was submitted.";
       return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
@@ -525,13 +388,19 @@ async function processFlow(admin: Admin, store: Store, conversation: Conversatio
       caseId = created.caseId ?? null;
       if (caseId) await admin.from("whatsapp_conversations").update({ return_case_id: caseId }).eq("id", conversation.id);
     }
+    if (caseId && context.photoEvidenceId) {
+      const { error } = await admin.from("return_evidence").update({ case_id: caseId })
+        .eq("id", context.photoEvidenceId).eq("store_id", store.id).eq("conversation_id", conversation.id);
+      if (error) throw error;
+    }
+    if (!caseId) await discardUnsubmittedPhoto(admin, store, conversation, context.photoEvidenceId);
     await setFlow(admin, conversation.id, "COMPLETE", { ...context, decisionId: evaluated.decisionId });
     await admin.from("whatsapp_conversations").update({ state: "ANSWERED" }).eq("id", conversation.id);
     const outcome = evaluated.decision?.outcome;
     const reference = caseId ? `RL-${caseId.slice(0, 8).toUpperCase()}` : null;
     const body = language === "ar"
-      ? outcome === "ELIGIBLE" ? `طلبك مؤهل للإرجاع ✅\n\nرقم المتابعة: ${reference}\nأنشأنا الحالة لدى ${store.name}، وبنرسل لك هنا أي تحديث جديد.` : outcome === "MANUAL_REVIEW" ? `طلبك يحتاج مراجعة من المتجر.\n\nرقم المتابعة: ${reference}\nما رفضنا الطلب؛ فقط نحتاج من ${store.name} يتأكدون من بعض البيانات، وبنبلغك هنا.` : `للأسف، الطلب ما ينطبق عليه شرط الإرجاع في سياسة ${store.name}.\n\n${decisionExplanation(evaluated.decision, language)}`
-      : outcome === "ELIGIBLE" ? `Your request is eligible for return ✅\n\nReference: ${reference}\nA case has been created with ${store.name}. We’ll send any updates here.` : outcome === "MANUAL_REVIEW" ? `Your request needs a quick review by the store.\n\nReference: ${reference}\nIt hasn’t been rejected—${store.name} just needs to confirm some details. We’ll update you here.` : `This request doesn’t meet one of ${store.name}’s published return conditions.\n\n${decisionExplanation(evaluated.decision, language)}`;
+      ? outcome === "ELIGIBLE" ? `طلبك مستوفٍ لشروط الإرجاع ✅\n\nرقم المتابعة: ${reference}\nأرسلنا الطلب والصورة إلى ${store.name} لتأكيد الخطوة التالية. بنبلغك هنا بأي تحديث.` : outcome === "MANUAL_REVIEW" ? `طلبك يحتاج مراجعة من المتجر.\n\nرقم المتابعة: ${reference}\nأرسلنا التفاصيل والصورة إلى ${store.name}، وبنبلغك هنا بعد المراجعة.` : `هذا الطلب ما يستوفي أحد شروط الإرجاع لدى ${store.name}.\n\n${decisionExplanation(evaluated.decision, language)}`
+      : outcome === "ELIGIBLE" ? `Your request meets the return policy ✅\n\nReference: ${reference}\nWe’ve sent the request and photo to ${store.name} to confirm the next step. We’ll update you here.` : outcome === "MANUAL_REVIEW" ? `Your request needs the store’s review.\n\nReference: ${reference}\nWe’ve sent the details and photo to ${store.name}. We’ll update you here after they review it.` : `This request doesn’t meet one of ${store.name}’s return conditions.\n\n${decisionExplanation(evaluated.decision, language)}`;
     const buttons = language === "ar"
       ? [{ id: "feedback_clear", title: "واضح، شكرًا" }, { id: "report_bug", title: "الإبلاغ عن مشكلة" }]
       : [{ id: "feedback_clear", title: "Clear, thank you" }, { id: "report_bug", title: "Report a problem" }];
@@ -566,9 +435,9 @@ async function handleMessage(phoneNumberId: string, message: MetaMessage, profil
       await setFlow(admin, conversation.id, "AWAITING_LANGUAGE");
     } else await admin.from("whatsapp_conversations").update({ service_window_expires_at: new Date(Date.now() + 86_400_000).toISOString(), last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", conversation.id);
     const input = textOf(message);
-    const { error: messageError } = await admin.from("whatsapp_messages").insert({ store_id: store.id, conversation_id: conversation.id, external_message_id: messageId, direction: "INBOUND", message_type: message.type === "interactive" ? "INTERACTIVE" : message.type === "text" ? "TEXT" : "UNSUPPORTED", body: input.slice(0, 4096) || null, status: "RECEIVED", occurred_at: message.timestamp ? new Date(Number(message.timestamp) * 1000).toISOString() : new Date().toISOString() });
+    const { error: messageError } = await admin.from("whatsapp_messages").upsert({ store_id: store.id, conversation_id: conversation.id, external_message_id: messageId, direction: "INBOUND", message_type: message.type === "interactive" ? "INTERACTIVE" : message.type === "image" ? "IMAGE" : message.type === "text" ? "TEXT" : "UNSUPPORTED", body: message.type === "image" ? null : input.slice(0, 4096) || null, status: "RECEIVED", occurred_at: message.timestamp ? new Date(Number(message.timestamp) * 1000).toISOString() : new Date().toISOString() }, { onConflict: "external_message_id", ignoreDuplicates: true });
     if (messageError) throw messageError;
-    const response = await processFlow(admin, store, conversation, waId, input, profileName ?? contact.display_name ?? undefined);
+    const response = await processFlow(admin, store, conversation, waId, input, profileName ?? contact.display_name ?? undefined, message);
     await saveOutbound(admin, store.id, conversation.id, response.result, response.body, response.type);
     await admin.from("integration_events").update({ status: "PROCESSED", processed_at: new Date().toISOString() }).eq("provider", "whatsapp").eq("external_event_id", messageId);
   } catch (error) {

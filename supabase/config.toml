@@ -33,6 +33,9 @@ verify_jwt = true
 [functions.whatsapp-case-update]
 verify_jwt = false
 
+[functions.whatsapp-photo-analysis]
+verify_jwt = false
+
 [functions.whatsapp-onboarding]
 verify_jwt = true
 
@@ -40,4 +43,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.product-report-update]
+verify_jwt = true
+
+[functions.zid-connection]
 verify_jwt = true

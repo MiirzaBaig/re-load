@@ -85,14 +85,14 @@ export function PrivacyPage() {
           heading: "1. Information we process",
           body: [
             "For merchants, we process account details (name, email, store name) and the return policy text you supply so it can be turned into reviewable rules.",
-            "For customers of a connected store, we process the order details needed to evaluate a return request: order reference, contact email used to verify it, item, quantity, stated reason, and item condition.",
+            "For customers of a connected store, we process the order details needed to evaluate a return request: order reference, contact information used to verify it, item, quantity, stated reason, item condition, and any product photo sent with the request.",
           ],
         },
         {
           heading: "2. How we use it",
           body: [
             "Merchant data is used to operate your workspace: storing policy drafts and published versions, evaluating return requests, and keeping a record of each decision.",
-            "Customer data is used only to verify the order and produce an eligibility decision for that request. We do not use it to build advertising profiles, and we do not sell it.",
+            "Customer data is used to verify the order, assess the request against the store's approved policy, and show the merchant the photo and decision record. Photo analysis may be performed by our AI service to flag unclear evidence for human review; it does not issue a refund or decide eligibility on its own. We do not use customer data to build advertising profiles, and we do not sell it.",
           ],
         },
         {
