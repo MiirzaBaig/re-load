@@ -41,7 +41,7 @@ async function saveOutbound(admin: Admin, storeId: string, conversationId: strin
   if (error) throw error;
 }
 
-async function claim(admin: Admin, storeId: string, messageId: string, eventType: string) {
+async function claim(admin: Admin, storeId: string | null, messageId: string, eventType: string) {
   const { data: existing } = await admin.from("integration_events").select("id,status,attempts")
     .eq("provider", "whatsapp").eq("external_event_id", messageId).maybeSingle();
   if (existing?.status === "PROCESSED") return false;
@@ -415,10 +415,33 @@ async function processFlow(admin: Admin, store: Store, conversation: Conversatio
 }
 
 async function handleMessage(phoneNumberId: string, message: MetaMessage, profileName?: string) {
+  if (phoneNumberId !== env("WHATSAPP_PHONE_NUMBER_ID")) return;
   const messageId = message.id ?? "";
   const waId = (message.from ?? "").replace(/\D/g, "");
   if (!messageId || !waId) return;
   const admin = adminClient();
+  const publicEntry = textOf(message).trim().toLowerCase() === "reload";
+  if (publicEntry) {
+    if (!await claim(admin, null, messageId, "PUBLIC_WEBSITE_ENTRY")) return;
+    try {
+      const body = [
+        "أهلًا بك في ريلود 👋",
+        "إذا عندك طلب إرجاع، افتح الرابط اللي أرسله لك متجرك عشان نعرف أي طلب نراجع.",
+        "صاحب متجر؟ سجّل اهتمامك هنا ونتواصل معك: https://www.reload.sa/#contact",
+        "",
+        "Hi, welcome to Reload. For a return, use the link shared by your store so we can find the right order.",
+        "Run a store? Register here and we’ll get in touch: https://www.reload.sa/#contact",
+      ].join("\n");
+      await sendWhatsAppText(waId, body);
+      await admin.from("integration_events").update({ status: "PROCESSED", processed_at: new Date().toISOString() })
+        .eq("provider", "whatsapp").eq("external_event_id", messageId);
+      return;
+    } catch (error) {
+      await admin.from("integration_events").update({ status: "FAILED", last_error: error instanceof Error ? error.message.slice(0, 180) : "unknown", processed_at: new Date().toISOString() })
+        .eq("provider", "whatsapp").eq("external_event_id", messageId);
+      throw error;
+    }
+  }
   const { data: connection } = await admin.from("whatsapp_connections").select("store_id").eq("phone_number_id", phoneNumberId).eq("status", "CONNECTED").maybeSingle();
   if (!connection) throw new Error("whatsapp_connection_not_found");
   if (!await claim(admin, connection.store_id, messageId, `MESSAGE_${String(message.type ?? "unknown").toUpperCase()}`)) return;

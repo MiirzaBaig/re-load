@@ -48,7 +48,7 @@ import {
 import { useLanguage } from "@/components/language-provider";
 import { cn } from "@/lib/utils";
 import { Mark, Tone } from "@/components/heading-accent";
-import { getWhatsAppContactUrl } from "@/lib/whatsapp";
+import { getWhatsAppPublicUrl } from "@/lib/whatsapp";
 
 const HERO_STEPS: TraceStep[] = [
   {
@@ -266,9 +266,9 @@ export function LandingPage() {
                 </a>
               </Button>
               <Button asChild variant="outline" size="lg" className="border-white/20 bg-white/[0.04] text-white hover:border-white/40 hover:bg-white/[0.1] hover:text-white">
-                <a href={getWhatsAppContactUrl()} target="_blank" rel="noopener noreferrer">
+                <a href={getWhatsAppPublicUrl()} target="_blank" rel="noopener noreferrer">
                   <WhatsAppLogo className="size-4" />
-                  {t("Contact us", "تواصل معنا")}
+                  {t("Reload on WhatsApp", "ريلود على واتساب")}
                 </a>
               </Button>
             </motion.div>
@@ -801,9 +801,9 @@ export function LandingPage() {
                   </a>
                 </Button>
                 <Button asChild variant="outline" size="lg">
-                  <a href={getWhatsAppContactUrl()} target="_blank" rel="noopener noreferrer">
+                  <a href={getWhatsAppPublicUrl()} target="_blank" rel="noopener noreferrer">
                     <WhatsAppLogo className="size-4" />
-                    {t("Contact us", "تواصل معنا")}
+                    {t("Reload on WhatsApp", "ريلود على واتساب")}
                   </a>
                 </Button>
               </div>

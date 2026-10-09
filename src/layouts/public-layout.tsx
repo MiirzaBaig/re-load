@@ -18,7 +18,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { useLanguage } from "@/components/language-provider";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { useSectionSpy } from "@/hooks/use-section-spy";
-import { getWhatsAppContactUrl } from "@/lib/whatsapp";
+import { getWhatsAppPublicUrl } from "@/lib/whatsapp";
 
 /** Navbar WhatsApp link (desktop). Off: the floating bubble and hero CTA cover it. */
 const SHOW_NAV_WHATSAPP = false;
@@ -49,7 +49,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const { t } = useLanguage();
   const isHome = pathname === "/";
-  const whatsappStartUrl = getWhatsAppContactUrl();
+  const whatsappStartUrl = getWhatsAppPublicUrl();
   const requestedReturnUrl = searchParams.get("returnUrl");
   const authReturnUrl = requestedReturnUrl?.startsWith("/") && !requestedReturnUrl.startsWith("//")
     ? requestedReturnUrl
@@ -242,9 +242,8 @@ export function PublicLayout({ children }: { children: ReactNode }) {
                     </button>
                     {SHOW_GET_STARTED && (
                       <>
-                    {/* New merchants start on WhatsApp (onboarding lives there);
-                        returning ones use Sign in. The two used to open the
-                        same sign-in dialog. */}
+                    {/* Public WhatsApp opens a general Reload introduction.
+                        Store setup stays in the workspace. */}
                     <Button asChild size="sm" className="nav-cta rounded-full px-4">
                       <a href={whatsappStartUrl} target="_blank" rel="noreferrer">
                         {t("Get started", "ابدأ الآن")}
@@ -389,7 +388,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           </span>
           <span className="whatsapp-float-label" aria-hidden="true">
             <span className="whatsapp-float-title">
-              {t("Contact us on WhatsApp", "تواصل معنا عبر واتساب")}
+              {t("Reload on WhatsApp", "ريلود على واتساب")}
             </span>
           </span>
         </a>
