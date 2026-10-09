@@ -182,7 +182,7 @@ export function TeamView({ team: initial, currentUserId, isOwner, labels }: { te
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{t("Keep", "إبقاء")}</AlertDialogCancel>
-          <AlertDialogAction onClick={() => removing && void remove(removing)} className={cn("bg-destructive text-white hover:bg-destructive/90")}>{t("Remove access", "إزالة الوصول")}</AlertDialogAction>
+          <AlertDialogAction variant="destructive" onClick={() => removing && void remove(removing)}>{t("Remove access", "إزالة الوصول")}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

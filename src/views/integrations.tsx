@@ -17,6 +17,7 @@ import { useLanguage } from "@/components/language-provider";
 import { formatDateString, formatDateTimeString } from "@/lib/numerals";
 import { WhatsAppLogo } from "@/components/phone-frame";
 import { getWhatsAppStartUrl } from "@/lib/whatsapp";
+import { ZidConnectCard } from "@/components/zid-connect-card";
 
 interface SallaConnection {
   external_store_name: string | null;
@@ -40,6 +41,7 @@ export function IntegrationsPage() {
   const [connection, setConnection] = useState<SallaConnection | null>(null);
   const [whatsApp, setWhatsApp] = useState<WhatsAppConnection | null>(null);
   const [policyReady, setPolicyReady] = useState(false);
+  const [zidConnected, setZidConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [action, setAction] = useState<"connect" | "test" | "disconnect" | null>(null);
   const [returnCode, setReturnCode] = useState<string | null>(null);
@@ -59,6 +61,9 @@ export function IntegrationsPage() {
     if (whatsAppResult.error) toast.error(t("Could not load the WhatsApp channel.", "تعذّر تحميل قناة واتساب."));
     setWhatsApp(whatsAppResult.data as WhatsAppConnection | null);
     setPolicyReady(Boolean(policyResult.data));
+    const { data: zid } = await supabase.from("commerce_connections").select("status")
+      .eq("store_id", workspace.storeId).eq("platform", "zid").maybeSingle();
+    setZidConnected(zid?.status === "CONNECTED");
     const { data: store } = await supabase.from("stores").select("return_code").eq("id", workspace.storeId).maybeSingle();
     setReturnCode(typeof store?.return_code === "string" ? store.return_code : null);
     setLoading(false);
@@ -143,7 +148,7 @@ export function IntegrationsPage() {
         <div>
           <Badge variant="outline" className="mb-3">{t("Commerce", "التجارة الإلكترونية")}</Badge>
           <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{t("Store integrations", "تكاملات المتجر")}</h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{t("Connect your Salla store so Reload can verify orders against real merchant data.", "اربط متجرك في سلة ليتمكن ريلود من التحقق من الطلبات ببيانات متجرك الفعلية.")}</p>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{t("Connect your Salla or Zid store so Reload can verify orders against real merchant data.", "اربط متجرك في سلة أو زد ليتمكن ريلود من التحقق من الطلبات ببيانات متجرك الفعلية.")}</p>
         </div>
       </ScrollReveal>
       <ScrollReveal delay={80}>
@@ -196,6 +201,9 @@ export function IntegrationsPage() {
           </CardContent>
         </Card>
       </ScrollReveal>
+      <ScrollReveal delay={100}>
+        <ZidConnectCard onChange={() => void loadConnection()} />
+      </ScrollReveal>
       <ScrollReveal delay={120}>
         <Card className="overflow-hidden rounded-3xl border-border/70 shadow-[0_22px_70px_-42px_hsl(var(--foreground)/0.22)]">
           <CardContent className="p-0">
@@ -217,7 +225,7 @@ export function IntegrationsPage() {
                       : t("Once your store is connected and its return policy is published, the Reload team can activate this channel with you.", "بعد ربط متجرك ونشر سياسة الإرجاع، يفعّل فريق ريلود هذه القناة معك.")}
                   </p>
                   {!whatsAppConnected && <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-                    <span className={`rounded-full px-3 py-1.5 ${connected ? "bg-eligible-muted text-eligible" : "bg-muted text-muted-foreground"}`}>{connected ? "✓ " : "1 · "}{t("Store connected", "ربط المتجر")}</span>
+                    <span className={`rounded-full px-3 py-1.5 ${connected || zidConnected ? "bg-eligible-muted text-eligible" : "bg-muted text-muted-foreground"}`}>{connected || zidConnected ? "✓ " : "1 · "}{t("Store connected", "ربط المتجر")}</span>
                     <span className={`rounded-full px-3 py-1.5 ${policyReady ? "bg-eligible-muted text-eligible" : "bg-muted text-muted-foreground"}`}>{policyReady ? "✓ " : "2 · "}{t("Policy published", "نشر السياسة")}</span>
                     <span className="rounded-full bg-muted px-3 py-1.5 text-muted-foreground">3 · {t("Channel activation", "تفعيل القناة")}</span>
                   </div>}

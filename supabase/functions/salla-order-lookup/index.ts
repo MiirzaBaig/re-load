@@ -1,4 +1,5 @@
-import { sha256 } from "../_shared/crypto.ts";
+import { decrypt, sha256 } from "../_shared/crypto.ts";
+import { ZidMcp, zidOrderFacts } from "../_shared/zid-mcp.ts";
 import { corsHeaders, json } from "../_shared/http.ts";
 import { signReturnFacts } from "../_shared/return-token.ts";
 import { sallaGet } from "../_shared/salla.ts";
@@ -49,6 +50,21 @@ Deno.serve(async (request) => {
 
     const { data: store } = await admin.from("stores").select("id").eq("return_code", returnCode).maybeSingle();
     if (!store) return json({ error: "order_not_verified" }, 404);
+
+    // Despite this function's name it serves every store platform: callers
+    // (web return page, WhatsApp) don't need to know where a store sells. A
+    // store connected through Zid's AI Connector is looked up live in Zid.
+    const { data: zid } = await admin.rpc("get_zid_credential", { p_store_id: store.id });
+    if (zid?.[0]) {
+      const facts = await zidOrderFacts(new ZidMcp(await decrypt(zid[0].link_ciphertext)), store.id, orderNumber, verifier);
+      void admin.from("audit_events").insert({
+        store_id: store.id, event_type: "ZID_ORDER_LOOKUP", entity_type: "order",
+        metadata: { platform: "zid", verified: Boolean(facts) },
+      });
+      if (!facts) return json({ error: "order_not_verified" }, 404);
+      if (facts.items.length === 0) return json({ error: "order_items_unavailable" }, 422);
+      return json({ order: facts, verificationToken: await signReturnFacts(facts) });
+    }
 
     const query = new URLSearchParams({ reference_id: orderNumber.trim(), per_page: "1", page: "1" });
     const list = await sallaGet(store.id, `/orders?${query.toString()}`);
