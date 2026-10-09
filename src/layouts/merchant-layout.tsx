@@ -49,6 +49,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { useLanguage } from "@/components/language-provider";
 import { StoreIdentity } from "@/components/store-identity";
 import { SidebarWorkspaceSkeleton } from "@/components/merchant-skeletons";
+import { CreateWorkspace } from "@/components/create-workspace";
 
 export function MerchantLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -289,7 +290,11 @@ export function MerchantLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
         <div className="mx-auto w-full max-w-[1280px] px-4 pb-28 pt-6 sm:px-8 sm:pt-9 md:pb-9 lg:px-10">
-          <PageTransition>{children}</PageTransition>
+          {/* Signed in without a store yet (older accounts): create it here
+              instead of every page showing an empty or broken state. */}
+          {auth.configured && !auth.loading && auth.user && !auth.workspace
+            ? <CreateWorkspace />
+            : <PageTransition>{children}</PageTransition>}
         </div>
 
         {/* Bottom tabs on phones: the sidebar is one tap further away there. */}

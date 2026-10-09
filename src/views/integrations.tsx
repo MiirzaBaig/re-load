@@ -6,8 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  AlertTriangle, ArrowRight, Check, ChevronRight, Copy, Download, ExternalLink, FileText, Link2, Loader2,
-  QrCode, RefreshCw, ShieldCheck, ShoppingBag, Sparkles, Store, Unplug, Zap,
+  AlertTriangle, ArrowRight, ArrowUpRight, Check, ChevronRight, Copy, Download, ExternalLink, FileText, Link2, Loader2,
+  Lock, QrCode, RefreshCw, ShieldCheck, ShoppingBag, Unplug,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
@@ -15,6 +15,8 @@ import { useLanguage } from "@/components/language-provider";
 import { IntegrationsPageSkeleton } from "@/components/merchant-skeletons";
 import { WhatsAppLogo } from "@/components/phone-frame";
 import { ZidConnectCard } from "@/components/zid-connect-card";
+import { ConnectStepper } from "@/components/integrations/connect-stepper";
+import { ProgressRing } from "@/components/desk/progress-ring";
 import { QUICK, TWEEN } from "@/components/desk/primitives";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -108,85 +110,95 @@ export function IntegrationsPage() {
 
   if (loading) return <IntegrationsPageSkeleton />;
 
-  if (user && !workspace) {
-    return (
-      <div className="mx-auto flex w-full max-w-xl flex-col items-center py-16 text-center animate-fade-in">
-        <span className="grid size-14 place-items-center rounded-2xl border border-border bg-muted/50"><Store className="size-6" /></span>
-        <h1 className="mt-6 font-display text-2xl font-semibold tracking-tight">{t("No store workspace on this account", "لا توجد مساحة متجر في هذا الحساب")}</h1>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">{t("Sign in with the account that owns your store, or contact Reload to set up a workspace for it.", "سجّل الدخول بالحساب المالك لمتجرك، أو تواصل مع ريلود لإعداد مساحة عمل له.")}</p>
-        <Button asChild className="mt-6 rounded-xl"><a href="mailto:info@reload.sa">{t("Contact Reload", "تواصل مع ريلود")}</a></Button>
-      </div>
-    );
-  }
-
   const steps = [
-    { key: "store", done: storeConnected, label: t("Store connected", "ربط المتجر") },
-    { key: "policy", done: policyReady, label: t("Policy published", "نشر السياسة") },
-    { key: "whatsapp", done: whatsAppConnected, label: t("WhatsApp channel", "قناة واتساب") },
-    { key: "live", done: storeConnected && policyReady, label: t("Returns live", "الإرجاع مفعّل") },
+    { key: "store", done: storeConnected, label: t("Store", "المتجر"), icon: <ShoppingBag className="size-3.5" /> },
+    { key: "policy", done: policyReady, label: t("Policy", "السياسة"), icon: <FileText className="size-3.5" /> },
+    { key: "live", done: storeConnected && Boolean(returnPath), label: t("Return page", "صفحة الإرجاع"), icon: <Link2 className="size-3.5" /> },
+    { key: "whatsapp", done: whatsAppConnected, label: t("WhatsApp", "واتساب"), icon: <WhatsAppLogo className="size-3.5" /> },
   ];
   const doneCount = steps.filter((step) => step.done).length;
-  // The line fills up to the last step finished in order.
-  const leadingDone = steps.findIndex((step) => !step.done) === -1 ? steps.length : steps.findIndex((step) => !step.done);
+  const currentStep = steps.findIndex((step) => !step.done);
   const next = !storeConnected
-    ? { text: t("Connect your store to start verifying real orders.", "اربط متجرك لبدء التحقق من الطلبات الفعلية."), cta: t("Choose your platform", "اختر منصتك"), action: () => document.getElementById("your-store")?.scrollIntoView({ behavior: "smooth", block: "start" }) }
+    ? { key: "store", title: t("Connect your store", "اربط متجرك"), text: t("Pick your platform below. Reload checks every return against the real order.", "اختر منصتك بالأسفل. يتحقق ريلود من كل إرجاع مقابل الطلب الفعلي."), cta: null }
     : !policyReady
-      ? { text: t("Publish your return policy so Reload can decide returns.", "انشر سياسة الإرجاع ليتمكن ريلود من البت في الطلبات."), cta: t("Publish policy", "نشر السياسة"), href: "/app/policies" }
+      ? { key: "policy", title: t("Publish your return policy", "انشر سياسة الإرجاع"), text: t("Reload uses it to approve or decline each return.", "يستخدمها ريلود لقبول أو رفض كل طلب إرجاع."), cta: t("Publish policy", "نشر السياسة"), href: "/app/policies" }
       : !whatsAppConnected
-        ? { text: t("Returns are live on your return page. WhatsApp is next, and the Reload team activates it with you.", "الإرجاع مفعّل في صفحة الإرجاع. واتساب هو الخطوة التالية ويفعّله فريق ريلود معك."), cta: null }
-        : { text: t("Everything is connected. Share your return link with customers.", "كل شيء مربوط. شارك رابط الإرجاع مع عملائك."), cta: null };
+        ? { key: "whatsapp", title: t("Returns are live", "الإرجاع مفعّل"), text: t("Share your return page. WhatsApp is next, and the Reload team activates it with you.", "شارك صفحة الإرجاع. واتساب هو التالي ويفعّله فريق ريلود معك."), cta: null }
+        : { key: "done", title: t("Everything is connected", "كل شيء مربوط"), text: t("Share your return link with customers.", "شارك رابط الإرجاع مع عملائك."), cta: null };
+  // The store that's connected, or one that needs fixing.
+  const primary: Platform | null = sallaConnected ? "salla" : zidConnected ? "zid" : toneOf(zid) === "attention" ? "zid" : toneOf(salla) === "attention" ? "salla" : null;
+  const platformCopy = {
+    salla: { name: t("Salla", "سلة"), tagline: t("Official Reload app on Salla", "تطبيق ريلود الرسمي في سلة"), meta: t("Approve in Salla", "موافقة في سلة") },
+    zid: { name: t("Zid", "زد"), tagline: t("Free through Zid's AI Connector", "مجانًا عبر AI Connector من زد"), meta: t("About 2 minutes", "دقيقتان تقريبًا") },
+  };
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 pb-6">
-      {/* ── Header + journey ── */}
-      <section className="integrations-hero relative overflow-hidden rounded-3xl border border-border/70 bg-card p-6 sm:p-8">
-        <div className="relative">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground"><Zap className="size-3" />{t("Integrations", "التكاملات")}</span>
-          <h1 className="mt-4 font-display text-[28px] font-semibold leading-tight tracking-[-0.03em] sm:text-[34px]">{t("Connect once. Returns run themselves.", "اربط مرة واحدة، والإرجاع يعمل تلقائيًا.")}</h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{t("Link your store so every return is checked against the real order, then share one link with your customers.", "اربط متجرك ليتحقق ريلود من كل طلب إرجاع مقابل الطلب الفعلي، ثم شارك رابطًا واحدًا مع عملائك.")}</p>
-
-          <div className="mt-8" aria-label={t(`${doneCount} of ${steps.length} steps done`, `${doneCount} من ${steps.length} خطوات مكتملة`)}>
-            <div className="relative grid grid-cols-4">
-              <div className="absolute inset-x-[12.5%] top-[13px] h-[2px] rounded-full bg-border" aria-hidden="true" />
-              <motion.div className="absolute start-[12.5%] top-[13px] h-[2px] rounded-full bg-foreground" aria-hidden="true"
-                initial={{ width: 0 }} animate={{ width: `${(Math.max(0, leadingDone - 1) / 3) * 75}%` }}
-                transition={{ ...TWEEN, duration: 0.9, delay: 0.15 }} />
-              {steps.map((step, index) => (
-                <div key={step.key} className="relative flex flex-col items-center gap-2 text-center">
-                  <motion.span initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...QUICK, delay: 0.1 + index * 0.08 }}
-                    className={cn("relative z-[1] grid size-7 place-items-center rounded-full border-2 text-[11px] font-semibold transition-colors duration-300",
-                      step.done ? "border-foreground bg-foreground text-background" : "border-border bg-card text-muted-foreground")}>
-                    {step.done ? <Check className="size-3.5" strokeWidth={3} /> : index + 1}
-                  </motion.span>
-                  <span className={cn("text-[11px] font-medium leading-4 sm:text-xs", step.done ? "text-foreground" : "text-muted-foreground")}>{step.label}</span>
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-10 pb-6">
+      {/* ── Header + progress ── */}
+      <section>
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={TWEEN}>
+          <h1 className="font-display text-[28px] font-semibold leading-tight tracking-[-0.03em] sm:text-[32px]">{t("Integrations", "التكاملات")}</h1>
+          <p className="mt-1.5 max-w-xl text-sm leading-6 text-muted-foreground">{t("Connect your store once. Every return is checked against the real order, and customers start returns from one link.", "اربط متجرك مرة واحدة. يُتحقق من كل إرجاع مقابل الطلب الفعلي، ويبدأ العملاء الإرجاع من رابط واحد.")}</p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ ...TWEEN, delay: 0.06 }}
+          className="mt-6 rounded-2xl border border-border bg-card">
+          <div className="flex items-center gap-4 p-4 sm:p-5">
+            <ProgressRing done={doneCount} total={steps.length} label={t(`${doneCount} of ${steps.length} ready`, `${doneCount} من ${steps.length} جاهزة`)} />
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div key={next.key} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={QUICK}
+                className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-[.14em] text-muted-foreground">{next.key === "done" || next.key === "whatsapp" ? t("Status", "الحالة") : t("Next step", "الخطوة التالية")}</p>
+                  <p className="mt-0.5 text-[15px] font-semibold tracking-tight">{next.title}</p>
+                  <p className="text-xs leading-5 text-muted-foreground">{next.text}</p>
                 </div>
-              ))}
-            </div>
-            <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/60 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="flex items-start gap-2.5 text-sm"><Sparkles className="mt-0.5 size-4 shrink-0 text-muted-foreground" /><span>{next.text}</span></p>
-              {next.cta && ("href" in next && next.href
-                ? <Button asChild size="sm" className="shrink-0 rounded-xl"><Link href={next.href}>{next.cta}<ArrowRight className="size-3.5 rtl:-scale-x-100" /></Link></Button>
-                : <Button size="sm" className="shrink-0 rounded-xl" onClick={"action" in next ? next.action : undefined}>{next.cta}<ArrowRight className="size-3.5 rtl:-scale-x-100" /></Button>)}
-            </div>
+                {next.cta && next.href && <Button asChild size="sm" className="shrink-0 self-start rounded-xl sm:self-auto"><Link href={next.href}>{next.cta}<ArrowRight className="size-3.5 rtl:-scale-x-100" /></Link></Button>}
+              </motion.div>
+            </AnimatePresence>
           </div>
-        </div>
+          <ol className="flex flex-wrap gap-1.5 border-t border-border px-4 py-3 sm:gap-2 sm:px-5">
+            {steps.map((step, index) => {
+              const current = index === currentStep;
+              return (
+                <motion.li key={step.key} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ ...QUICK, delay: 0.15 + index * 0.06 }}
+                  className={cn("inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors duration-300",
+                    step.done ? "border-eligible/25 bg-eligible-muted text-eligible"
+                      : current ? "border-foreground/20 bg-foreground/[.06] text-foreground"
+                        : "border-transparent text-muted-foreground")}>
+                  {step.done
+                    ? <Check className="size-3.5" strokeWidth={2.75} />
+                    : current
+                      ? <span className="relative grid size-3.5 place-items-center"><span className="absolute size-2 animate-ping rounded-full bg-foreground/40 motion-reduce:hidden" /><span className="size-1.5 rounded-full bg-foreground" /></span>
+                      : <span className="opacity-60">{step.icon}</span>}
+                  {step.label}
+                </motion.li>
+              );
+            })}
+          </ol>
+        </motion.div>
       </section>
 
       {/* ── Your store ── */}
       <section id="your-store" className="scroll-mt-20">
-        <SectionHeading title={t("Your store", "متجرك")} subtitle={t("Where your orders live. Reload reads orders and creates returns, nothing else.", "حيث توجد طلباتك. يقرأ ريلود الطلبات وينشئ المرتجعات فقط.")} />
-        <div className="desk-stagger mt-4 grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-3">
-          <StoreTile
-            name={t("Salla", "سلة")} logo={<Image src="/salla-logo.png" alt="" width={30} height={30} className="rounded-lg" />} logoBg="bg-[#004d5a]"
-            tone={toneOf(salla)} detail={sallaConnected ? salla?.external_store_name ?? t("Your store", "متجرك") : t("Official Salla app", "تطبيق سلة الرسمي")}
-            labels={labelsFor(t)} onOpen={() => setPanel("salla")} />
-          <StoreTile
-            name={t("Zid", "زد")} logo={<Image src="/zid-logo.png" alt="" width={48} height={48} className="size-12 rounded-xl" />} logoBg=""
-            tone={toneOf(zid)} detail={zidConnected ? zid?.external_store_name ?? t("Your store", "متجرك") : t("Free via Zid's AI Connector", "مجانًا عبر AI Connector من زد")}
-            labels={labelsFor(t)} onOpen={() => setPanel("zid")} />
-          <StoreTile
-            name="Shopify" logo={<ShoppingBag className="size-6 text-[#5e8e3e]" />} logoBg="bg-[#95bf47]/15"
-            tone="idle" detail={t("We'll let you know", "سنبلغك عند التوفر")} soon labels={labelsFor(t)} />
+        <SectionHeading title={t("Your store", "متجرك")} subtitle={primary ? t("Reload reads orders and creates returns. Nothing else.", "يقرأ ريلود الطلبات وينشئ المرتجعات. لا شيء غير ذلك.") : t("Where do you sell? Choose your platform to connect.", "أين تبيع؟ اختر منصتك للربط.")} />
+        <div className="mt-4">
+          {primary ? (
+            <ConnectedStore
+              platform={primary} name={platformCopy[primary].name} tone={toneOf(primary === "zid" ? zid : salla)}
+              storeName={(primary === "zid" ? zid : salla)?.external_store_name ?? null}
+              connectedAt={date((primary === "zid" ? zid : salla)?.connected_at ?? null)}
+              lastChecked={date((primary === "zid" ? zid : salla)?.last_synced_at ?? null, true)}
+              t={t} onOpen={() => setPanel(primary)} />
+          ) : (
+            <div className="desk-stagger overflow-hidden rounded-2xl border border-border bg-card">
+              {(["zid", "salla"] as const).map((platform) => (
+                <PlatformRow key={platform} logo={<PlatformLogo platform={platform} size={44} />} name={platformCopy[platform].name}
+                  tagline={platformCopy[platform].tagline} meta={platformCopy[platform].meta} free={platform === "zid"} t={t} onOpen={() => setPanel(platform)} />
+              ))}
+              <PlatformRow logo={<span className="grid size-11 place-items-center rounded-xl bg-[#95bf47]/15"><ShoppingBag className="size-5 text-[#5e8e3e]" /></span>}
+                name="Shopify" tagline={t("We'll let you know when it's ready", "سنبلغك عند التوفر")} soon t={t} />
+            </div>
+          )}
         </div>
       </section>
 
@@ -215,7 +227,7 @@ export function IntegrationsPage() {
                 t={t} onClose={() => setPanel(null)} />
               <div className="px-6 pb-8 pt-6">
                 {panel === "zid"
-                  ? <ZidConnectCard embedded onChange={() => void load()} />
+                  ? <ZidConnectCard onChange={() => void load()} onDone={() => setPanel(null)} />
                   : <SallaPanel connected={sallaConnected} storeId={workspace?.storeId ?? null} signedIn={Boolean(user)} t={t} onChange={() => void load()} />}
               </div>
             </div>
@@ -263,41 +275,73 @@ function StatusPill({ tone, label }: { tone: Tone; label: string }) {
   );
 }
 
-function StoreTile({ name, logo, logoBg, tone, detail, soon, labels, onOpen }: {
-  name: string; logo: ReactNode; logoBg: string; tone: Tone; detail: string; soon?: boolean;
-  labels: ReturnType<typeof labelsFor>; onOpen?: () => void;
+function PlatformLogo({ platform, size }: { platform: Platform; size: number }) {
+  return platform === "zid"
+    ? <Image src="/zid-logo.png" alt="" width={size} height={size} className="shrink-0 rounded-xl" style={{ width: size, height: size }} />
+    : <span className="grid shrink-0 place-items-center rounded-xl bg-[#004d5a]" style={{ width: size, height: size }}><Image src="/salla-logo.png" alt="" width={size * 0.62} height={size * 0.62} className="rounded-md" /></span>;
+}
+
+/** One platform in the "choose your platform" list. */
+function PlatformRow({ logo, name, tagline, meta, free, soon, t, onOpen }: {
+  logo: ReactNode; name: string; tagline: string; meta?: string; free?: boolean; soon?: boolean; t: T; onOpen?: () => void;
 }) {
   const content = (
     <>
-      <div className="flex items-start justify-between gap-3">
-        <span className={cn("relative grid size-12 place-items-center overflow-hidden rounded-xl", logoBg)}>
-          {logo}
-        </span>
-        {soon
-          ? <span className="rounded-full border border-dashed border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{labels.soon}</span>
-          : <StatusPill tone={tone} label={labels[tone]} />}
+      {logo}
+      <div className="min-w-0 flex-1">
+        <p className="flex flex-wrap items-center gap-2 font-display text-[15px] font-semibold">
+          {name}
+          {free && <span className="rounded-full bg-eligible-muted px-2 py-px text-[10px] font-semibold uppercase tracking-wide text-eligible">{t("Free", "مجاني")}</span>}
+        </p>
+        <p className="mt-0.5 text-xs leading-5 text-muted-foreground sm:truncate">{tagline}</p>
       </div>
-      <div className="mt-5 min-w-0">
-        <p className="font-display text-base font-semibold">{name}</p>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground" dir="auto">{detail}</p>
-      </div>
-      {!soon && <span className={cn("store-tile-cta mt-5 inline-flex items-center gap-1 text-sm font-medium",
-        tone === "attention" ? "text-review" : "text-foreground")}>
-        {tone === "connected" ? labels.manage : tone === "attention" ? labels.fix : labels.connect}
-        <ChevronRight className="size-4 rtl:rotate-180" />
-      </span>}
-      <AnimatePresence>
-        {tone === "connected" && <motion.span initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0, opacity: 0 }} transition={{ ...QUICK, delay: 0.25 }}
-          className="absolute start-[52px] top-[52px] grid size-5 place-items-center rounded-full border-2 border-card bg-eligible text-white"><Check className="size-3" strokeWidth={3} /></motion.span>}
-      </AnimatePresence>
+      {soon
+        ? <span className="shrink-0 rounded-full border border-dashed border-border px-2.5 py-1 text-[11px] font-medium text-muted-foreground">{t("Coming soon", "قريبًا")}</span>
+        : <span className="store-tile-cta flex shrink-0 items-center gap-3">
+            {meta && <span className="hidden text-xs text-muted-foreground sm:inline">{meta}</span>}
+            <span className="inline-flex h-9 items-center gap-1 rounded-xl bg-foreground px-3.5 text-sm font-medium text-background">{t("Connect", "ربط")}<ChevronRight className="size-4 rtl:rotate-180" /></span>
+          </span>}
     </>
   );
-  const cls = cn("store-tile admin-card group relative flex min-h-[188px] flex-col rounded-2xl border bg-card p-5 text-start",
-    soon ? "border-dashed border-border/80 opacity-70" : "admin-lift border-border",
-    tone === "connected" && "border-eligible/30");
+  const cls = "store-tile flex w-full items-center gap-4 border-b border-border px-4 py-4 text-start last:border-b-0 sm:px-5";
   return soon
-    ? <div className={cls} aria-disabled="true">{content}</div>
-    : <button type="button" onClick={onOpen} className={cls}>{content}</button>;
+    ? <div className={cn(cls, "opacity-60")} aria-disabled="true">{content}</div>
+    : <button type="button" onClick={onOpen} className={cn(cls, "hover:bg-muted/40")}>{content}</button>;
+}
+
+/** The store that's connected (or needs fixing), shown wide. */
+function ConnectedStore({ platform, name, tone, storeName, connectedAt, lastChecked, t, onOpen }: {
+  platform: Platform; name: string; tone: Tone; storeName: string | null; connectedAt: string | null; lastChecked: string | null; t: T; onOpen: () => void;
+}) {
+  const labels = labelsFor(t);
+  return (
+    <button type="button" onClick={onOpen}
+      className={cn("store-tile admin-card admin-lift group flex w-full flex-col gap-4 rounded-2xl border bg-card p-5 text-start sm:flex-row sm:items-center sm:p-6",
+        tone === "attention" ? "border-review/40" : "border-eligible/30")}>
+      <div className="flex min-w-0 flex-1 items-center gap-4">
+        <span className="relative">
+          <PlatformLogo platform={platform} size={52} />
+          <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ ...QUICK, delay: 0.3 }}
+            className={cn("absolute -bottom-1 -end-1 grid size-5 place-items-center rounded-full border-2 border-card text-white", tone === "attention" ? "bg-review" : "bg-eligible")}>
+            {tone === "attention" ? <AlertTriangle className="size-2.5" strokeWidth={3} /> : <Check className="size-3" strokeWidth={3} />}
+          </motion.span>
+        </span>
+        <div className="min-w-0">
+          <p className="flex flex-wrap items-center gap-2"><span className="font-display text-base font-semibold">{name}</span><StatusPill tone={tone} label={labels[tone]} /></p>
+          <p className="mt-0.5 truncate text-sm" dir="auto">{storeName ?? t("Your store", "متجرك")}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {tone === "attention"
+              ? t("Reload can't reach your store. Reconnect to keep returns working.", "لا يستطيع ريلود الوصول لمتجرك. أعد الربط ليستمر الإرجاع.")
+              : <>{connectedAt && t(`Connected ${connectedAt}`, `تم الربط ${connectedAt}`)}{connectedAt && " · "}{t(`Last checked ${lastChecked ?? "not yet"}`, `آخر تحقق ${lastChecked ?? "لم يتم بعد"}`)}</>}
+          </p>
+        </div>
+      </div>
+      <span className={cn("store-tile-cta inline-flex h-9 shrink-0 items-center justify-center gap-1 self-start rounded-xl border px-3.5 text-sm font-medium sm:self-auto",
+        tone === "attention" ? "border-review/40 text-review" : "border-border")}>
+        {tone === "attention" ? labels.fix : labels.manage}<ChevronRight className="size-4 rtl:rotate-180" />
+      </span>
+    </button>
+  );
 }
 
 function PanelHeader({ platform, tone, connection, connectedAt, lastChecked, t, onClose }: {
@@ -332,6 +376,8 @@ function PanelHeader({ platform, tone, connection, connectedAt, lastChecked, t, 
   );
 }
 
+const SALLA = "#004d5a";
+
 function SallaPanel({ connected, storeId, signedIn, t, onChange }: { connected: boolean; storeId: string | null; signedIn: boolean; t: T; onChange: () => void }) {
   const [action, setAction] = useState<"connect" | "test" | "disconnect" | null>(null);
   const [confirm, setConfirm] = useState(false);
@@ -355,33 +401,45 @@ function SallaPanel({ connected, storeId, signedIn, t, onChange }: { connected: 
   return (
     <div className="space-y-6">
       {connected ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" className="rounded-xl" onClick={() => void run("test")} disabled={action !== null}>{action === "test" ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}{t("Check connection", "فحص الربط")}</Button>
-          <Button variant="ghost" className="rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive sm:ms-auto" onClick={() => setConfirm(true)} disabled={action !== null}>{action === "disconnect" ? <Loader2 className="size-4 animate-spin" /> : <Unplug className="size-4 rtl:-scale-x-100" />}{t("Disconnect", "فصل الربط")}</Button>
-        </div>
-      ) : (
         <>
-          <ol className="space-y-3">
-            {[
-              t("Click Connect. You'll go to Salla to approve access.", "اضغط ربط. ستنتقل إلى سلة للموافقة على الوصول."),
-              t("Sign in to Salla and approve Reload.", "سجّل الدخول إلى سلة ووافق على ريلود."),
-              t("You come back here, connected.", "تعود هنا وقد تم الربط."),
-            ].map((text, index) => (
-              <li key={text} className="flex gap-3.5 rounded-2xl border border-border/60 p-4">
-                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">{index + 1}</span>
-                <p className="pt-1 text-sm">{text}</p>
-              </li>
-            ))}
-          </ol>
-          <Button className="h-11 w-full rounded-xl" onClick={() => void connect()} disabled={action !== null}>
-            {action === "connect" ? <><Loader2 className="size-4 animate-spin" />{t("Opening Salla…", "جارٍ فتح سلة…")}</> : <><Link2 className="size-4" />{t("Connect Salla", "ربط سلة")}</>}
-          </Button>
+          <div className="rounded-2xl border border-border p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[.14em] text-muted-foreground">{t("What Reload can do", "ما يستطيع ريلود فعله")}</p>
+            <ul className="mt-3 space-y-2 text-sm">
+              {[t("Find an order by number, phone or email", "إيجاد الطلب برقمه أو بالجوال أو البريد"), t("Read items, prices, status and delivery date", "قراءة المنتجات والأسعار والحالة وتاريخ التوصيل")].map((line) => (
+                <li key={line} className="flex items-center gap-2.5"><Check className="size-4 shrink-0 text-eligible" />{line}</li>
+              ))}
+              <li className="flex items-center gap-2.5 text-muted-foreground"><span className="grid size-4 shrink-0 place-items-center text-xs">✕</span>{t("Never products, prices, coupons or settings", "لا يصل أبدًا للمنتجات أو الأسعار أو الكوبونات أو الإعدادات")}</li>
+            </ul>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" className="rounded-xl" onClick={() => void run("test")} disabled={action !== null}>{action === "test" ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}{t("Check connection", "فحص الربط")}</Button>
+            <Button variant="ghost" className="rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive sm:ms-auto" onClick={() => setConfirm(true)} disabled={action !== null}>{action === "disconnect" ? <Loader2 className="size-4 animate-spin" /> : <Unplug className="size-4 rtl:-scale-x-100" />}{t("Disconnect", "فصل الربط")}</Button>
+          </div>
         </>
+      ) : (
+        <ConnectStepper
+          current={0} busy={action === "connect"} accent={SALLA}
+          steps={[
+            {
+              title: t("Approve Reload in Salla", "وافق على ريلود في سلة"),
+              content: (
+                <div className="space-y-3">
+                  <p className="text-sm leading-6 text-muted-foreground">{t("You'll go to Salla, sign in, and allow Reload to read your orders. It takes under a minute.", "ستنتقل إلى سلة، تسجّل الدخول، وتسمح لريلود بقراءة طلباتك. يستغرق أقل من دقيقة.")}</p>
+                  <Button className="h-11 w-full rounded-xl transition-transform active:scale-[.99]" onClick={() => void connect()} disabled={action !== null}>
+                    {action === "connect" ? <><Loader2 className="size-4 animate-spin" />{t("Opening Salla…", "جارٍ فتح سلة…")}</> : <>{t("Continue to Salla", "المتابعة إلى سلة")}<ArrowUpRight className="size-3.5 rtl:-scale-x-100" /></>}
+                  </Button>
+                </div>
+              ),
+            },
+            { title: t("Come back connected", "عُد وقد تم الربط") },
+            { title: t("Customers can start returns", "يبدأ العملاء طلبات الإرجاع") },
+          ]}
+        />
       )}
-      <div className="grid overflow-hidden rounded-2xl border border-border/60 bg-muted/20 sm:grid-cols-3">
-        <div className="flex items-center gap-3 p-4 text-sm"><ShieldCheck className="size-4 text-[#004d5a] dark:text-[#5ec6c6]" />{t("Encrypted access", "وصول مشفّر")}</div>
-        <div className="flex items-center gap-3 border-y border-border/60 p-4 text-sm sm:border-x sm:border-y-0"><FileText className="size-4 text-[#004d5a] dark:text-[#5ec6c6]" />{t("Orders read only", "قراءة الطلبات فقط")}</div>
-        <div className="flex items-center gap-3 p-4 text-sm"><Unplug className="size-4 text-[#004d5a] dark:text-[#5ec6c6]" />{t("Disconnect anytime", "فصل في أي وقت")}</div>
+      <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-4 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5"><ShieldCheck className="size-3.5 text-[#004d5a] dark:text-[#5ec6c6]" />{t("Encrypted access", "وصول مشفّر")}</span>
+        <span className="inline-flex items-center gap-1.5"><FileText className="size-3.5 text-[#004d5a] dark:text-[#5ec6c6]" />{t("Orders read only", "قراءة الطلبات فقط")}</span>
+        <span className="inline-flex items-center gap-1.5"><Unplug className="size-3.5 text-[#004d5a] dark:text-[#5ec6c6]" />{t("Disconnect anytime", "فصل في أي وقت")}</span>
       </div>
       <AlertDialog open={confirm} onOpenChange={setConfirm}>
         <AlertDialogContent>
@@ -399,12 +457,14 @@ function SallaPanel({ connected, storeId, signedIn, t, onChange }: { connected: 
   );
 }
 
-function ChannelCard({ icon, iconBg, title, tone, toneLabel, children }: { icon: ReactNode; iconBg: string; title: string; tone: Tone; toneLabel: string; children: ReactNode }) {
+function ChannelCard({ icon, iconBg, title, tone, toneLabel, locked, children }: { icon: ReactNode; iconBg: string; title: string; tone: Tone; toneLabel: string; locked?: boolean; children: ReactNode }) {
   return (
-    <div className="admin-card flex min-w-0 flex-col rounded-2xl border border-border bg-card p-5 sm:p-6">
+    <div className={cn("admin-card flex min-w-0 flex-col rounded-2xl border bg-card p-5 sm:p-6", locked ? "border-dashed border-border" : "border-border")}>
       <div className="flex items-start justify-between gap-3">
-        <span className={cn("grid size-11 place-items-center rounded-xl", iconBg)}>{icon}</span>
-        <StatusPill tone={tone} label={toneLabel} />
+        <span className={cn("grid size-11 place-items-center rounded-xl transition-[filter,opacity] duration-300", iconBg, locked && "opacity-60 grayscale")}>{icon}</span>
+        {locked
+          ? <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground"><Lock className="size-3" />{toneLabel}</span>
+          : <StatusPill tone={tone} label={toneLabel} />}
       </div>
       <p className="mt-4 font-display text-base font-semibold">{title}</p>
       <div className="mt-1 flex flex-1 flex-col">{children}</div>
@@ -433,10 +493,10 @@ function ReturnPageCard({ returnPath, t }: { returnPath: string | null; t: T }) 
 
   return (
     <ChannelCard icon={<Link2 className="size-5" />} iconBg="bg-muted" title={t("Customer return page", "صفحة إرجاع العملاء")}
-      tone={returnPath ? "connected" : "idle"} toneLabel={returnPath ? t("Live", "مفعّلة") : t("After connecting", "بعد الربط")}>
+      tone={returnPath ? "connected" : "idle"} toneLabel={returnPath ? t("Live", "مفعّلة") : t("Locked", "مقفلة")} locked={!returnPath}>
       <p className="text-sm leading-6 text-muted-foreground">{returnPath
         ? t("Customers enter their order number and the phone or email on the order. Reload checks it against your store.", "يدخل العميل رقم طلبه والجوال أو البريد المسجل. يتحقق ريلود منه مقابل متجرك.")
-        : t("Connect your store and this link goes live.", "اربط متجرك وسيُفعّل هذا الرابط.")}</p>
+        : t("One link and a QR code for your customers. It goes live as soon as your store is connected.", "رابط واحد ورمز QR لعملائك. يُفعّل فور ربط متجرك.")}</p>
       {returnPath && (
         <div className="mt-4 flex flex-1 flex-col justify-end gap-3">
           <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-2">
@@ -478,10 +538,10 @@ function WhatsAppCard({ connected, link, storeConnected, policyReady, connectedA
   };
   return (
     <ChannelCard icon={<WhatsAppLogo className="size-6" />} iconBg="bg-[#25D366]/12 text-[#128C7E] dark:text-[#25D366]" title="WhatsApp"
-      tone={connected ? "connected" : "idle"} toneLabel={connected ? t("Connected", "متصل") : t("Awaiting activation", "بانتظار التفعيل")}>
+      tone={connected ? "connected" : "idle"} toneLabel={connected ? t("Connected", "متصل") : storeConnected ? t("Awaiting activation", "بانتظار التفعيل") : t("Locked", "مقفلة")} locked={!connected && !storeConnected}>
       <p className="text-sm leading-6 text-muted-foreground">{connected
         ? t("Customers start a return in WhatsApp. Their requests and photos appear in your return cases.", "يبدأ عملاؤك الإرجاع من واتساب، وتظهر طلباتهم وصورهم ضمن حالات الإرجاع.")
-        : t("The Reload team activates this with you once your store is connected and your policy is published.", "يفعّل فريق ريلود هذه القناة معك بعد ربط متجرك ونشر سياستك.")}</p>
+        : t("Customers message your number to start a return. The Reload team activates it with you.", "يراسل العملاء رقمك لبدء الإرجاع. يفعّله فريق ريلود معك.")}</p>
       {connected ? (
         <div className="mt-4 flex flex-1 flex-col justify-end gap-3">
           <p className="text-xs text-muted-foreground">{connectedAt && t(`Connected ${connectedAt}`, `تم الربط ${connectedAt}`)}{connectedAt && " · "}{t(`Last message ${lastMessage ?? "not yet"}`, `آخر رسالة ${lastMessage ?? "لم تصل بعد"}`)}</p>
@@ -491,19 +551,9 @@ function WhatsAppCard({ connected, link, storeConnected, policyReady, connectedA
           </div> : <p className="flex items-center gap-1.5 text-xs text-review"><AlertTriangle className="size-3.5" />{t("Active, but its number is unavailable. Contact Reload before sharing.", "مفعّلة لكن رقمها غير متوفر. تواصل مع ريلود قبل المشاركة.")}</p>}
         </div>
       ) : (
-        <div className="mt-4 flex flex-1 items-end">
-          <div className="flex flex-wrap gap-1.5 text-xs">
-            {[
-              { done: storeConnected, label: t("Store connected", "ربط المتجر") },
-              { done: policyReady, label: t("Policy published", "نشر السياسة") },
-              { done: false, label: t("Activation", "التفعيل") },
-            ].map((item, index) => (
-              <span key={item.label} className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 transition-colors duration-300", item.done ? "bg-eligible-muted text-eligible" : "bg-muted text-muted-foreground")}>
-                {item.done ? <Check className="size-3" /> : <span className="tabular-nums">{index + 1}</span>}{item.label}
-              </span>
-            ))}
-          </div>
-        </div>
+        <p className="mt-4 flex flex-1 items-end text-xs text-muted-foreground">
+          {!storeConnected ? t("Unlocks after you connect your store.", "يُفتح بعد ربط متجرك.") : !policyReady ? t("Next: publish your return policy.", "التالي: انشر سياسة الإرجاع.") : t("Ready. The Reload team will reach out to activate it.", "جاهز. سيتواصل معك فريق ريلود لتفعيله.")}
+        </p>
       )}
     </ChannelCard>
   );

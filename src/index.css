@@ -5215,18 +5215,8 @@ html[data-admin-welcome="play"] .admin-grow { transform: scaleX(0); }
 }
 
 /* ── Integrations hub (views/integrations.tsx) ─────────────────────────────
-   A faint dot texture on the hero that fades out downward (texture, not glow),
-   tiles that lift and nudge their arrow, quick press feedback. */
-.integrations-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: radial-gradient(circle at 1px 1px, color-mix(in oklab, var(--foreground) 9%, transparent) 1px, transparent 0);
-  background-size: 18px 18px;
-  mask-image: linear-gradient(to bottom, #000 0%, transparent 75%);
-}
-.store-tile { transition: border-color 200ms var(--ease-brand), box-shadow 200ms var(--ease-brand), transform 160ms var(--ease-brand); }
+   Platform rows and the store card nudge their arrow on hover, press gently. */
+.store-tile { transition: background-color 200ms var(--ease-brand), border-color 200ms var(--ease-brand), box-shadow 200ms var(--ease-brand), transform 160ms var(--ease-brand); }
 .store-tile .store-tile-cta svg { transition: transform 240ms var(--ease-brand); }
 .store-tile:hover .store-tile-cta svg { transform: translateX(3px); }
 [dir="rtl"] .store-tile:hover .store-tile-cta svg { transform: rotate(180deg) translateX(3px); }
@@ -5235,3 +5225,6 @@ html[data-admin-welcome="play"] .admin-grow { transform: scaleX(0); }
 @media (prefers-reduced-motion: reduce) {
   .store-tile, .store-tile .store-tile-cta svg { transition: none; }
 }
+
+/* Overview greeting: the hand waves once. */
+@keyframes wave { 0%, 100% { transform: rotate(0); } 20%, 60% { transform: rotate(14deg); } 40%, 80% { transform: rotate(-8deg); } }

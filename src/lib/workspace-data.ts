@@ -5,7 +5,8 @@ import type { CaseStatus, PolicyRule, ReturnCase } from "@/lib/domain";
 import { supabase } from "@/lib/supabase";
 
 /*
- * The merchant workspace's live data (cases, latest policy, drafts, Salla),
+ * The merchant workspace's live data (cases, latest policy, drafts, store
+ * connection, WhatsApp, return link),
  * read from Supabase once and shared by the sidebar badges, Overview and the
  * case list. Before this, Overview and the badges read the old browser-only
  * demo store, so a real store could publish a policy and still be told its
@@ -31,7 +32,8 @@ export function mapCaseRow(row: Record<string, any>): ReturnCase {
 }
 
 export type LatestPolicy = { versionLabel: string; publishedAt: string; ruleCount: number };
-export type SallaState = { status: string; storeName: string | null; connectedAt: string | null } | null;
+/** The store connection that matters: a connected one first, else whatever exists. */
+export type StoreConnection = { platform: "salla" | "zid"; status: string; storeName: string | null; connectedAt: string | null } | null;
 
 export type WorkspaceData = {
   ready: boolean;
@@ -39,10 +41,12 @@ export type WorkspaceData = {
   cases: ReturnCase[];
   policy: LatestPolicy | null;
   draftCount: number;
-  salla: SallaState;
+  store: StoreConnection;
+  whatsApp: string | null;
+  returnCode: string | null;
 };
 
-const EMPTY: WorkspaceData = { ready: false, storeId: null, cases: [], policy: null, draftCount: 0, salla: null };
+const EMPTY: WorkspaceData = { ready: false, storeId: null, cases: [], policy: null, draftCount: 0, store: null, whatsApp: null, returnCode: null };
 
 let state: WorkspaceData = EMPTY;
 let inflight: Promise<void> | null = null;
@@ -52,12 +56,16 @@ const set = (next: WorkspaceData) => { state = next; emit(); };
 
 async function load(storeId: string) {
   if (!supabase) { set({ ...EMPTY, ready: true, storeId }); return; }
-  const [cases, policies, drafts, salla] = await Promise.all([
+  const [cases, policies, drafts, connections, whatsApp, store] = await Promise.all([
     supabase.from("return_cases").select(CASE_SELECT).eq("store_id", storeId).order("created_at", { ascending: false }),
     supabase.from("policy_versions").select("version_label, published_at, rules_snapshot").eq("store_id", storeId).order("published_at", { ascending: false }).limit(1),
     supabase.from("policy_drafts").select("id", { count: "exact", head: true }).eq("store_id", storeId),
-    supabase.from("commerce_connections").select("status, external_store_name, connected_at").eq("store_id", storeId).eq("platform", "salla").maybeSingle(),
+    supabase.from("commerce_connections").select("platform, status, external_store_name, connected_at").eq("store_id", storeId),
+    supabase.from("whatsapp_connections").select("status").eq("store_id", storeId).maybeSingle(),
+    supabase.from("stores").select("return_code").eq("id", storeId).maybeSingle(),
   ]);
+  const rows = (connections.data ?? []) as Array<Record<string, any>>;
+  const connection = rows.find((row) => row.status === "CONNECTED") ?? rows[0];
   const latest = (policies.data ?? [])[0] as Record<string, unknown> | undefined;
   set({
     ready: true,
@@ -65,7 +73,9 @@ async function load(storeId: string) {
     cases: ((cases.data ?? []) as Array<Record<string, any>>).map(mapCaseRow),
     policy: latest ? { versionLabel: String(latest.version_label), publishedAt: String(latest.published_at), ruleCount: ((latest.rules_snapshot ?? []) as PolicyRule[]).length } : null,
     draftCount: drafts.count ?? 0,
-    salla: salla.data ? { status: String(salla.data.status), storeName: (salla.data.external_store_name as string | null) ?? null, connectedAt: (salla.data.connected_at as string | null) ?? null } : null,
+    store: connection ? { platform: connection.platform, status: String(connection.status), storeName: connection.external_store_name ?? null, connectedAt: connection.connected_at ?? null } : null,
+    whatsApp: whatsApp.data ? String(whatsApp.data.status) : null,
+    returnCode: typeof store.data?.return_code === "string" ? store.data.return_code : null,
   });
 }
 
