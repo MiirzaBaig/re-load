@@ -420,20 +420,30 @@ async function handleMessage(phoneNumberId: string, message: MetaMessage, profil
   const waId = (message.from ?? "").replace(/\D/g, "");
   if (!messageId || !waId) return;
   const admin = adminClient();
-  const publicEntry = textOf(message).trim().toLowerCase() === "reload";
+  const publicInput = textOf(message).trim().toLowerCase();
+  const publicEntry = ["reload", "public_language_ar", "public_language_en"].includes(publicInput);
   const { data: connection } = await admin.from("whatsapp_connections").select("store_id").eq("phone_number_id", phoneNumberId).eq("status", "CONNECTED").maybeSingle();
   if (publicEntry || !connection) {
     if (!await claim(admin, null, messageId, "PUBLIC_WEBSITE_ENTRY")) return;
     try {
-      const body = [
-        "أهلًا بك في ريلود 👋",
-        "إذا عندك طلب إرجاع، افتح الرابط اللي أرسله لك متجرك عشان نعرف أي طلب نراجع.",
-        "صاحب متجر؟ سجّل اهتمامك هنا ونتواصل معك: https://www.reload.sa/#contact",
-        "",
-        "Hi, welcome to Reload. For a return, use the link shared by your store so we can find the right order.",
-        "Run a store? Register here and we’ll get in touch: https://www.reload.sa/#contact",
-      ].join("\n");
-      await sendWhatsAppText(waId, body);
+      if (publicInput === "public_language_ar") {
+        await sendWhatsAppText(waId, [
+          "إذا تبي ترجع طلب، افتح رابط الإرجاع اللي وصلك من المتجر. نكمل معك هنا خطوة بخطوة.",
+          "",
+          "عندك متجر؟ سجّل اهتمامك ونتواصل معك: https://www.reload.sa/#contact",
+        ].join("\n"));
+      } else if (publicInput === "public_language_en") {
+        await sendWhatsAppText(waId, [
+          "Returning an order? Open the return link your store shared. We’ll continue with you here in WhatsApp.",
+          "",
+          "Run a store? Leave your details and we’ll get in touch: https://www.reload.sa/#contact",
+        ].join("\n"));
+      } else {
+        await sendWhatsAppButtons(waId, "يا هلا، حيّاك الله في ريلود 👋\nHi, welcome to Reload.\n\nاختر لغتك · Choose your language", [
+          { id: "public_language_ar", title: "العربية" },
+          { id: "public_language_en", title: "English" },
+        ]);
+      }
       await admin.from("integration_events").update({ status: "PROCESSED", processed_at: new Date().toISOString() })
         .eq("provider", "whatsapp").eq("external_event_id", messageId);
       return;
