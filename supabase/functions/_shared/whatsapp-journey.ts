@@ -1,3 +1,5 @@
+import { decrypt } from "./crypto.ts";
+import { requestOrderOtp, verifyOrderOtp } from "./email-otp.ts";
 import { reviseTicketDraft } from "./ticket-draft.ts";
 import { whatsappRouteInput } from "./whatsapp-route-input.ts";
 import { extractOrderReference } from "./return-photo.ts";
@@ -43,7 +45,7 @@ async function persistAndDeliver(admin: Admin, messageId: string, plan: ReplyPla
 type Admin = ReturnType<typeof adminClient>;
 type MetaMessage = { id?: string; from?: string; timestamp?: string; type?: string; text?: { body?: string }; image?: { id?: string; mime_type?: string; caption?: string }; interactive?: { button_reply?: { id?: string }; list_reply?: { id?: string } } };
 type Item = { id: string; name: string; sku: string; quantity: number; price: number };
-type Context = { generalHistory?: Array<{role:string;content:string}>; extractedOrder?: string; serviceMode?: "QUESTION" | "PRODUCT" | "TRACK" | "COMPLAINT" | "HUMAN"; ticketDraft?: string; ticketEditing?: boolean; returnResume?: { step: string; context: Record<string, unknown> }; caseId?: string | null; orderNumber?: string; identityReviewId?: string; verificationToken?: string; order?: { orderId: string; customerName: string; orderStatus?: string; customerEmail?: string; items: Item[] }; itemId?: string; quantity?: number; reason?: string; condition?: string; photoEvidenceId?: string; photoReviewRequired?: boolean; decisionId?: string; reportType?: "BUG" | "FEEDBACK"; reportMessage?: string; itemPage?: number };
+type Context = { emailChallengeId?: string; emailVerified?: boolean; generalHistory?: Array<{role:string;content:string}>; extractedOrder?: string; serviceMode?: "QUESTION" | "PRODUCT" | "TRACK" | "COMPLAINT" | "HUMAN"; ticketDraft?: string; ticketEditing?: boolean; returnResume?: { step: string; context: Record<string, unknown> }; caseId?: string | null; orderNumber?: string; identityReviewId?: string; verificationToken?: string; order?: { orderId: string; customerName: string; orderStatus?: string; customerEmail?: string; items: Item[] }; itemId?: string; quantity?: number; reason?: string; condition?: string; photoEvidenceId?: string; photoReviewRequired?: boolean; decisionId?: string; reportType?: "BUG" | "FEEDBACK"; reportMessage?: string; itemPage?: number };
 type Conversation = { id: string; language: string; contact_id: string; return_case_id: string | null };
 type Store = { id: string; name: string; return_code: string };
 
@@ -485,7 +487,68 @@ Choose Continue to pick up where you left off, or New return to start again.`;
     const body = language === "ar" ? `طلب التحقق عند ${store.name}. تقدر ترجع هنا وتضغط «التحقق من الحالة». ما أرسلنا طلب إرجاع إلى الآن.` : `Your identity check is waiting with ${store.name}. Come back here and tap Check status. A return hasn’t been submitted yet.`;
     return { body, result: await sendWhatsAppButtons(to, body, [{ id: "identity_status", title: language === "ar" ? "التحقق من الحالة" : "Check status" }]), type: "INTERACTIVE" as const };
   }
-  if (flow.step === "AWAITING_ORDER" && normalized === "identity_request" && flow.context.orderNumber) {
+  if (["AWAITING_ORDER", "AWAITING_EMAIL_OTP"].includes(flow.step) && ["email_request", "email_resend"].includes(normalized) && flow.context.orderNumber) {
+    let result: { status: string; id?: string; masked?: string };
+    try {
+      result = await requestOrderOtp(admin, store.id, conversation.id, flow.context.orderNumber, message?.id ?? crypto.randomUUID(), store.name, language);
+    } catch { result = { status: "unavailable" }; }
+    if (result.status === "sent" && result.id) {
+      await setFlow(admin, conversation.id, "AWAITING_EMAIL_OTP", { orderNumber: flow.context.orderNumber, serviceMode: flow.context.serviceMode, emailChallengeId: result.id });
+      const body = language === "ar" ? `أرسلنا رمز التحقق إلى ${result.masked}.
+اكتب الرمز المكوّن من 6 أرقام هنا خلال 10 دقائق. وإذا طلبت رمزًا جديدًا، استخدم آخر رمز وصلك.
+ما وصلك؟ شيّك مجلد الرسائل غير المرغوب فيها.` : `We’ve sent a code to ${result.masked}.
+Enter the 6-digit code here within 10 minutes. If you request another, use the latest code.
+Check your spam folder if it hasn’t arrived.`;
+      return { body, result: await sendWhatsAppButtons(to, body, [{ id: "email_resend", title: language === "ar" ? "إعادة إرسال الرمز" : "Resend code" }, { id: "identity_request", title: language === "ar" ? "التحقق عبر المتجر" : "Ask store to verify" }]), type: "INTERACTIVE" as const };
+    }
+    const body = result.status === "cooldown" ? language === "ar" ? "انتظر دقيقة من آخر طلب للرمز، ثم جرّب مرة ثانية. إذا وصلك رمز، اكتبه هنا." : "Wait a minute after your last code request, then try again. If a code arrived, enter it here."
+      : result.status === "limited" ? language === "ar" ? "وصلت للحد المسموح لطلب الرموز. جرّب بعد ساعة، أو اطلب من المتجر التحقق من هويتك." : "You’ve reached the code-request limit. Try again in an hour, or ask the store to verify you."
+      : language === "ar" ? "ما قدرنا نرسل رمز التحقق الآن. ممكن بيانات الطلب تحتاج مراجعة أو خدمة البريد غير متاحة. راجع رقم الطلب، أو اطلب من المتجر التحقق من هويتك." : "We couldn’t send a verification code right now. The order details may need checking, or email may be unavailable. Check your order number, or ask the store to verify you.";
+    return { body, result: await sendWhatsAppButtons(to, body, [{ id: "email_resend", title: language === "ar" ? "المحاولة مرة ثانية" : "Try again" }, { id: "identity_request", title: language === "ar" ? "التحقق عبر المتجر" : "Ask store to verify" }]), type: "INTERACTIVE" as const };
+  }
+  if (flow.step === "AWAITING_EMAIL_OTP" && normalized !== "identity_request") {
+    const context = flow.context;
+    if (!context.emailChallengeId || !context.orderNumber) {
+      await setFlow(admin, conversation.id, "AWAITING_ORDER");
+      const body = language === "ar" ? "أرسل رقم الطلب من جديد عشان نكمل التحقق." : "Send your order number again so we can verify it.";
+      return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
+    }
+    let verified: { status: string; verifier?: string };
+    if (context.emailVerified) {
+      const grant = await admin.rpc("get_order_email_grant", { p_id: context.emailChallengeId, p_conversation: conversation.id, p_order: context.orderNumber });
+      if (grant.error) throw grant.error;
+      verified = { status: grant.data ? "verified" : "expired", verifier: grant.data ?? undefined };
+    } else {
+      verified = await verifyOrderOtp(admin, context.emailChallengeId, conversation.id, context.orderNumber, input, message?.id ?? crypto.randomUUID());
+    }
+    if (verified.status === "verified" && verified.verifier) {
+      await setFlow(admin, conversation.id, "AWAITING_EMAIL_OTP", { ...context, emailVerified: true });
+      try {
+        const contact = await decrypt(verified.verifier);
+        const lookup = await invoke("salla-order-lookup", { returnCode: store.return_code, orderNumber: context.orderNumber, verifier: contact });
+        if (!lookup.order?.items?.length || typeof lookup.verificationToken !== "string") throw new Error("order_unavailable");
+        if (context.serviceMode === "TRACK") {
+          await setFlow(admin, conversation.id, "MENU", {});
+          return orderTrackingReply(admin, contact, to, language, store, lookup.order);
+        }
+        await setFlow(admin, conversation.id, "AWAITING_ITEM", { order: lookup.order, verificationToken: lookup.verificationToken });
+        await admin.from("whatsapp_conversations").update({ state: "CAPTURING_RETURN" }).eq("id", conversation.id);
+        const reply = await itemPrompt(to, language, lookup.order);
+        const confirmation = language === "ar" ? "تم التحقق من طلبك ✅\n\n" : "Your order is verified ✅\n\n";
+        reply.body = confirmation + reply.body;
+        reply.result.body = reply.body;
+        return reply;
+      } catch {
+        const body = language === "ar" ? "تحققنا من بريدك، لكن ما قدرنا نجيب بيانات الطلب الآن. اضغط «متابعة» للمحاولة خلال 20 دقيقة." : "Your email is verified, but we couldn’t fetch the order right now. Tap Continue to retry within 20 minutes.";
+        return { body, result: await sendWhatsAppButtons(to, body, [{ id: "email_continue", title: language === "ar" ? "متابعة" : "Continue" }]), type: "INTERACTIVE" as const };
+      }
+    }
+    const body = verified.status === "invalid" ? language === "ar" ? "الرمز غير صحيح. تأكد من آخر رمز وصلك وأرسله مرة ثانية." : "That code isn’t correct. Check the latest email and try again."
+      : verified.status === "locked" ? language === "ar" ? "وصلت للحد المسموح للمحاولات. اطلب رمزًا جديدًا أو خلّ المتجر يتحقق من هويتك." : "Too many attempts with this code. Request a new one or ask the store to verify you."
+      : language === "ar" ? "هذا الرمز انتهت صلاحيته أو تم استخدامه. اطلب رمزًا جديدًا عشان نكمل." : "This code has expired or was already used. Request a new one to continue.";
+    return { body, result: await sendWhatsAppButtons(to, body, [{ id: "email_resend", title: language === "ar" ? "رمز جديد" : "New code" }, { id: "identity_request", title: language === "ar" ? "التحقق عبر المتجر" : "Ask store to verify" }]), type: "INTERACTIVE" as const };
+  }
+  if (["AWAITING_ORDER", "AWAITING_EMAIL_OTP"].includes(flow.step) && normalized === "identity_request" && flow.context.orderNumber) {
     const { data: reviewId, error } = await admin.rpc("request_identity_review", { p_conversation: conversation.id, p_order: flow.context.orderNumber });
     if (error || !reviewId) {
       const body = language === "ar" ? "ما قدرنا نسجل طلب تحقق جديد الآن. تواصل مع المتجر لمراجعة بياناتك." : "We can’t open another identity check right now. Please contact the store to check your details.";
@@ -534,8 +597,8 @@ After the store reviews it, come back and tap Continue. Your order details stay 
         return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
       }
       await setFlow(admin, conversation.id, "AWAITING_ORDER", { orderNumber, serviceMode: flow.context.serviceMode });
-      const body = language === "ar" ? "ما قدرنا نطابق رقم الطلب مع رقم واتساب. راجع رقم الطلب وأرسله مرة ثانية.\nإذا رقمك تغيّر، اطلب من المتجر التحقق من هويتك." : "We couldn’t match that order to your WhatsApp number. Check the order number and send it again.\nIf your number has changed, ask the store to verify your identity.";
-      return { body, result: await sendWhatsAppButtons(to, body, [{ id: "identity_request", title: language === "ar" ? "طلب تحقق من المتجر" : "Ask store to verify" }]), type: "INTERACTIVE" as const };
+      const body = language === "ar" ? "ما قدرنا نطابق رقم الطلب مع رقم واتساب. راجع رقم الطلب وأرسله مرة ثانية.\nإذا رقمك تغيّر، تقدر تتحقق عبر البريد المسجل في الطلب أو تطلب مساعدة المتجر." : "We couldn’t match that order to your WhatsApp number. Check the order number and send it again.\nIf your number has changed, verify through the email on your order or ask the store to help.";
+      return { body, result: await sendWhatsAppButtons(to, body, [{ id: "email_request", title: language === "ar" ? "التحقق عبر البريد" : "Verify by email" }, { id: "identity_request", title: language === "ar" ? "التحقق عبر المتجر" : "Ask store to verify" }]), type: "INTERACTIVE" as const };
     }
   }
   if (flow.step === "AWAITING_ITEM") {
@@ -799,7 +862,9 @@ export async function handleMessage(phoneNumberId: string, message: MetaMessage,
       await setFlow(admin, conversation.id, "AWAITING_LANGUAGE");
     } else await admin.from("whatsapp_conversations").update({ service_window_expires_at: new Date(Date.now() + 86_400_000).toISOString(), last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", conversation.id);
     const input = routeCode ? "hello" : textOf(message);
-    const { error: messageError } = await admin.from("whatsapp_messages").upsert({ store_id: store.id, conversation_id: conversation.id, external_message_id: messageId, direction: "INBOUND", message_type: message.type === "interactive" ? "INTERACTIVE" : message.type === "image" ? "IMAGE" : message.type === "text" ? "TEXT" : "UNSUPPORTED", body: message.type === "image" ? null : input.slice(0, 4096) || null, status: "RECEIVED", occurred_at: message.timestamp ? new Date(Number(message.timestamp) * 1000).toISOString() : new Date().toISOString() }, { onConflict: "external_message_id", ignoreDuplicates: true });
+    const currentFlow = /[0-9٠-٩۰-۹]{6}/.test(input) ? await getFlow(admin, conversation.id) : null;
+    const storedInput = currentFlow?.step === "AWAITING_EMAIL_OTP" ? "[Verification code hidden]" : input;
+    const { error: messageError } = await admin.from("whatsapp_messages").upsert({ store_id: store.id, conversation_id: conversation.id, external_message_id: messageId, direction: "INBOUND", message_type: message.type === "interactive" ? "INTERACTIVE" : message.type === "image" ? "IMAGE" : message.type === "text" ? "TEXT" : "UNSUPPORTED", body: message.type === "image" ? null : storedInput.slice(0, 4096) || null, status: "RECEIVED", occurred_at: message.timestamp ? new Date(Number(message.timestamp) * 1000).toISOString() : new Date().toISOString() }, { onConflict: "external_message_id", ignoreDuplicates: true });
     if (messageError) throw messageError;
     if(conversation.state === "HANDED_TO_HUMAN") {
       const done=await admin.from("integration_events").update({status:"PROCESSED",processed_at:new Date().toISOString()}).eq("provider","whatsapp").eq("external_event_id",messageId);

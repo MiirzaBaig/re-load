@@ -131,7 +131,7 @@ export function zidStatus(code: unknown) {
  * belongs to the customer on it. Null means "not found or not verified";
  * callers must not tell those two apart to the customer.
  */
-export async function zidVerifiedOrder(client: ZidMcp, orderNumber: string, verifier: string): Promise<Record<string, any> | null> {
+export async function zidOrderForEmailVerification(client: ZidMcp, orderNumber: string): Promise<Record<string, any> | null> {
   const wanted = orderNumber.trim().replace(/^#/, "");
   const list = await client.call("Orders", { action: "list", searchTerm: wanted, perPage: 10 });
   const candidates = Array.isArray(list.orders) ? list.orders : [];
@@ -141,6 +141,12 @@ export async function zidVerifiedOrder(client: ZidMcp, orderNumber: string, veri
 
   const detail = await client.call("Orders", { action: "get", orderId: String(match.id) });
   const order = (detail.order ?? match) as Record<string, any>;
+  return order;
+}
+
+export async function zidVerifiedOrder(client: ZidMcp, orderNumber: string, verifier: string): Promise<Record<string, any> | null> {
+  const order = await zidOrderForEmailVerification(client, orderNumber);
+  if (!order) return null;
   const customer = order.customer ?? {};
   const supplied = normalizeVerifier(verifier);
   const known = [customer.email, customer.mobile, customer.phone]

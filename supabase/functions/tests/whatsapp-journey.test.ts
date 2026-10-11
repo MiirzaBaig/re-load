@@ -54,7 +54,7 @@ Deno.test("phone mismatch reveals no order details and offers merchant review", 
     const reply = await processFlow(h.admin, store, conversation, "966500000000", "SA-10492");
     assert(!reply.body.includes("Ahmed") && !reply.body.includes("Shoes"));
     assert(h.state().context.orderNumber === "SA-10492");
-    assert(reply.result.kind === "buttons" && reply.result.buttons[0].id === "identity_request");
+    assert(reply.result.kind === "buttons" && reply.result.buttons.some(button => button.id === "identity_request") && reply.result.buttons.some(button => button.id === "email_request"));
     assert(!reply.body.toLowerCase().includes("code sent"));
   } finally { globalThis.fetch = original; }
 });
@@ -242,4 +242,41 @@ Deno.test("long ticket previews fit interactive limits without losing the full d
  const reply=await processFlow(h.admin,store,conversation,"966500000000",message);
  assert(reply.body.length<1024 && h.state().context.ticketDraft === message);
  assert(reply.body.includes("full message is saved"));
+});
+
+Deno.test("email verification resumes an order only after consuming the bound challenge", async () => {
+  Deno.env.set("OTP_HASH_SECRET", "test-only-otp-secret");
+  Deno.env.set("INTEGRATION_ENCRYPTION_KEY", btoa("x".repeat(32)));
+  const encrypted = await encrypt("ahmed@example.com");
+  const h = harness("AWAITING_EMAIL_OTP", { orderNumber: "SA-10492", emailChallengeId: "challenge" });
+  const originalRpc = h.admin.rpc.bind(h.admin);
+  h.admin.rpc = ((name: string, args: Record<string, unknown>) => name === "verify_order_email_otp"
+    ? Promise.resolve({data:{status:"verified",verifier:encrypted},error:null}) : originalRpc(name,args)) as typeof h.admin.rpc;
+  const originalFetch = globalThis.fetch;
+  let request: Record<string,unknown> | null = null;
+  globalThis.fetch = async (_url, init) => {
+    request = JSON.parse(String(init?.body));
+    return new Response(JSON.stringify({order,verificationToken:"signed-order"}),{status:200});
+  };
+  try {
+    const reply = await processFlow(h.admin,store,conversation,"966500000000","012345",undefined,{id:"otp-message",type:"text",text:{body:"012345"}});
+    assert(reply.body.includes("verified"));
+    assert((request as unknown as Record<string,unknown>).verifier === "ahmed@example.com");
+    assert(h.calls.some(c=>c.name === "commit_whatsapp_transition" && c.args.p_step === "AWAITING_ITEM"));
+  }finally{globalThis.fetch=originalFetch;}
+});
+Deno.test("wrong or expired OTP cannot fetch or expose order details",async()=>{
+  for(const status of ["invalid","expired","locked"]) {
+    const h=harness("AWAITING_EMAIL_OTP",{orderNumber:"SA-10492",emailChallengeId:"challenge"});
+    const rpc=h.admin.rpc.bind(h.admin);
+    h.admin.rpc=((name:string,args:Record<string,unknown>)=>name === "verify_order_email_otp"?Promise.resolve({data:{status},error:null}):rpc(name,args)) as typeof h.admin.rpc;
+    const original=globalThis.fetch;
+    globalThis.fetch=()=>{throw new Error("Unverified order lookup");};
+    try{const reply=await processFlow(h.admin,store,conversation,"966500000000","999999");assert(!reply.body.includes("Shoes"));assert(reply.result.kind === "buttons");assert(h.state().step === "AWAITING_EMAIL_OTP");}finally{globalThis.fetch=original;}
+  }
+});
+Deno.test("email OTP fallback opens the existing merchant identity review",async()=>{
+  const h=harness("AWAITING_EMAIL_OTP",{orderNumber:"SA-10492",emailChallengeId:"challenge"});
+  await processFlow(h.admin,store,conversation,"966500000000","identity_request");
+  assert(h.state().step === "AWAITING_ORDER");assert(h.state().context.identityReviewId === "review-id");
 });

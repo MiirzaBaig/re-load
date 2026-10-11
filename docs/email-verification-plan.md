@@ -1,4 +1,4 @@
-# Email notifications and WhatsApp order verification (next phase)
+# Email notifications and WhatsApp order verification
 
 Recommended sender: `Reload <no-reply@notify.reload.sa>`, with `support@reload.sa` as Reply-To if that inbox exists.
 
@@ -29,3 +29,17 @@ Official resources:
 - https://resend.com/docs/dashboard/domains/introduction
 - https://resend.com/docs/dashboard/api-keys/introduction
 - https://supabase.com/docs/guides/auth/auth-smtp
+
+## Implemented 11 October 2026
+- `notify.reload.sa` verified in Resend; sender `Reload <no-reply@notify.reload.sa>`.
+- Supabase secrets: `RESEND_API_KEY`, `OTP_HASH_SECRET`, `OTP_EMAIL_FROM`. No keys are in the repository.
+- Migration `202610110004_email_order_otp.sql`: private challenges, service-only atomic send/verify functions, attempt and request quotas, recovery grants and hourly retention cleanup.
+- `email-otp.ts` looks up the registered order email internally (Zid or Salla), sends through Resend and checks a conversation/order-bound keyed hash. There is no public endpoint accepting an arbitrary destination email.
+- Six digits, ten-minute expiry, five attempts, sixty-second resend cooldown; at most five requests/conversation/hour, ten/recipient/hour, 100/store/hour and 500 overall/hour. Recipient identifiers are keyed hashes.
+- Provider retries use the same Resend idempotency key and encrypted delivery payload. A resend invalidates earlier pending/sent codes. Provider rejection or uncertain acceptance never produces a success claim.
+- Verification recovery grants last twenty minutes. Every continuation re-fetches the live order through the existing verified lookup. If the registered contact no longer matches, order details remain unavailable.
+- Submitted six-digit codes are hidden in merchant-visible message history; completed/failed/uncertain inbox jobs scrub masked input. Queued private jobs temporarily retain input for recovery. Plain generated codes are not stored; encrypted delivery payloads are cleared after consumption or expiry cleanup.
+- Matching phone flows remain unchanged; mismatches offer email or merchant verification. No SMS provider is enabled.
+- English and Arabic delivery tests accepted by Resend for authorised team inboxes; automated backend and rollback-only database tests passed. Inbox arrival and a real mismatched-phone Zid order still require the pilot test.
+
+Notifications and bounce/delivery-event webhooks remain a separate phase. A provider acceptance means queued for sending, not guaranteed inbox delivery. Tracking settings should remain disabled for OTP emails.
