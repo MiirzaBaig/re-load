@@ -36,6 +36,7 @@ export function AdminLogin() {
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const codeRef = useRef<HTMLInputElement>(null);
+  const emailRequestInFlight = useRef(false);
 
   useEffect(() => {
     if (!cooldown) return;
@@ -59,18 +60,35 @@ export function AdminLogin() {
 
   const sendEmail = async (event?: React.FormEvent) => {
     event?.preventDefault();
+    if (busy || cooldown || emailRequestInFlight.current) return;
     const address = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) return setError(t("Enter your work email.", "أدخل بريدك الإلكتروني."));
     const client = getSupabaseBrowserClient();
     if (!client) return setError(t("Sign-in is unavailable right now.", "تسجيل الدخول غير متاح حاليًا."));
+    emailRequestInFlight.current = true;
     setBusy("email"); setError("");
-    const { error: otpError } = await client.auth.signInWithOtp({ email: address, options: { emailRedirectTo: `${window.location.origin}${CALLBACK}`, shouldCreateUser: true } });
-    setBusy(null);
-    if (otpError) return setError(/rate|seconds|many/i.test(otpError.message)
-      ? t("Too many emails just now. Wait a minute and try again.", "طلبات كثيرة الآن. انتظر دقيقة وحاول مجددًا.")
-      : t("We couldn't send the email. Try again shortly.", "تعذّر إرسال البريد. حاول بعد قليل."));
-    setCooldown(60);
-    setStep("code");
+    try {
+      const { error: otpError } = await client.auth.signInWithOtp({ email: address, options: { emailRedirectTo: `${window.location.origin}${CALLBACK}`, shouldCreateUser: true } });
+      if (otpError) {
+        if (otpError.code === "over_email_send_rate_limit") {
+          setCooldown(60);
+          setError(t("Sign-in emails have reached our sending limit. Use an existing link if you have one, or contact Reload for help.", "وصلت رسائل الدخول إلى حد الإرسال. استخدم رابطًا وصلك، أو تواصل مع ريلود للمساعدة."));
+        } else if (otpError.status === 429) {
+          setCooldown(60);
+          setError(t("Too many sign-in requests. Wait before trying again, or use your latest email.", "طلبات دخول كثيرة. انتظر قبل المحاولة مجددًا، أو استخدم أحدث بريد وصلك."));
+        } else {
+          setError(t("We couldn't send the email. Try again shortly.", "تعذّر إرسال البريد. حاول بعد قليل."));
+        }
+        return;
+      }
+      setCooldown(60);
+      setStep("code");
+    } catch {
+      setError(t("We couldn't reach the sign-in service. Check your connection and try again.", "تعذّر الاتصال بخدمة الدخول. تحقق من اتصالك وحاول مجددًا."));
+    } finally {
+      emailRequestInFlight.current = false;
+      setBusy(null);
+    }
   };
 
   const verify = async (event?: React.FormEvent) => {
@@ -119,7 +137,7 @@ export function AdminLogin() {
               <label className="block text-sm font-medium" htmlFor="team-email">{t("Work email", "البريد الإلكتروني")}</label>
               <div className="mt-2 flex gap-2">
                 <Input id="team-email" type="email" dir="ltr" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" className="h-11 rounded-xl" />
-                <Button type="submit" disabled={!!busy || !email.trim()} className="h-11 shrink-0 rounded-xl px-4" aria-label={t("Email me a sign-in code", "أرسل رمز الدخول")}>
+                <Button type="submit" disabled={!!busy || cooldown > 0 || !email.trim()} className="h-11 shrink-0 rounded-xl px-4" aria-label={t("Email me a sign-in code", "أرسل رمز الدخول")}>
                   {busy === "email" ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4 rtl:rotate-180" />}
                 </Button>
               </div>

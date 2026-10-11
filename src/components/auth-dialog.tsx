@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { ReloadMark } from "@/components/reload-logo";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -34,6 +34,7 @@ export function AuthDialog({ open, onOpenChange, redirectTo = "/app" }: AuthDial
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
+  const emailRequestInFlight = useRef(false);
 
   useEffect(() => {
     if (!cooldown) return;
@@ -75,22 +76,40 @@ export function AuthDialog({ open, onOpenChange, redirectTo = "/app" }: AuthDial
     if (!supabase) return setError(t("Authentication is temporarily unavailable.", "خدمة تسجيل الدخول غير متاحة مؤقتًا."));
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) return setError(t("Enter your work email.", "أدخل بريد العمل الإلكتروني."));
-    if (cooldown) return;
+    if (cooldown || loading || emailRequestInFlight.current) return;
+    emailRequestInFlight.current = true;
 
     setError("");
     setLoading("email");
-    const { error: magicLinkError } = await supabase.auth.signInWithOtp({
-      email: normalizedEmail,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
-        shouldCreateUser: true,
-        data: { store_name: "My Store" },
-      },
-    });
-    setLoading(null);
-    if (magicLinkError) return setError(magicLinkError.message);
-    setSent(true);
-    setCooldown(60);
+    try {
+      const { error: magicLinkError } = await supabase.auth.signInWithOtp({
+        email: normalizedEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
+          shouldCreateUser: true,
+          data: { store_name: "My Store" },
+        },
+      });
+      if (magicLinkError) {
+        if (magicLinkError.code === "over_email_send_rate_limit") {
+          setCooldown(60);
+          setError(t("Sign-in emails have reached our sending limit. If you already received a link, use it. Otherwise, contact Reload so we can help.", "وصلت رسائل تسجيل الدخول إلى حد الإرسال. إذا وصلك رابط، استخدمه. وإلا تواصل مع ريلود لمساعدتك."));
+        } else if (magicLinkError.status === 429) {
+          setCooldown(60);
+          setError(t("Too many sign-in requests. Please wait before trying again, or use the latest link in your inbox.", "طلبات دخول كثيرة. انتظر قبل المحاولة مجددًا، أو استخدم أحدث رابط في بريدك."));
+        } else {
+          setError(t("We couldn't send your sign-in link. Please try again shortly.", "تعذّر إرسال رابط الدخول. حاول مجددًا بعد قليل."));
+        }
+        return;
+      }
+      setSent(true);
+      setCooldown(60);
+    } catch {
+      setError(t("We couldn't reach the sign-in service. Check your connection and try again.", "تعذّر الاتصال بخدمة الدخول. تحقق من اتصالك وحاول مجددًا."));
+    } finally {
+      emailRequestInFlight.current = false;
+      setLoading(null);
+    }
   };
 
   const sendMagicLink = (event: React.FormEvent) => {
@@ -201,10 +220,10 @@ export function AuthDialog({ open, onOpenChange, redirectTo = "/app" }: AuthDial
                 <Button
                   type="submit"
                   className="nav-cta h-11 w-full"
-                  disabled={loading !== null}
+                  disabled={loading !== null || cooldown > 0}
                 >
                   {loading === "email" ? <Spinner /> : null}
-                  {t("Continue with email", "المتابعة بالبريد الإلكتروني")}
+                  {cooldown ? t(`Try again in ${cooldown}s`, `المحاولة بعد ${cooldown} ث`) : t("Continue with email", "المتابعة بالبريد الإلكتروني")}
                 </Button>
               </form>
 
