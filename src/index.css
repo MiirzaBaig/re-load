@@ -2430,6 +2430,7 @@ textarea:focus-visible,
 
 /* Components that draw their own ring opt out of the global outline. Plain
    selectors, not :where() — that has zero specificity and would lose. */
+.field-bare:focus-visible,
 .mode-toggle:focus-visible,
 .nav-ghost:focus-visible,
 .nav-cta:focus-visible {

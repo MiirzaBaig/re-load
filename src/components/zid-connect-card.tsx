@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ArrowRight, ArrowUpRight, Check, ClipboardPaste, Copy, KeyRound, Link2, Loader2, RefreshCw, ShieldCheck, Unplug } from "lucide-react";
+import { AlertTriangle, ArrowRight, ArrowUpRight, Check, ClipboardPaste, Copy, Eye, EyeOff, KeyRound, Link2, Loader2, RefreshCw, ShieldCheck, Unplug } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
 import { useLanguage } from "@/components/language-provider";
@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 const ZID_APP_URL = "https://apps.zid.sa/en/application/4820";
 const LINK_PATTERN = /^https:\/\/zam-mcp-server\.zid\.sa\/mcp\/[A-Za-z0-9+/=_-]{16,}$/;
 const ZID = "#7c3aed";
+const REVEAL_MS = 10_000;
 
 type ZidConnection = { external_store_name: string | null; status: "CONNECTING" | "CONNECTED" | "EXPIRED" | "REVOKED" | "ERROR" };
 type Phase = "steps" | "connecting" | "success";
@@ -45,6 +46,14 @@ export function ZidConnectCard({ onChange, onDone }: { onChange?: () => void; on
   const [busy, setBusy] = useState<"test" | "disconnect" | null>(null);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [revealed, setRevealed] = useState(false);
+
+  // The link is a secret: showing it is temporary, and it hides itself again.
+  useEffect(() => {
+    if (!revealed) return;
+    const timer = window.setTimeout(() => setRevealed(false), REVEAL_MS);
+    return () => window.clearTimeout(timer);
+  }, [revealed]);
 
   const load = useCallback(async () => {
     if (!supabase || !workspace) return setLoading(false);
@@ -82,7 +91,7 @@ export function ZidConnectCard({ onChange, onDone }: { onChange?: () => void; on
 
   const connect = async () => {
     if (linkState !== "valid") { inputRef.current?.focus(); return; }
-    setError(""); setPhase("connecting"); setTicks(0);
+    setError(""); setRevealed(false); setPhase("connecting"); setTicks(0);
     // The checklist mirrors what the server does: reach the store, read an
     // order, encrypt and save. The last tick waits for the real answer.
     const timers = [window.setTimeout(() => setTicks(1), 650), window.setTimeout(() => setTicks(2), 1350)];
@@ -225,10 +234,29 @@ export function ZidConnectCard({ onChange, onDone }: { onChange?: () => void; on
                   <div className={cn("flex items-center gap-2 rounded-2xl border bg-background p-1.5 ps-3.5 transition-[border-color,box-shadow] duration-200 focus-within:shadow-[0_0_0_3px_color-mix(in_oklab,var(--ring)_18%,transparent)]",
                     linkState === "invalid" || error ? "border-destructive/50" : linkState === "valid" ? "border-eligible/50" : "border-border")}>
                     <Link2 className="size-4 shrink-0 text-muted-foreground" />
-                    <input ref={inputRef} type="password" autoComplete="off" spellCheck={false} dir="ltr" value={link}
+                    <input ref={inputRef} type={revealed ? "text" : "password"} autoComplete="off" spellCheck={false} dir="ltr" value={link}
                       onChange={(event) => { setLink(event.target.value); setError(""); }}
                       placeholder="https://zam-mcp-server.zid.sa/mcp/…" aria-label={t("Zid AI Connector link", "رابط AI Connector من زد")}
-                      className="h-11 min-w-0 flex-1 bg-transparent font-mono text-sm outline-none placeholder:font-sans placeholder:text-muted-foreground/70" />
+                      className="field-bare h-11 min-w-0 flex-1 bg-transparent font-mono text-sm outline-none placeholder:font-sans placeholder:text-muted-foreground/70" />
+                    {trimmed && (
+                      <button type="button" onClick={() => setRevealed((value) => !value)} aria-pressed={revealed}
+                        aria-label={revealed ? t("Hide link", "إخفاء الرابط") : t("Show link", "إظهار الرابط")}
+                        title={revealed ? t("Hides itself in 10 seconds", "يختفي تلقائيًا بعد 10 ثوانٍ") : t("Show link", "إظهار الرابط")}
+                        className="relative grid size-8 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95">
+                        {/* A ring that runs down while the link is visible. */}
+                        {revealed && (
+                          <svg viewBox="0 0 32 32" className="pointer-events-none absolute inset-0 size-full -rotate-90" aria-hidden="true">
+                            <motion.circle cx="16" cy="16" r="14" fill="none" stroke={ZID} strokeWidth="2" strokeLinecap="round" pathLength={1} strokeDasharray="1"
+                              initial={{ strokeDashoffset: 0 }} animate={{ strokeDashoffset: 1 }} transition={{ duration: REVEAL_MS / 1000, ease: "linear" }} />
+                          </svg>
+                        )}
+                        <AnimatePresence initial={false} mode="wait">
+                          <motion.span key={revealed ? "hide" : "show"} initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }} transition={{ ...QUICK, duration: 0.12 }}>
+                            {revealed ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                          </motion.span>
+                        </AnimatePresence>
+                      </button>
+                    )}
                     <AnimatePresence initial={false} mode="popLayout">
                       {linkState === "valid"
                         ? <motion.span key="ok" initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.4, opacity: 0 }} transition={QUICK} className="me-1 grid size-8 place-items-center rounded-full bg-eligible-muted text-eligible"><Check className="size-4" /></motion.span>

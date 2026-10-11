@@ -161,7 +161,7 @@ export function KnowledgeImportDialog({
                     <input ref={inputRef} dir="ltr" type="url" inputMode="url" autoComplete="off" spellCheck={false} maxLength={2000} value={source}
                       onChange={(event) => { setSource(event.target.value); setError(""); }}
                       placeholder="https://your-store.com/help" aria-label={t("Public page URL", "رابط الصفحة العامة")}
-                      className="h-10 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/70" />
+                      className="field-bare h-10 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/70" />
                     <AnimatePresence initial={false} mode="popLayout">
                       {valid
                         ? <motion.span key="ok" initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.4, opacity: 0 }} transition={QUICK} className="me-1 grid size-8 place-items-center rounded-full bg-eligible-muted text-eligible"><Check className="size-4" /></motion.span>
