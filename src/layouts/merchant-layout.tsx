@@ -50,7 +50,8 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { CommandPalette } from "@/components/command-palette";
 import { useLanguage } from "@/components/language-provider";
 import { StoreIdentity } from "@/components/store-identity";
-import { SidebarWorkspaceSkeleton } from "@/components/merchant-skeletons";
+import { MerchantRouteSkeleton, SidebarWorkspaceSkeleton } from "@/components/merchant-skeletons";
+import { Button } from "@/components/ui/button";
 import { CreateWorkspace } from "@/components/create-workspace";
 
 export function MerchantLayout({ children }: { children: ReactNode }) {
@@ -294,11 +295,20 @@ export function MerchantLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
         <div className="mx-auto w-full max-w-[1280px] px-4 pb-28 pt-6 sm:px-8 sm:pt-9 md:pb-9 lg:px-10">
-          {/* Signed in without a store yet (older accounts): create it here
-              instead of every page showing an empty or broken state. */}
-          {auth.configured && !auth.loading && auth.user && !auth.workspace
-            ? <CreateWorkspace />
-            : <PageTransition>{children}</PageTransition>}
+          {auth.configured && auth.loading ? (
+            <div role="status" aria-label={t("Loading your workspace", "جارٍ تحميل مساحة العمل")}>
+              <MerchantRouteSkeleton />
+            </div>
+          ) : auth.configured && auth.workspaceError ? (
+            <div role="alert" className="mx-auto my-12 max-w-md rounded-2xl border border-border bg-card p-6 sm:p-8">
+              <h1 className="text-xl font-semibold">{t("We couldn’t load your workspace", "تعذّر تحميل مساحة العمل")}</h1>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{t("Please check your connection and try again.", "تأكد من اتصالك بالإنترنت وحاول مرة أخرى.")}</p>
+              <Button className="mt-5" onClick={() => void auth.refreshWorkspace()}>{t("Try again", "حاول مرة أخرى")}</Button>
+            </div>
+          ) : auth.configured && auth.user && !auth.workspace ? (
+            <CreateWorkspace />
+          ) : <PageTransition>{children}</PageTransition>}
+
         </div>
 
         {/* Bottom tabs on phones: the sidebar is one tap further away there. */}

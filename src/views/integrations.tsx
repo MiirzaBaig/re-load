@@ -14,7 +14,6 @@ import { useAuth } from "@/components/auth-provider";
 import { useLanguage } from "@/components/language-provider";
 import { IntegrationsPageSkeleton } from "@/components/merchant-skeletons";
 import { WhatsAppLogo } from "@/components/phone-frame";
-import { WhatsAppLinkPreview } from "@/components/whatsapp-link-preview";
 import { ZidConnectCard } from "@/components/zid-connect-card";
 import { ConnectStepper } from "@/components/integrations/connect-stepper";
 import { ProgressRing } from "@/components/desk/progress-ring";
@@ -228,7 +227,6 @@ export function IntegrationsPage() {
             connected={whatsAppConnected} link={whatsAppLink} storeConnected={storeConnected} policyReady={policyReady}
             connectedAt={date(whatsApp?.connected_at ?? null)} lastMessage={date(whatsApp?.last_webhook_at ?? null, true)} t={t} />
         </div>
-      <WhatsAppLinkPreview />
       </section>
 
       {/* ── Platform side panel ── */}
