@@ -138,3 +138,8 @@ Run TypeScript checks, production build, focused browser checks in English/Arabi
 - Support preview offers Send/Edit/Cancel and typed replacement/additions; interactive previews are capped while preserving full drafts.
 - Integrations has explicit dummy QR/link preview; no demo data is used in real routing.
 - 50 backend tests, typecheck and webpack build; live-model authenticated browser importing and mobile checks passed; test fixtures deleted. Email delivery remains deferred; see docs/email-verification-plan.md.
+
+### Short WhatsApp codes and layered QR preview — 11 Oct 2026
+- Existing and new stores receive immutable random RL-xxxxxxxxxx codes; UUID chat links and web return links remain compatible. Invalid explicit routes clear previous store routing. Resolution remains service-only and order verification unchanged.
+- Sample uses reserved DEMO-NOVA, with a layered raised card; QR stays flat and reduced-motion respected.
+- Migration 202610110003 applied; rollback-only live SQL isolation tests, 52 backend tests, typecheck/build and authenticated desktop/mobile real-link preview checks passed. Temporary fixtures removed.

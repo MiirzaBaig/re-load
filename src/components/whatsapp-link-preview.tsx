@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/language-provider";
 import { createBrandQr } from "@/lib/brand-qr";
 import { getWhatsAppStartUrl, RELOAD_WHATSAPP_NUMBER } from "@/lib/whatsapp";
-const SAMPLE_CODE = "00000000-0000-4000-8000-000000000000";
+const SAMPLE_CODE = "DEMO-NOVA";
 export function WhatsAppLinkPreview() {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
@@ -41,18 +41,32 @@ export function WhatsAppLinkPreview() {
         </span>
       </button>
       {open && (
-        <div className="grid gap-5 border-t p-4 motion-safe:animate-fade-in sm:grid-cols-[160px_1fr]">
-          <div>
+        <div className="grid gap-5 border-t p-4 motion-safe:animate-fade-in sm:grid-cols-[220px_1fr]">
+          <div className="relative mx-auto w-full max-w-[260px] self-start px-2 pb-4 pt-1">
             <div
-              className="rounded-xl bg-[#f8f7f4] p-2 [&>svg]:w-full"
-              role="img"
-              aria-label={t("Sample WhatsApp QR code", "رمز واتساب تجريبي")}
-              dangerouslySetInnerHTML={{ __html: qr.svg("ink") }}
+              aria-hidden="true"
+              className="absolute inset-x-5 bottom-2 top-5 rotate-3 rounded-3xl border bg-muted shadow-sm"
             />
-            <p className="mt-2 text-center text-xs text-muted-foreground">
-              <QrCode className="me-1 inline size-3" />
-              {t("Sample Nova Store", "متجر نوفا التجريبي")}
-            </p>
+            <div className="relative rounded-3xl border border-black/10 bg-[#f8f7f4] p-4 text-[#0f0f12] shadow-[0_14px_30px_-14px_rgba(15,15,18,0.35),0_3px_0_0_rgba(15,15,18,0.08)] transition-transform duration-300 motion-safe:hover:-translate-y-1 motion-reduce:transition-none">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.18em]">
+                  Nova Store
+                </span>
+                <QrCode className="size-4 opacity-50" />
+              </div>
+              <div
+                className="rounded-2xl bg-[#f8f7f4] [&>svg]:block [&>svg]:w-full"
+                role="img"
+                aria-label={t("Sample WhatsApp QR code", "رمز واتساب تجريبي")}
+                dangerouslySetInnerHTML={{ __html: qr.svg("ink") }}
+              />
+              <p className="mt-3 text-center text-sm font-medium">
+                {t("Scan. Say hello.", "امسح الرمز، وحيّاك.")}
+              </p>
+              <p className="mt-1 text-center text-[11px] opacity-60">
+                {t("Sample Nova Store", "متجر نوفا التجريبي")}
+              </p>
+            </div>
           </div>
           <div className="min-w-0 space-y-3">
             <p className="text-sm leading-6 text-muted-foreground">

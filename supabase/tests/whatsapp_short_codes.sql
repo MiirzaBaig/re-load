@@ -1,0 +1,24 @@
+begin;
+do $$ declare a uuid:=gen_random_uuid();b uuid:=gen_random_uuid();ca text;cb text;old_code uuid;
+begin
+ insert into public.stores(id,name) values(a,'Short code A'),(b,'Short code B');
+ select whatsapp_code,return_code into ca,old_code from public.stores where id=a;
+ select whatsapp_code into cb from public.stores where id=b;
+ assert ca<>cb and ca ~ '^RL-[0-9A-F]{10}$','unique generated codes';
+ assert not has_function_privilege('anon','public.whatsapp_route_code(text,text,text)','EXECUTE'),'anonymous cannot resolve routes';
+ assert not has_function_privilege('authenticated','public.whatsapp_route_code(text,text,text)','EXECUTE'),'clients cannot resolve routes';
+ insert into public.whatsapp_connections(store_id,phone_number_id,business_account_id,status) values(a,'short-test-phone','short-test-waba','CONNECTED'),(b,'short-test-phone','short-test-waba','CONNECTED');
+ assert public.whatsapp_route_code('short-test-phone','customer-a',lower(ca))=a,'case insensitive short route';
+ assert public.whatsapp_route_code('short-test-phone','customer-b',cb)=b,'second merchant and sender';
+ assert public.whatsapp_route_code('short-test-phone','customer-a',null)=a,'first sender unchanged';
+ assert public.whatsapp_route_code('other-phone','customer-a',ca) is null,'receiving number isolation';
+ assert public.whatsapp_route_code('short-test-phone','customer-a',old_code::text)=a,'legacy links still route';
+ assert public.whatsapp_route_code('short-test-phone','customer-a','DEMO-NOVA') is null,'dummy never routes';
+ assert public.whatsapp_route_code('short-test-phone','customer-a',null) is null,'invalid code clears stale store';
+ assert public.whatsapp_route_code('short-test-phone','customer-b',ca)=a,'explicit merchant switch';
+ update public.whatsapp_connections set status='DISCONNECTED' where store_id=a;
+ assert public.whatsapp_route_code('short-test-phone','customer-b',ca) is null,'disconnected code blocked';
+ begin update public.stores set whatsapp_code=cb where id=a; raise exception 'unexpected code update';
+ exception when others then assert sqlerrm='whatsapp_code_immutable','code cannot be reassigned';end;
+end $$;
+rollback;

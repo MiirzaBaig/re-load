@@ -1,4 +1,5 @@
 import { reviseTicketDraft } from "./ticket-draft.ts";
+import { whatsappRouteInput } from "./whatsapp-route-input.ts";
 import { extractOrderReference } from "./return-photo.ts";
 import { answerStoreQuestion } from "./customer-assistant.ts";
 import { zidOrderTracking } from "./zid-catalog.ts";
@@ -747,8 +748,8 @@ export async function handleMessage(phoneNumberId: string, message: MetaMessage,
     if (done.error) throw done.error;
     return;
   }
-  const routeMatch = /^return\s+([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.exec(publicInput);
-  const { data: routedStoreId, error: routeError } = await admin.rpc("whatsapp_route", { p_phone: phoneNumberId, p_sender: waId, p_code: routeMatch?.[1] ?? null });
+  const routeCode = whatsappRouteInput(publicInput);
+  const { data: routedStoreId, error: routeError } = await admin.rpc("whatsapp_route_code", { p_phone: phoneNumberId, p_sender: waId, p_code: routeCode });
   if (routeError) throw routeError;
   const connection = routedStoreId ? { store_id: routedStoreId as string } : null;
   if (publicEntry || !connection) {
@@ -797,7 +798,7 @@ export async function handleMessage(phoneNumberId: string, message: MetaMessage,
       conversation = created.data;
       await setFlow(admin, conversation.id, "AWAITING_LANGUAGE");
     } else await admin.from("whatsapp_conversations").update({ service_window_expires_at: new Date(Date.now() + 86_400_000).toISOString(), last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", conversation.id);
-    const input = routeMatch ? "hello" : textOf(message);
+    const input = routeCode ? "hello" : textOf(message);
     const { error: messageError } = await admin.from("whatsapp_messages").upsert({ store_id: store.id, conversation_id: conversation.id, external_message_id: messageId, direction: "INBOUND", message_type: message.type === "interactive" ? "INTERACTIVE" : message.type === "image" ? "IMAGE" : message.type === "text" ? "TEXT" : "UNSUPPORTED", body: message.type === "image" ? null : input.slice(0, 4096) || null, status: "RECEIVED", occurred_at: message.timestamp ? new Date(Number(message.timestamp) * 1000).toISOString() : new Date().toISOString() }, { onConflict: "external_message_id", ignoreDuplicates: true });
     if (messageError) throw messageError;
     if(conversation.state === "HANDED_TO_HUMAN") {

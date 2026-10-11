@@ -58,6 +58,7 @@ export function IntegrationsPage() {
   const [zid, setZid] = useState<Connection | null>(null);
   const [whatsApp, setWhatsApp] = useState<WhatsAppConnection | null>(null);
   const [policyReady, setPolicyReady] = useState(false);
+  const [whatsappCode, setWhatsappCode] = useState<string | null>(null);
   const [returnCode, setReturnCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [channelBusy, setChannelBusy] = useState(false);
@@ -69,7 +70,7 @@ export function IntegrationsPage() {
       supabase.from("commerce_connections").select("platform, external_store_name, status, connected_at, last_synced_at").eq("store_id", workspace.storeId),
       supabase.from("whatsapp_connections").select("status, display_phone_number, connected_at, last_webhook_at").eq("store_id", workspace.storeId).maybeSingle(),
       supabase.from("policy_versions").select("id").eq("store_id", workspace.storeId).limit(1).maybeSingle(),
-      supabase.from("stores").select("return_code").eq("id", workspace.storeId).maybeSingle(),
+      supabase.from("stores").select("return_code,whatsapp_code").eq("id", workspace.storeId).maybeSingle(),
     ]);
     if (commerce.error) toast.error(t("Could not load your store connections.", "تعذّر تحميل ربط المتجر."));
     const rows = (commerce.data ?? []) as Array<Connection & { platform: string }>;
@@ -79,6 +80,7 @@ export function IntegrationsPage() {
     setWhatsApp(whatsAppResult.data as WhatsAppConnection | null);
     setPolicyReady(Boolean(policy.data));
     setReturnCode(typeof store.data?.return_code === "string" ? store.data.return_code : null);
+    setWhatsappCode(typeof store.data?.whatsapp_code === "string" ? store.data.whatsapp_code : null);
     setLoading(false);
   }, [workspace, t]);
 
@@ -101,7 +103,7 @@ export function IntegrationsPage() {
   const whatsAppConnected = whatsApp?.status === "CONNECTED";
   const returnPath = returnCode ? `/return?store=${encodeURIComponent(returnCode)}` : null;
   const whatsAppNumber = whatsApp?.display_phone_number?.replace(/\D/g, "") ?? "";
-  const whatsAppLink = whatsAppConnected && whatsAppNumber && returnCode ? getWhatsAppStartUrl(whatsAppNumber, returnCode) : null;
+  const whatsAppLink = whatsAppConnected && whatsAppNumber && whatsappCode ? getWhatsAppStartUrl(whatsAppNumber, whatsappCode) : null;
   const toneOf = (connection: Connection | null): Tone =>
     connection?.status === "CONNECTED" ? "connected" : connection?.status === "EXPIRED" || connection?.status === "ERROR" ? "attention" : "idle";
   const date = (value: string | null, withTime = false) => value
