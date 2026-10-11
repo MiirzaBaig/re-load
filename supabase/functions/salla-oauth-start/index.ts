@@ -7,6 +7,7 @@ Deno.serve(async (request) => {
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
   try {
+    if (Deno.env.get("SALLA_PUBLIC_APP_READY") !== "true") return json({ error: "salla_public_app_pending" }, 409);
     const authorization = request.headers.get("Authorization") ?? "";
     if (!authorization.startsWith("Bearer ")) return json({ error: "authentication_required" }, 401);
 
@@ -47,7 +48,7 @@ Deno.serve(async (request) => {
     url.searchParams.set("client_id", env("SALLA_CLIENT_ID"));
     url.searchParams.set("response_type", "code");
     url.searchParams.set("redirect_uri", env("SALLA_REDIRECT_URI"));
-    url.searchParams.set("scope", "orders.read offline_access");
+    url.searchParams.set("scope", "orders.read products.read offline_access");
     url.searchParams.set("state", state);
 
     return json({ authorizationUrl: url.toString() });

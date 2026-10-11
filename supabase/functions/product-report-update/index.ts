@@ -20,12 +20,12 @@ Deno.serve(async (request) => {
     if (error) throw error;
     let notified = false;
     if (status === "RESOLVED" && report.status !== "RESOLVED" && report.conversation_id) {
-      const { data: conversation } = await admin.from("whatsapp_conversations").select("language,whatsapp_contacts!inner(wa_id)").eq("id", report.conversation_id).maybeSingle();
+      const { data: conversation } = await admin.from("whatsapp_conversations").select("language,service_window_expires_at,whatsapp_contacts!inner(wa_id)").eq("id", report.conversation_id).maybeSingle();
       const contact = Array.isArray(conversation?.whatsapp_contacts) ? conversation.whatsapp_contacts[0] : conversation?.whatsapp_contacts;
-      if (contact?.wa_id) {
+      if (contact?.wa_id && conversation?.service_window_expires_at && new Date(conversation.service_window_expires_at).getTime() > Date.now()) {
         const ref = `RL-${report.id.slice(0, 8).toUpperCase()}`;
-        await sendWhatsAppText(contact.wa_id, conversation?.language === "en" ? `Update on ${ref}: the Reload team has marked this ${report.report_type === "BUG" ? "problem" : "feedback item"} as resolved. Thank you for helping us improve.` : `تحديث على ${ref}: تم حل ${report.report_type === "BUG" ? "المشكلة" : "الملاحظة"} من فريق ريلود. شكرًا لأنك ساعدتنا نطوّر التجربة.`);
-        notified = true;
+        try { await sendWhatsAppText(contact.wa_id, conversation?.language === "en" ? `Update on ${ref}: the Reload team has marked this ${report.report_type === "BUG" ? "problem" : "feedback item"} as resolved. Thank you for helping us improve.` : `تحديث على ${ref}: تم حل ${report.report_type === "BUG" ? "المشكلة" : "الملاحظة"} من فريق ريلود. شكرًا لأنك ساعدتنا نطوّر التجربة.`);
+        notified = true; } catch { console.error("report_notification_unavailable", report.id); }
       }
     }
     return json({ status, notified });

@@ -1,4 +1,4 @@
-import { corsHeaders, json } from "../_shared/http.ts";
+import { corsHeaders, env, json } from "../_shared/http.ts";
 import { verifyReturnFacts } from "../_shared/return-token.ts";
 import { adminClient } from "../_shared/supabase.ts";
 
@@ -40,8 +40,12 @@ Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
   try {
-    const { verificationToken, itemId, quantity, reason, condition, action = "evaluate", decisionId } = await request.json();
+    const { verificationToken, itemId, quantity, reason, condition, action = "evaluate", decisionId, whatsappMessageId } = await request.json();
     if (typeof verificationToken !== "string" || typeof itemId !== "string" || !Number.isInteger(quantity) || typeof reason !== "string" || typeof condition !== "string") return json({ error: "invalid_request" }, 400);
+    if (whatsappMessageId !== undefined) {
+      const serverKey = Deno.env.get("SUPABASE_SECRET_KEY") ?? env("SUPABASE_SERVICE_ROLE_KEY");
+      if (typeof whatsappMessageId !== "string" || request.headers.get("authorization") !== `Bearer ${serverKey}`) return json({ error: "internal_request_required" }, 403);
+    }
     const facts = await verifyReturnFacts<Facts>(verificationToken);
     const item = facts.items.find((entry) => entry.id === itemId);
     if (!item) return json({ error: "item_not_found" }, 400);
@@ -85,19 +89,26 @@ Deno.serve(async (request) => {
     };
     let decisionIdSaved: string | null = null;
     {
-      const { data, error } = await admin.rpc("record_return_decision", {
+      const parameters = {
         p_store_id: facts.storeId, p_policy_version_id: policy.id, p_order_id: facts.orderId,
         p_outcome: outcome, p_reason_codes: reasonCodes, p_order_facts: facts,
         p_policy_snapshot: { ...policy, rules_snapshot: rules },
         p_customer_snapshot: { name: facts.customerName, email: facts.customerEmail },
         p_item_snapshot: { ...item, quantity, reason, condition }, p_create_case: false,
-      });
+      };
+      if (whatsappMessageId) {
+        const { data, error } = await admin.rpc("record_whatsapp_decision", { p_message: whatsappMessageId, p_parameters: parameters, p_decision: decision });
+        if (error) throw error;
+        return json(data);
+      }
+      const { data, error } = await admin.rpc("record_return_decision", parameters);
       if (error) throw error;
       decisionIdSaved = data?.[0]?.decision_id ?? null;
     }
     return json({ decision, decisionId: decisionIdSaved });
   } catch (error) {
     console.error("return_decision_failed", error instanceof Error ? error.message : "unknown");
+    if (error instanceof Error && error.message === "expired_return_token") return json({ error: "expired_return_token" }, 401);
     return json({ error: "return_decision_failed" }, 500);
   }
 });

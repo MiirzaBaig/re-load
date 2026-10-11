@@ -19,7 +19,7 @@ async function credential(storeId: string): Promise<StoredCredential> {
 export async function sallaAccessToken(storeId: string) {
   let stored = await credential(storeId);
   const expiresAt = stored.token_expires_at ? new Date(stored.token_expires_at).getTime() : 0;
-  if (expiresAt > Date.now() + 60_000) return decrypt(stored.access_token_ciphertext);
+  if (expiresAt > Date.now() + 172_800_000) return decrypt(stored.access_token_ciphertext);
   if (!stored.refresh_token_ciphertext) throw new Error("salla_reauthorization_required");
 
   const admin = adminClient();

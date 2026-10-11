@@ -14,6 +14,7 @@ import { useAuth } from "@/components/auth-provider";
 import { useLanguage } from "@/components/language-provider";
 import { IntegrationsPageSkeleton } from "@/components/merchant-skeletons";
 import { WhatsAppLogo } from "@/components/phone-frame";
+import { WhatsAppLinkPreview } from "@/components/whatsapp-link-preview";
 import { ZidConnectCard } from "@/components/zid-connect-card";
 import { ConnectStepper } from "@/components/integrations/connect-stepper";
 import { ProgressRing } from "@/components/desk/progress-ring";
@@ -49,7 +50,7 @@ type Platform = "salla" | "zid";
 type Tone = "connected" | "attention" | "idle";
 
 export function IntegrationsPage() {
-  const { user, workspace } = useAuth();
+  const { workspace } = useAuth();
   const { t, locale, isArabic } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -59,6 +60,7 @@ export function IntegrationsPage() {
   const [policyReady, setPolicyReady] = useState(false);
   const [returnCode, setReturnCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [channelBusy, setChannelBusy] = useState(false);
   const [panel, setPanel] = useState<Platform | null>(null);
 
   const load = useCallback(async () => {
@@ -99,7 +101,7 @@ export function IntegrationsPage() {
   const whatsAppConnected = whatsApp?.status === "CONNECTED";
   const returnPath = returnCode ? `/return?store=${encodeURIComponent(returnCode)}` : null;
   const whatsAppNumber = whatsApp?.display_phone_number?.replace(/\D/g, "") ?? "";
-  const whatsAppLink = whatsAppConnected && whatsAppNumber ? getWhatsAppStartUrl(whatsAppNumber) : null;
+  const whatsAppLink = whatsAppConnected && whatsAppNumber && returnCode ? getWhatsAppStartUrl(whatsAppNumber, returnCode) : null;
   const toneOf = (connection: Connection | null): Tone =>
     connection?.status === "CONNECTED" ? "connected" : connection?.status === "EXPIRED" || connection?.status === "ERROR" ? "attention" : "idle";
   const date = (value: string | null, withTime = false) => value
@@ -107,6 +109,18 @@ export function IntegrationsPage() {
       ? formatDateTimeString(value, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }, locale)
       : formatDateString(value, { year: "numeric", month: "short", day: "numeric" }, locale)
     : null;
+
+  const activateWhatsApp = async () => {
+    if (!supabase || !workspace || channelBusy) return;
+    setChannelBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("whatsapp-connection", { body: { storeId: workspace.storeId, action: "connect" } });
+      if (error || !data?.connected) throw new Error("channel_not_connected");
+      toast.success(t("WhatsApp is ready. Share your store’s link with customers.", "واتساب جاهز. شارك رابط متجرك مع العملاء."));
+      await load();
+    } catch { toast.error(t("Couldn’t activate WhatsApp. Check your store connection and published policy, then try again.", "تعذّر تفعيل واتساب. تأكد من ربط المتجر ونشر السياسة، ثم حاول مرة ثانية.")); }
+    finally { setChannelBusy(false); }
+  };
 
   if (loading) return <IntegrationsPageSkeleton />;
 
@@ -128,7 +142,7 @@ export function IntegrationsPage() {
   // The store that's connected, or one that needs fixing.
   const primary: Platform | null = sallaConnected ? "salla" : zidConnected ? "zid" : toneOf(zid) === "attention" ? "zid" : toneOf(salla) === "attention" ? "salla" : null;
   const platformCopy = {
-    salla: { name: t("Salla", "سلة"), tagline: t("Official Reload app on Salla", "تطبيق ريلود الرسمي في سلة"), meta: t("Approve in Salla", "موافقة في سلة") },
+    salla: { name: t("Salla", "سلة"), tagline: t("Public app setup and review in progress", "إعداد التطبيق العام ومراجعته قيد التنفيذ"), meta: t("Under development", "قيد التطوير") },
     zid: { name: t("Zid", "زد"), tagline: t("Free through Zid's AI Connector", "مجانًا عبر AI Connector من زد"), meta: t("About 2 minutes", "دقيقتان تقريبًا") },
   };
 
@@ -180,7 +194,7 @@ export function IntegrationsPage() {
 
       {/* ── Your store ── */}
       <section id="your-store" className="scroll-mt-20">
-        <SectionHeading title={t("Your store", "متجرك")} subtitle={primary ? t("Reload reads orders and creates returns. Nothing else.", "يقرأ ريلود الطلبات وينشئ المرتجعات. لا شيء غير ذلك.") : t("Where do you sell? Choose your platform to connect.", "أين تبيع؟ اختر منصتك للربط.")} />
+        <SectionHeading title={t("Your store", "متجرك")} subtitle={primary ? t("Reload reads order and product details, and can create returns.", "يقرأ ريلود بيانات الطلبات والمنتجات، ويمكنه إنشاء المرتجعات.") : t("Where do you sell? Choose your platform to connect.", "أين تبيع؟ اختر منصتك للربط.")} />
         <div className="mt-4">
           {primary ? (
             <ConnectedStore
@@ -208,9 +222,11 @@ export function IntegrationsPage() {
         <div className="desk-stagger mt-4 grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-2" style={{ ["--desk-base" as string]: "120ms" }}>
           <ReturnPageCard returnPath={storeConnected ? returnPath : null} t={t} />
           <WhatsAppCard
+            onActivate={() => void activateWhatsApp()} busy={channelBusy} canActivate={workspace?.role === "owner" || workspace?.role === "admin"}
             connected={whatsAppConnected} link={whatsAppLink} storeConnected={storeConnected} policyReady={policyReady}
             connectedAt={date(whatsApp?.connected_at ?? null)} lastMessage={date(whatsApp?.last_webhook_at ?? null, true)} t={t} />
         </div>
+      <WhatsAppLinkPreview />
       </section>
 
       {/* ── Platform side panel ── */}
@@ -228,7 +244,7 @@ export function IntegrationsPage() {
               <div className="px-6 pb-8 pt-6">
                 {panel === "zid"
                   ? <ZidConnectCard onChange={() => void load()} onDone={() => setPanel(null)} />
-                  : <SallaPanel connected={sallaConnected} storeId={workspace?.storeId ?? null} signedIn={Boolean(user)} t={t} onChange={() => void load()} />}
+                  : <SallaPanel connected={sallaConnected} storeId={workspace?.storeId ?? null} t={t} onChange={() => void load()} />}
               </div>
             </div>
           )}
@@ -378,17 +394,10 @@ function PanelHeader({ platform, tone, connection, connectedAt, lastChecked, t, 
 
 const SALLA = "#004d5a";
 
-function SallaPanel({ connected, storeId, signedIn, t, onChange }: { connected: boolean; storeId: string | null; signedIn: boolean; t: T; onChange: () => void }) {
+function SallaPanel({ connected, storeId, t, onChange }: { connected: boolean; storeId: string | null; t: T; onChange: () => void }) {
   const [action, setAction] = useState<"connect" | "test" | "disconnect" | null>(null);
   const [confirm, setConfirm] = useState(false);
 
-  const connect = async () => {
-    if (!supabase || !signedIn || !storeId) { toast.error(t("Sign in before connecting a store.", "سجّل الدخول قبل ربط المتجر.")); return; }
-    setAction("connect");
-    const { data, error } = await supabase.functions.invoke("salla-oauth-start", { body: { storeId, redirectPath: "/app/integrations" } });
-    if (error || !data?.authorizationUrl) { toast.error(t("Could not start Salla authorization.", "تعذّر بدء عملية التفويض مع سلة.")); setAction(null); return; }
-    window.location.assign(data.authorizationUrl);
-  };
   const run = async (next: "test" | "disconnect") => {
     if (!supabase || !storeId) return;
     setConfirm(false); setAction(next);
@@ -408,7 +417,7 @@ function SallaPanel({ connected, storeId, signedIn, t, onChange }: { connected: 
               {[t("Find an order by number, phone or email", "إيجاد الطلب برقمه أو بالجوال أو البريد"), t("Read items, prices, status and delivery date", "قراءة المنتجات والأسعار والحالة وتاريخ التوصيل")].map((line) => (
                 <li key={line} className="flex items-center gap-2.5"><Check className="size-4 shrink-0 text-eligible" />{line}</li>
               ))}
-              <li className="flex items-center gap-2.5 text-muted-foreground"><span className="grid size-4 shrink-0 place-items-center text-xs">✕</span>{t("Never products, prices, coupons or settings", "لا يصل أبدًا للمنتجات أو الأسعار أو الكوبونات أو الإعدادات")}</li>
+              <li className="flex items-center gap-2.5 text-muted-foreground"><span className="grid size-4 shrink-0 place-items-center text-xs">✕</span>{t("Never edits orders, products, coupons or settings", "لا يعدّل الطلبات أو المنتجات أو الكوبونات أو الإعدادات")}</li>
             </ul>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -424,9 +433,9 @@ function SallaPanel({ connected, storeId, signedIn, t, onChange }: { connected: 
               title: t("Approve Reload in Salla", "وافق على ريلود في سلة"),
               content: (
                 <div className="space-y-3">
-                  <p className="text-sm leading-6 text-muted-foreground">{t("You'll go to Salla, sign in, and allow Reload to read your orders. It takes under a minute.", "ستنتقل إلى سلة، تسجّل الدخول، وتسمح لريلود بقراءة طلباتك. يستغرق أقل من دقيقة.")}</p>
-                  <Button className="h-11 w-full rounded-xl transition-transform active:scale-[.99]" onClick={() => void connect()} disabled={action !== null}>
-                    {action === "connect" ? <><Loader2 className="size-4 animate-spin" />{t("Opening Salla…", "جارٍ فتح سلة…")}</> : <>{t("Continue to Salla", "المتابعة إلى سلة")}<ArrowUpRight className="size-3.5 rtl:-scale-x-100" /></>}
+                  <p className="text-sm leading-6 text-muted-foreground">{t("We’re preparing Reload’s public Salla app. New connections will open after testing and Salla approval.", "نعمل على تجهيز تطبيق ريلود العام في سلة. سيتاح الربط بعد الاختبار وموافقة سلة.")}</p>
+                  <Button className="h-11 w-full rounded-xl transition-transform active:scale-[.99]" disabled>
+                    {action === "connect" ? <><Loader2 className="size-4 animate-spin" />{t("Opening Salla…", "جارٍ فتح سلة…")}</> : <>{t("Under development", "قيد التطوير")}<ArrowUpRight className="size-3.5 rtl:-scale-x-100" /></>}
                   </Button>
                 </div>
               ),
@@ -528,9 +537,10 @@ function ReturnPageCard({ returnPath, t }: { returnPath: string | null; t: T }) 
   );
 }
 
-function WhatsAppCard({ connected, link, storeConnected, policyReady, connectedAt, lastMessage, t }: {
-  connected: boolean; link: string | null; storeConnected: boolean; policyReady: boolean; connectedAt: string | null; lastMessage: string | null; t: T;
+function WhatsAppCard({ onActivate, busy, canActivate, connected, link, storeConnected, policyReady, connectedAt, lastMessage, t }: {
+  onActivate: () => void; busy: boolean; canActivate: boolean; connected: boolean; link: string | null; storeConnected: boolean; policyReady: boolean; connectedAt: string | null; lastMessage: string | null; t: T;
 }) {
+  const qr = useMemo(() => link ? createBrandQr(link) : null, [link]);
   const copy = async () => {
     if (!link) return;
     try { await navigator.clipboard.writeText(link); toast.success(t("Customer WhatsApp link copied.", "تم نسخ رابط واتساب للعملاء.")); }
@@ -541,19 +551,22 @@ function WhatsAppCard({ connected, link, storeConnected, policyReady, connectedA
       tone={connected ? "connected" : "idle"} toneLabel={connected ? t("Connected", "متصل") : storeConnected ? t("Awaiting activation", "بانتظار التفعيل") : t("Locked", "مقفلة")} locked={!connected && !storeConnected}>
       <p className="text-sm leading-6 text-muted-foreground">{connected
         ? t("Customers start a return in WhatsApp. Their requests and photos appear in your return cases.", "يبدأ عملاؤك الإرجاع من واتساب، وتظهر طلباتهم وصورهم ضمن حالات الإرجاع.")
-        : t("Customers message your number to start a return. The Reload team activates it with you.", "يراسل العملاء رقمك لبدء الإرجاع. يفعّله فريق ريلود معك.")}</p>
+        : t("Activate the shared Reload number for your store. Your unique link tells us which store the customer is contacting.", "فعّل رقم ريلود الموحد لمتجرك. رابطك الخاص يحدد لنا المتجر الذي يتواصل معه العميل.")}</p>
       {connected ? (
         <div className="mt-4 flex flex-1 flex-col justify-end gap-3">
           <p className="text-xs text-muted-foreground">{connectedAt && t(`Connected ${connectedAt}`, `تم الربط ${connectedAt}`)}{connectedAt && " · "}{t(`Last message ${lastMessage ?? "not yet"}`, `آخر رسالة ${lastMessage ?? "لم تصل بعد"}`)}</p>
           {link ? <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" className="rounded-xl" onClick={() => void copy()}><Copy className="size-4" />{t("Copy WhatsApp link", "نسخ رابط واتساب")}</Button>
+            {qr && <Popover><PopoverTrigger asChild><Button size="sm" variant="outline" className="rounded-xl"><QrCode className="size-4" />{t("QR code", "رمز QR")}</Button></PopoverTrigger><PopoverContent align="start" className="w-64 rounded-2xl p-4"><div className="qr-preview overflow-hidden rounded-xl bg-[#f8f7f4] [&>svg]:size-full" dangerouslySetInnerHTML={{ __html: qr.svg("ink") }} /><p className="mt-3 text-xs leading-5 text-muted-foreground">{t("Customers scan this to open your store’s return chat. They must send the prefilled message to begin.", "يمسح العميل الرمز لفتح محادثة الإرجاع الخاصة بمتجرك، ثم يرسل الرسالة الجاهزة للبدء.")}</p></PopoverContent></Popover>}
             <Button size="sm" variant="ghost" className="rounded-xl" asChild><a href={link} target="_blank" rel="noopener noreferrer"><ExternalLink className="size-4" />{t("Open chat", "فتح المحادثة")}</a></Button>
           </div> : <p className="flex items-center gap-1.5 text-xs text-review"><AlertTriangle className="size-3.5" />{t("Active, but its number is unavailable. Contact Reload before sharing.", "مفعّلة لكن رقمها غير متوفر. تواصل مع ريلود قبل المشاركة.")}</p>}
         </div>
       ) : (
-        <p className="mt-4 flex flex-1 items-end text-xs text-muted-foreground">
-          {!storeConnected ? t("Unlocks after you connect your store.", "يُفتح بعد ربط متجرك.") : !policyReady ? t("Next: publish your return policy.", "التالي: انشر سياسة الإرجاع.") : t("Ready. The Reload team will reach out to activate it.", "جاهز. سيتواصل معك فريق ريلود لتفعيله.")}
-        </p>
+        <div className="mt-4 flex flex-1 flex-col justify-end gap-3">
+          {storeConnected && policyReady && canActivate && <Button size="sm" className="self-start rounded-xl" disabled={busy} onClick={onActivate}>{busy && <Loader2 className="size-4 animate-spin" />}{t("Activate WhatsApp", "تفعيل واتساب")}</Button>}
+          <p className="text-xs text-muted-foreground">
+          {!storeConnected ? t("Unlocks after you connect your store.", "يُفتح بعد ربط متجرك.") : !policyReady ? t("Next: publish your return policy.", "التالي: انشر سياسة الإرجاع.") : t("Share this store’s link, rather than just the number, so customers reach the right store.", "شارك رابط المتجر ليصل العملاء إلى المتجر الصحيح.")}
+        </p></div>
       )}
     </ChannelCard>
   );

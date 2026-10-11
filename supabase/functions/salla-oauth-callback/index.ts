@@ -57,7 +57,7 @@ Deno.serve(async (request) => {
     if (!externalStoreId) throw new Error("user_info_missing_store_id");
     const externalStoreName = String(merchant.name ?? merchant.username ?? data.name ?? "Salla Store");
     const publicStoreUrl = String(merchant.domain ?? merchant.url ?? merchant.website ?? "").trim();
-    const scopes = String(token.scope ?? "orders.read offline_access").split(/[\s,]+/).filter(Boolean);
+    const scopes = String(token.scope ?? "orders.read products.read offline_access").split(/[\s,]+/).filter(Boolean);
     const expiresAt = new Date(Date.now() + Number(token.expires_in ?? 1_209_600) * 1000).toISOString();
 
     const { error: saveError } = await admin.rpc("finalize_salla_connection", {

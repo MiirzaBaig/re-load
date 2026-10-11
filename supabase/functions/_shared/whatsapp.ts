@@ -18,6 +18,7 @@ async function metaRequest(body: Record<string, unknown>) {
     `https://graph.facebook.com/${GRAPH_VERSION}/${env("WHATSAPP_PHONE_NUMBER_ID")}/messages`,
     {
       method: "POST",
+      signal: AbortSignal.timeout(20000),
       headers: {
         Authorization: `Bearer ${env("WHATSAPP_ACCESS_TOKEN")}`,
         "Content-Type": "application/json",

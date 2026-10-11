@@ -1,5 +1,6 @@
 "use client";
 
+import { IdentityReviews } from "@/components/identity-reviews";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -149,6 +150,7 @@ export function CaseListPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <IdentityReviews />
       <ScrollReveal>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>

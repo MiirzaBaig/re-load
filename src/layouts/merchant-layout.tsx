@@ -26,6 +26,8 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import {
+  BookOpen,
+  MessageSquare,
   LayoutDashboard,
   FileText,
   Package,
@@ -96,7 +98,9 @@ export function MerchantLayout({ children }: { children: ReactNode }) {
       icon: MessageSquareWarning,
     },
   ];
+  primaryNav.push({ label: t("Inbox", "المحادثات"), href: "/app/inbox", icon: MessageSquare });
   const secondaryNav = [
+    { label: t("Store knowledge", "معلومات المتجر"), href: "/app/knowledge", icon: BookOpen },
     {
       label: t("Integrations", "التكاملات"),
       href: "/app/integrations",
@@ -122,7 +126,7 @@ export function MerchantLayout({ children }: { children: ReactNode }) {
   });
 
   const tabs = [primaryNav[0], primaryNav[2], primaryNav[1]];
-  const moreItems = [primaryNav[3], ...secondaryNav];
+  const moreItems = [...primaryNav.slice(3), ...secondaryNav];
   const moreActive = moreItems.some((item) => isActive(item.href));
 
   return (
@@ -358,6 +362,8 @@ function WorkspaceBreadcrumb({ pathname }: { pathname: string }) {
     review: t("Review", "مراجعة"),
     cases: t("Cases", "الحالات"),
     reports: t("Feedback", "الملاحظات"),
+    inbox: t("Customer inbox", "محادثات العملاء"),
+    knowledge: t("Store knowledge", "معلومات المتجر"),
     integrations: t("Integrations", "التكاملات"),
     settings: t("Settings", "الإعدادات"),
   };

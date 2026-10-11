@@ -1,3 +1,4 @@
+import { normalizeOrderContact as normalizeVerifier } from "./order-contact.ts";
 import { decode } from "npm:@toon-format/toon@4.4.0";
 
 /*
@@ -5,8 +6,9 @@ import { decode } from "npm:@toon-format/toon@4.4.0";
  * merchant installs it and pastes their store's private MCP link into Reload.
  *
  * That link grants FULL store access, so Reload only ever calls an allowlist
- * of tools/actions (reading orders and creating returns), never products,
- * prices, coupons or settings. Replies are TOON text; we decode them to JSON.
+ * of tools/actions: reading orders, creating returns, and READING products
+ * (for customer questions on WhatsApp). Never product edits, prices, coupons,
+ * customers or settings. Replies are TOON text; we decode them to JSON.
  */
 
 const ZID_MCP_HOST = "zam-mcp-server.zid.sa";
@@ -15,6 +17,10 @@ const ZID_MCP_HOST = "zam-mcp-server.zid.sa";
 const ALLOWED: Record<string, readonly string[]> = {
   Orders: ["list", "get", "get_credit_notes", "list_reverse_reasons", "create_reverse"],
   StoreLocations: ["list"],
+  // Read-only. Zid's Products tool also has create/update/delete/import;
+  // none of those may ever be added here.
+  Products: ["list", "get"],
+  ProductImages: ["list"],
 };
 
 export function isZidMcpLink(value: unknown): value is string {
@@ -75,6 +81,7 @@ export class ZidMcp {
     await this.init();
     const result = await this.rpc("tools/call", { name: tool, arguments: args });
     const text = (result?.content ?? []).map((part: { text?: string }) => part.text ?? "").join("\n").trim();
+    if (result?.isError && /^404 error/i.test(text)) throw new ZidMcpError("zid_not_found");
     if (result?.isError || /^validation error/i.test(text)) throw new ZidMcpError(`zid_tool_error:${text.slice(0, 160)}`);
     try {
       return decode(text) as Record<string, any>;
@@ -108,7 +115,7 @@ export function zidDate(value: unknown): string | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
-function zidStatus(code: unknown) {
+export function zidStatus(code: unknown) {
   const raw = String(code ?? "").toLowerCase();
   if (raw === "delivered") return "delivered";
   if (raw === "indelivery") return "shipped";
@@ -117,19 +124,14 @@ function zidStatus(code: unknown) {
   return "processing";
 }
 
-function normalizeVerifier(value: string) {
-  const clean = value.trim().toLowerCase();
-  if (clean.includes("@")) return clean;
-  const digits = clean.replace(/\D/g, "");
-  return digits.length > 9 ? digits.slice(-9) : digits;
-}
+
 
 /**
- * Find a Zid order by its number and confirm the customer's phone or email,
- * then shape it exactly like Salla order facts so the decision engine (web
- * return page and WhatsApp) doesn't care which platform it came from.
+ * The raw Zid order for this number, only if the supplied phone or email
+ * belongs to the customer on it. Null means "not found or not verified";
+ * callers must not tell those two apart to the customer.
  */
-export async function zidOrderFacts(client: ZidMcp, storeId: string, orderNumber: string, verifier: string) {
+export async function zidVerifiedOrder(client: ZidMcp, orderNumber: string, verifier: string): Promise<Record<string, any> | null> {
   const wanted = orderNumber.trim().replace(/^#/, "");
   const list = await client.call("Orders", { action: "list", searchTerm: wanted, perPage: 10 });
   const candidates = Array.isArray(list.orders) ? list.orders : [];
@@ -145,6 +147,18 @@ export async function zidOrderFacts(client: ZidMcp, storeId: string, orderNumber
     .filter((value) => value !== null && value !== undefined && value !== "")
     .map((value) => normalizeVerifier(String(value)));
   if (!supplied || !known.includes(supplied)) return null;
+  return order;
+}
+
+/**
+ * Find a Zid order by its number and confirm the customer's phone or email,
+ * then shape it exactly like Salla order facts so the decision engine (web
+ * return page and WhatsApp) doesn't care which platform it came from.
+ */
+export async function zidOrderFacts(client: ZidMcp, storeId: string, orderNumber: string, verifier: string) {
+  const order = await zidVerifiedOrder(client, orderNumber, verifier);
+  if (!order) return null;
+  const customer = order.customer ?? {};
 
   const products = Array.isArray(order.products) ? order.products : [];
   return {

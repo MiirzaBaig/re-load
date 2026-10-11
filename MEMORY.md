@@ -1,6 +1,14 @@
 # Reload project memory
 
-Updated: 24 September 2026
+Updated: 10 October 2026
+
+## WhatsApp enhancement — 10 October 2026
+
+Production uses Reload +966 55 236 2631 (phone ID 1418354908018050, WABA 2165590787358223). Each connected store shares that receiving number and gets a `return <return_code>` link/QR in Integrations. The receiving number alone does not identify a store. Explicit links select store context; private routing remembers the sender's current store. Owners/admins can activate the channel after store connection and policy publication.
+
+Phone mismatch offers a merchant identity-check request in Return cases. The merchant independently confirms identity, verifies the original order contact, and records the verification method; access is private, conversation-bound and expires after 24 hours. Email/SMS OTP delivery is deferred until a provider is configured. Never show “code sent” or expose order facts before verification.
+
+The private WhatsApp inbox persists messages, serializes a sender, retries confirmed failures, saves replies with flow changes atomically, and reuses decision/report/send receipts. A `pg_net` worker plus minute cron provides recovery. Ambiguous sends require operator investigation; do not promise exactly-once delivery. See docs/whatsapp-enhancement.md for tests, operator recovery and pilot steps. Photo assessment stays advisory; catalogue comparison, automated shipping and actual refund payment are not implemented by this enhancement.
 
 ## Product
 
@@ -104,3 +112,29 @@ Run TypeScript checks, production build, focused browser checks in English/Arabi
 - Extended the existing financing interest form with platform, optional monthly sales/orders, return rate, refund amounts/volume, processing time, preferred repayment period, and required contact consent. Calculator estimates remain separate from merchant-provided figures.
 - Migration `202609280001_financing_interest.sql` adds fields and validation; public inserts require consent, and no public read policy was added. Existing leads remain intact.
 - This task changes marketing and financing interest collection only. Customer WhatsApp and merchant workspace operational flows remain as implemented.
+
+## 2026-10-11 — New Salla public app
+- Public app ID: 1155852112; client ID: a8695793-40d8-481a-86be-2b5246591958. User authorized replacing the old Salla credentials in Supabase project clwczcvxosudfevjznmk. Never store client/webhook secrets in this document.
+- Public listing is still a draft. Correct displayed name Relaodd to Reload. Request Basic Information, Orders and Products read-only access. Existing backend uses Custom OAuth; public-app webhook synchronization and product tools remain to implement/test. Existing private-app connections need reauthorization for the new app.
+
+## 2026-10-11 — WhatsApp customer service foundation
+- User authorized execution of the WhatsApp assistant, approved store knowledge, merchant inbox/tickets, optional photos, shared case data and Salla public-app backend. Claude owns Zid; do not edit/connect his product tools until he provides the tested contract. Email/SMS delivery is deferred.
+- New pages: /app/knowledge (draft/approve/publish answers) and /app/inbox (store-scoped conversations, tickets, takeover/resume, queued staff replies). Mobile layouts, Arabic/English copy, restrained motion and reduced-motion support use existing primitives.
+- New migration 202610110001_customer_service.sql applied to linked Supabase project. Includes protected knowledge/tickets, role/window-guarded staff queue, safe Salla resource snapshots, dedup/out-of-order protection and proactive refresh scheduling. Rollback SQL regression checks passed. No raw order/customer payloads in resource snapshots.
+- WhatsApp identifies a store, lets customers choose language/service, routes general questions using DeepSeek and approved knowledge, and uses fresh Salla product reads only with products.read. Never exposes costs/admin links. Unknown answers offer review-and-send tickets. Confirmed ticket submission pauses automation for merchant replies; resume is explicit. Incoming messages remain recorded during takeover.
+- Order tracking preserves verification. Optional screenshots use Gemma OCR plus customer confirmation; no identity bypass. Return photos can be skipped without false photo claims; uploaded evidence stays visible in existing case details and AI assessment is advisory.
+- New Salla authorizations are blocked by SALLA_PUBLIC_APP_READY (default false) and disabled UI. Public app review/demo install still required. Tokens refresh two days before expiry; scheduler handles due stores. Existing private connections require new public-app authorization.
+- Backend model defaults: deepseek-v4.1-flash text; gemma4:31b images, with env overrides. No secrets added to tracked files.
+- Verification: TypeScript checks and backend checks passed; Deno suite passed 35 tests including Claude's existing/new Zid product tests. Production build passes with --webpack. Default Turbopack build is blocked by a local CSS-worker port permission (Google Fonts also required network access). Real merchant/customer delivery, live AI/product accuracy and visual acceptance remain to test.
+- Details and rollout dependencies: docs/customer-service.md. No GitHub push requested for this task. Refund payments, shipping, financing and bulk marketing remain outside this change.
+
+### Zid WhatsApp handoff wired — 11 Oct 2026
+- Connected Claude’s zidProductsFor to the customer assistant; verified order tracking now uses zidOrderTracking, including courier and safe tracking links. Shared store-code routing unchanged.
+- Tracking rechecks the original order contact; manual approval uses conversation-bound verified contact. Failed reads produce a retry answer, never stale shipment claims.
+- 44 Deno tests passed; frontend typecheck clean. Email/SMS OTP still deferred. Sizes/colours require real variant-product acceptance; no new Git commit or push in this task.
+
+### Knowledge import and editable tickets — 11 Oct 2026
+- Import one public page or pasted text into source-backed unpublished knowledge drafts; expanded categories, source review, search/filter UI. New migration 202610110002 applied.
+- Support preview offers Send/Edit/Cancel and typed replacement/additions; interactive previews are capped while preserving full drafts.
+- Integrations has explicit dummy QR/link preview; no demo data is used in real routing.
+- 50 backend tests, typecheck and webpack build; live-model authenticated browser importing and mobile checks passed; test fixtures deleted. Email delivery remains deferred; see docs/email-verification-plan.md.

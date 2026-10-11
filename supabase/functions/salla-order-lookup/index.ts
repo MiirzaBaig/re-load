@@ -1,16 +1,12 @@
+import { normalizeOrderContact as normalizeVerifier } from "../_shared/order-contact.ts";
 import { decrypt, sha256 } from "../_shared/crypto.ts";
 import { ZidMcp, zidOrderFacts } from "../_shared/zid-mcp.ts";
-import { corsHeaders, json } from "../_shared/http.ts";
+import { corsHeaders, env, json } from "../_shared/http.ts";
 import { signReturnFacts } from "../_shared/return-token.ts";
 import { sallaGet } from "../_shared/salla.ts";
 import { adminClient } from "../_shared/supabase.ts";
 
-function normalizeVerifier(value: string) {
-  const clean = value.trim().toLowerCase();
-  if (clean.includes("@")) return clean;
-  const digits = clean.replace(/\D/g, "");
-  return digits.length > 9 ? digits.slice(-9) : digits;
-}
+
 
 function statusOf(order: Record<string, any>) {
   const raw = String(order.status?.slug ?? order.status?.name ?? order.status ?? "").toLowerCase();
@@ -44,7 +40,12 @@ Deno.serve(async (request) => {
     }
     const admin = adminClient();
     const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-    const bucket = await sha256(`${returnCode}:${forwarded}`);
+    const serverKey = Deno.env.get("SUPABASE_SECRET_KEY") ?? env("SUPABASE_SERVICE_ROLE_KEY");
+    const serverRequest = request.headers.get("authorization") === `Bearer ${serverKey}`;
+    // WhatsApp workers share an IP; throttle each sender instead of blocking
+    // every customer of a store when ten unrelated lookups have been made.
+    const caller = serverRequest ? `server:${normalizeVerifier(verifier)}` : `web:${forwarded}`;
+    const bucket = await sha256(`${returnCode}:${caller}`);
     const { data: allowed } = await admin.rpc("consume_public_rate_limit", { p_bucket: bucket, p_limit: 10, p_window_seconds: 600 });
     if (!allowed) return json({ error: "try_again_later" }, 429);
 

@@ -34,6 +34,24 @@ Deno.serve(async (request) => {
       }
     }
 
+    if (storeId && /^(order|product)\./.test(eventType) && payload.data) {
+      const data = payload.data;
+      const resourceId = String(data.product_id ?? data.order_id ?? data.id ?? "");
+      if (resourceId) {
+        const parsed = new Date(String(payload.created_at ?? "").replace(" ", "T"));
+        const changedAt = Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+        const snapshot: Record<string,unknown> = { event: eventType };
+        if (typeof data.name === "string") snapshot.name = data.name.slice(0,160);
+        if (typeof data.status === "string") snapshot.status = data.status;
+        else if (typeof data.status?.slug === "string") snapshot.status = data.status.slug;
+        if (typeof data.quantity === "number") snapshot.quantity = data.quantity;
+        if (typeof data.price?.amount === "number") snapshot.price = data.price.amount;
+        const applied=await admin.rpc("apply_salla_resource_event",{p_store:storeId,p_event_id:externalEventId,p_event:eventType,p_digest:digest,p_resource_type:eventType.startsWith("order.")?"order":"product",p_resource_id:resourceId,p_snapshot:snapshot,p_deleted:eventType.endsWith(".deleted"),p_changed_at:changedAt});
+        if(applied.error)throw applied.error;
+        return json({received:true});
+      }
+    }
+
     const { error } = await admin.from("integration_events").upsert({
       store_id: storeId,
       provider: "salla",

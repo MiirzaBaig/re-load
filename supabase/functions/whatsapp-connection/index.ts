@@ -16,7 +16,9 @@ Deno.serve(async (request) => {
     let assurance = "";
     try { assurance = JSON.parse(atob(token.replace(/-/g, "+").replace(/_/g, "/"))).aal; } catch { /* invalid claim */ }
     const { data: staff } = await client.from("platform_admins").select("role").eq("user_id", user.id).maybeSingle();
-    if (staff?.role !== "owner" || assurance !== "aal2") return json({ error: "platform_owner_required" }, 403);
+    const { data: membership } = await client.from("memberships").select("role").eq("store_id", storeId).eq("user_id", user.id).maybeSingle();
+    const managesStore = membership && ["owner", "admin"].includes(membership.role);
+    if (!managesStore && !(staff?.role === "owner" && assurance === "aal2")) return json({ error: "store_admin_required" }, 403);
 
     const admin = adminClient();
     if (action === "disconnect") {
@@ -32,8 +34,6 @@ Deno.serve(async (request) => {
     const { data: policy } = await admin.from("policy_versions").select("id").eq("store_id", storeId).limit(1).maybeSingle();
     if (!commerce || !policy) return json({ error: "store_setup_incomplete" }, 409);
     const phoneNumberId = env("WHATSAPP_PHONE_NUMBER_ID");
-    const { data: assigned } = await admin.from("whatsapp_connections").select("id,store_id,status").eq("phone_number_id", phoneNumberId).maybeSingle();
-    if (assigned && assigned.store_id !== storeId && assigned.status === "CONNECTED") return json({ error: "number_assigned_to_another_store" }, 409);
     const version = Deno.env.get("WHATSAPP_GRAPH_VERSION")?.trim() || "v25.0";
     const response = await fetch(`https://graph.facebook.com/${version}/${encodeURIComponent(phoneNumberId)}?fields=display_phone_number,verified_name,status`, {
       headers: { Authorization: `Bearer ${env("WHATSAPP_ACCESS_TOKEN")}` },
@@ -41,11 +41,6 @@ Deno.serve(async (request) => {
     if (!response.ok) return json({ error: "meta_number_unavailable" }, 502);
     const meta = await response.json() as { display_phone_number?: string; verified_name?: string; status?: string };
     if (meta.status !== "CONNECTED") return json({ error: "meta_number_not_ready" }, 409);
-    if (assigned && assigned.store_id !== storeId) {
-      const { error: releaseError } = await admin.from("whatsapp_connections").delete()
-        .eq("id", assigned.id).eq("status", "DISCONNECTED");
-      if (releaseError) throw releaseError;
-    }
     const { data, error } = await admin.from("whatsapp_connections").upsert({
       store_id: storeId,
       business_account_id: env("WHATSAPP_WABA_ID"),

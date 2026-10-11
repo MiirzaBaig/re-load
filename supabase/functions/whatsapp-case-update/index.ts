@@ -69,10 +69,12 @@ Deno.serve(async (request) => {
     if (claimError?.code !== "23505" && (claimError || !claimed)) throw claimError ?? new Error("notification_claim_failed");
     if (!eventId && claimed) eventId = claimed.id;
 
+    const { data: linkedConversationId, error: linkError } = await admin.rpc("get_whatsapp_case_conversation", { p_case: caseId });
+    if (linkError) throw linkError;
     const { data: conversation, error: conversationError } = await admin
       .from("whatsapp_conversations")
       .select("id, store_id, language, service_window_expires_at, whatsapp_contacts!inner(wa_id)")
-      .eq("return_case_id", caseId)
+      .eq(linkedConversationId ? "id" : "return_case_id", linkedConversationId ?? caseId)
       .order("last_message_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -92,9 +94,10 @@ Deno.serve(async (request) => {
     const recipient = contact?.wa_id;
     if (!recipient) throw new Error("whatsapp_contact_missing");
     const language = conversation.language === "en" ? "en" : "ar";
-    const message = copy[status][language];
-    const outsideWindow = !conversation.service_window_expires_at || new Date(conversation.service_window_expires_at) <= new Date();
+    const { data: store } = await admin.from("stores").select("name").eq("id", conversation.store_id).single();
     const reference = `RL-${caseId.slice(0, 8).toUpperCase()}`;
+    const message = `${store?.name ?? "Reload"} · ${reference}\n\n${copy[status][language]}`;
+    const outsideWindow = !conversation.service_window_expires_at || new Date(conversation.service_window_expires_at) <= new Date();
     const result = outsideWindow
       ? await sendWhatsAppTemplate(recipient, templateName[status], language, [reference])
       : await sendWhatsAppText(recipient, message);
