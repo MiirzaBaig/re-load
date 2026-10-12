@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ReloadLogo } from "@/components/reload-logo";
 import { IntroSplash } from "@/components/intro-splash";
 
-import { CurtainReveal } from "@/components/curtain-reveal";
+import { SiteFooter } from "@/components/site-footer";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
@@ -367,11 +367,10 @@ export function PublicLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      <CurtainReveal>
-        <main className="relative isolate min-h-svh bg-background pt-16">
-          {children}
-        </main>
-      </CurtainReveal>
+      <main className="relative isolate min-h-svh bg-background pt-16">
+        {children}
+      </main>
+      <SiteFooter />
       {isHome && (
         <a
           href={whatsappStartUrl}
