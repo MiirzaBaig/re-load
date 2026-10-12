@@ -33,7 +33,7 @@ export function KnowledgeImportDialog({
   const [source, setSource] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [ticks, setTicks] = useState(0);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const [result, setResult] = useState<{
     created: number;
@@ -44,9 +44,7 @@ export function KnowledgeImportDialog({
     if (!supabase) return;
     setBusy(true);
     setError("");
-    setTicks(0);
-    // The steps mirror what the server does; the last one waits for the real answer.
-    const timers = [window.setTimeout(() => setTicks(1), 2500), window.setTimeout(() => setTicks(2), 9000)];
+
     try {
       const { data, error } = await supabase.functions.invoke(
         "customer-service",
@@ -90,7 +88,7 @@ export function KnowledgeImportDialog({
               ),
       );
     } finally {
-      timers.forEach(window.clearTimeout);
+
       setBusy(false);
     }
   }
@@ -138,11 +136,7 @@ export function KnowledgeImportDialog({
               </motion.div>
             ) : busy ? (
               <motion.div key="busy" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={QUICK} className="space-y-4 px-6 py-6">
-                <ProgressChecklist done={ticks} items={[
-                  kind === "URL" ? t("Reading the page", "قراءة الصفحة") : t("Reading your text", "قراءة النص"),
-                  t("Picking out the facts", "استخراج المعلومات"),
-                  t("Writing drafts for you to review", "كتابة مسودات لتراجعها"),
-                ]} />
+                <ProgressChecklist done={0} items={[t("Preparing drafts from your source", "تجهيز مسودات من مصدرك")]} />
                 <p aria-live="polite" className="text-center text-xs text-muted-foreground">{t("This can take about a minute. Please keep this window open.", "قد يستغرق حوالي دقيقة. خلّ النافذة مفتوحة.")}</p>
               </motion.div>
             ) : (

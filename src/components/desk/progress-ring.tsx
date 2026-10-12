@@ -1,12 +1,13 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Check } from "lucide-react";
 import { TWEEN } from "@/components/desk/primitives";
 import { cn } from "@/lib/utils";
 
 /** Setup progress as a ring that fills once, count in the middle, a tick when done. */
 export function ProgressRing({ done, total, label, className }: { done: number; total: number; label: string; className?: string }) {
+  const reduce = useReducedMotion();
   const r = 22;
   const c = 2 * Math.PI * r;
   return (
@@ -15,7 +16,7 @@ export function ProgressRing({ done, total, label, className }: { done: number; 
         <circle cx="26" cy="26" r={r} fill="none" strokeWidth="4" className="stroke-muted" />
         <motion.circle cx="26" cy="26" r={r} fill="none" strokeWidth="4" strokeLinecap="round" className="stroke-eligible"
           strokeDasharray={c} initial={{ strokeDashoffset: c }} animate={{ strokeDashoffset: c * (1 - done / total) }}
-          transition={{ ...TWEEN, duration: 0.9, delay: 0.2 }} style={{ opacity: done ? 1 : 0 }} />
+          transition={{ ...TWEEN, duration: reduce ? 0 : 0.28 }} style={{ opacity: done ? 1 : 0 }} />
       </svg>
       {done === total
         ? <Check className="size-5 text-eligible" strokeWidth={2.75} />

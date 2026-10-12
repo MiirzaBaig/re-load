@@ -67,6 +67,7 @@ Deno.test("platform outage is not presented as an identity mismatch", async () =
     const reply = await processFlow(h.admin, store, conversation, "966500000000", "SA-10492");
     assert(reply.result.kind === "text" && reply.body.includes("reach the store"));
     assert(!h.state().context.orderNumber);
+    assert(h.calls.some(call=>call.name==="record_journey_issue" && call.args.p_kind==="order_lookup_unavailable"));
   } finally { globalThis.fetch = original; }
 });
 

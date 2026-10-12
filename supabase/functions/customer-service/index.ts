@@ -45,14 +45,12 @@ Deno.serve(async (request) => {
         .gte("created_at", new Date(Date.now() - 3600000).toISOString());
       if (limitError) throw limitError;
       if ((count ?? 0) >= 8) return json({ error: "import_rate_limit" }, 429);
-      const started = await admin
-        .from("audit_events")
-        .insert({
-          store_id: body.storeId,
-          actor_user_id: user.id,
-          event_type: "knowledge.import.started",
-          entity_type: "store_knowledge",
-        });
+      const started = await admin.from("audit_events").insert({
+        store_id: body.storeId,
+        actor_user_id: user.id,
+        event_type: "knowledge.import.started",
+        entity_type: "store_knowledge",
+      });
       if (started.error) throw started.error;
       try {
         const source =
@@ -88,6 +86,19 @@ Deno.serve(async (request) => {
           })
           .select("id");
         if (saved.error) throw saved.error;
+        const completed = await admin
+          .from("audit_events")
+          .insert({
+            store_id: body.storeId,
+            actor_user_id: user.id,
+            event_type: "knowledge.import.completed",
+            entity_type: "store_knowledge",
+            metadata: {
+              created: saved.data.length,
+              duplicates: rows.length - saved.data.length,
+            },
+          });
+        if (completed.error) throw completed.error;
         return json({
           created: saved.data.length,
           ids: saved.data.map((row) => row.id),
@@ -97,6 +108,14 @@ Deno.serve(async (request) => {
       } catch (error) {
         const code = error instanceof Error ? error.message : "import_failed";
         console.error("knowledge_import_failed", code);
+        await admin
+          .from("audit_events")
+          .insert({
+            store_id: body.storeId,
+            actor_user_id: user.id,
+            event_type: "knowledge.import.failed",
+            entity_type: "store_knowledge",
+          });
         return json(
           {
             error: [

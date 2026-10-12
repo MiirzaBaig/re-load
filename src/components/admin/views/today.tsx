@@ -55,7 +55,7 @@ export function TodayView({ data, leads, merchants, issues, labels, canEdit, que
   const pipeline = STATUSES.map((status) => ({ status, count: leads.filter((lead) => lead.status === status).length }));
   const funnel = [
     { label: t("Accounts", "الحسابات"), count: merchants.length },
-    { label: t("Salla connected", "سلة متصلة"), count: merchants.filter((m) => m.commerce?.status === "CONNECTED").length },
+    { label: t("Store connected", "المتجر متصل"), count: merchants.filter((m) => m.commerce?.status === "CONNECTED").length },
     { label: t("Policy published", "سياسة منشورة"), count: merchants.filter((m) => m.policy).length },
     { label: t("First decision", "أول قرار"), count: merchants.filter((m) => m.firstDecision).length },
   ];
@@ -128,7 +128,7 @@ export function TodayView({ data, leads, merchants, issues, labels, canEdit, que
 
         <button type="button" onClick={() => onGo("health")} className={cn("admin-card admin-lift flex w-full items-center gap-3 rounded-2xl border px-5 py-4 text-start", issues ? "border-review/30 bg-review-muted/40" : "border-border bg-card")}>
           <span className={cn("grid size-8 place-items-center rounded-full", issues ? "bg-review-muted text-review" : "bg-eligible-muted text-eligible")}><Activity className="size-4" /></span>
-          <span className="flex-1"><strong className="block text-sm font-semibold">{issues ? t(`${issues} channel issues need attention`, `${issues} مشكلات في القنوات تحتاج انتباهًا`) : t("Channels are quiet", "القنوات هادئة")}</strong><span className="text-xs text-muted-foreground">{t("Salla, webhooks and WhatsApp delivery", "سلة والأحداث وتسليم واتساب")}</span></span>
+          <span className="flex-1"><strong className="block text-sm font-semibold">{issues ? t(`${issues} channel issues need attention`, `${issues} مشكلات في القنوات تحتاج انتباهًا`) : t("Channels are quiet", "القنوات هادئة")}</strong><span className="text-xs text-muted-foreground">{t("Store connections, webhooks and WhatsApp delivery", "اتصالات المتجر والأحداث وتسليم واتساب")}</span></span>
           <ChevronRight className="size-4 text-muted-foreground rtl:rotate-180" />
         </button>
       </div>

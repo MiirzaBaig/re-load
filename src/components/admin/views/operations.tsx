@@ -5,6 +5,7 @@ import { Activity, Bug, CheckCheck, MessageSquareText, ShieldCheck, UserRound, W
 import { BarRow, EmptyState, FilterChip, Panel, SectionLabel } from "@/components/desk/primitives";
 import type { AdminData } from "@/components/admin/types";
 import type { Labels } from "@/components/admin/use-labels";
+import { auditLabel } from "@/lib/support-workspace";
 import { cn } from "@/lib/utils";
 import { memberName } from "@/components/admin/views/team";
 
@@ -81,23 +82,23 @@ function Donut({ segments, total, label }: { segments: { value: number; color: s
 export function HealthView({ data, labels, storeName }: Base) {
   const { t } = labels;
   const groups: { title: string; icon: LucideIcon; rows: { key: string; title: string; detail: string; at?: string | null }[] }[] = [
-    { title: "Salla", icon: ShieldCheck, rows: data.commerce.filter((row) => row.status === "ERROR" || row.status === "EXPIRED").map((row) => ({ key: `c-${row.store_id}`, title: storeName(row.store_id), detail: row.last_error_code ?? labels.code(row.status), at: row.last_synced_at })) },
-    { title: t("Webhooks", "الأحداث"), icon: Webhook, rows: data.failedEvents.map((row, i) => ({ key: `e-${i}`, title: storeName(row.store_id), detail: `${row.provider} · ${row.event_type}${row.last_error ? ` · ${row.last_error}` : ""}`, at: row.received_at })) },
+    { title: t("Store connections", "اتصالات المتجر"), icon: ShieldCheck, rows: data.commerce.filter((row) => row.status === "ERROR" || row.status === "EXPIRED").map((row) => ({ key: `c-${row.store_id}`, title: storeName(row.store_id), detail: t("The store connection needs attention.", "اتصال المتجر يحتاج مراجعة."), at: row.last_synced_at })) },
+    { title: t("Webhooks", "الأحداث"), icon: Webhook, rows: data.failedEvents.map((row, i) => ({ key: `e-${i}`, title: storeName(row.store_id), detail: row.provider === "whatsapp" ? t("WhatsApp processing failed.", "تعذّرت معالجة واتساب.") : t("A store update could not be processed.", "تعذّرت معالجة تحديث المتجر."), at: row.received_at })) },
     { title: "WhatsApp", icon: MessageSquareText, rows: [
       ...data.whatsapp.filter((row) => row.status === "ERROR" || row.status === "RESTRICTED").map((row) => ({ key: `w-${row.store_id}`, title: storeName(row.store_id), detail: labels.code(row.status), at: row.last_webhook_at })),
-      ...data.failedMessages.map((row, i) => ({ key: `m-${i}`, title: storeName(row.store_id), detail: row.failure_code ?? t("Send failed", "فشل الإرسال"), at: row.occurred_at })),
+      ...data.failedMessages.map((row, i) => ({ key: `m-${i}`, title: storeName(row.store_id), detail: t("Message delivery failed.", "تعذّر تسليم الرسالة."), at: row.occurred_at })),
     ] },
   ];
   return <div className="space-y-6">
     <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-3">
       {groups.map(({ title, icon: Icon, rows }) => <div key={title} className="admin-card flex items-center gap-4 rounded-2xl border border-border bg-card p-5">
-        <span className={cn("grid size-10 place-items-center rounded-xl", rows.length ? "bg-review-muted text-review" : "bg-eligible-muted text-eligible")}><Icon className="size-4" /></span>
+        <span className={cn("grid size-10 place-items-center rounded-xl", rows.length ? "bg-destructive/10 text-destructive" : "bg-eligible-muted text-eligible")}><Icon className="size-4" /></span>
         <div><p className="text-xs text-muted-foreground">{title}</p><p className="mt-0.5 text-sm font-semibold">{rows.length ? t(`${rows.length} issues`, `${rows.length} مشكلات`) : t("No recorded failures", "لا إخفاقات مسجلة")}</p></div>
       </div>)}
     </div>
     {groups.filter((g) => g.rows.length).map(({ title, icon: Icon, rows }) => <Panel key={title} title={title} subtitle={t("Recorded failures, newest first.", "الإخفاقات المسجلة، الأحدث أولًا.")} action={<Icon className="size-4 text-muted-foreground" />} bodyClassName="px-2 pb-2 pt-2 sm:px-3">
       <ul>{rows.map((row) => <li key={row.key} className="flex items-start gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-muted/40">
-        <span className="mt-1.5 size-2 shrink-0 rounded-full bg-review" />
+        <span className="mt-1.5 size-2 shrink-0 rounded-full bg-destructive" />
         <div className="min-w-0 flex-1"><p className="text-sm font-medium" dir="auto">{row.title}</p><p className="mt-0.5 break-words text-xs text-muted-foreground">{row.detail}</p></div>
         {row.at && <span className="shrink-0 text-[11px] text-muted-foreground">{labels.age(row.at)}</span>}
       </li>)}</ul>
@@ -140,8 +141,8 @@ export function ActivityView({ data, labels, storeName, currentUserId }: Base & 
   const { t } = labels;
   const [scope, setScope] = useState<"all" | "merchant" | "team">("all");
   const events = useMemo(() => [
-    ...data.merchantAudit.map((e) => ({ id: `m-${e.id}`, kind: "merchant" as const, title: labels.code(e.event_type), detail: `${storeName(e.store_id)} · ${labels.code(e.entity_type)}`, at: e.created_at })),
-    ...data.adminAudit.map((e) => ({ id: `a-${e.id}`, kind: "team" as const, title: labels.code(e.event_type), detail: `${e.actor_user_id === currentUserId ? t("You", "أنت") : (() => { const member = data.team.find((m) => m.user_id === e.actor_user_id); return member ? memberName(member) : t("Former teammate", "زميل سابق"); })()} · ${labels.code(e.entity_type)}`, at: e.created_at })),
+    ...data.merchantAudit.map((e) => ({ id: `m-${e.id}`, kind: "merchant" as const, title: auditLabel(e.event_type, t), detail: `${storeName(e.store_id)} · ${labels.code(e.entity_type)}`, at: e.created_at })),
+    ...data.adminAudit.map((e) => ({ id: `a-${e.id}`, kind: "team" as const, title: auditLabel(e.event_type, t), detail: `${e.actor_user_id === currentUserId ? t("You", "أنت") : (() => { const member = data.team.find((m) => m.user_id === e.actor_user_id); return member ? memberName(member) : t("Former teammate", "زميل سابق"); })()} · ${labels.code(e.entity_type)}`, at: e.created_at })),
   ].filter((e) => scope === "all" || e.kind === scope).sort((a, b) => b.at.localeCompare(a.at)), [data, scope, labels, storeName, currentUserId, t]);
   // Back-to-back repeats (e.g. a dozen "Dashboard viewed") collapse into one
   // row with a count and a time range, so the log stays readable.

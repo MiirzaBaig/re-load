@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Check, ChevronRight, Search, Store, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import type { AdminData, Merchant } from "@/components/admin/types";
 import type { Labels } from "@/components/admin/use-labels";
 import { cn } from "@/lib/utils";
 
-const steps = (m: Merchant) => [m.account, m.commerce?.status === "CONNECTED", m.policy, m.firstDecision];
+const steps = (m: Merchant) => [m.account, m.commerce?.status === "CONNECTED", m.policy, m.whatsapp?.status === "CONNECTED"];
 
 export function MerchantsView({ merchants, labels, selectedId, onOpen }: { merchants: Merchant[]; labels: Labels; selectedId: string | null; onOpen: (id: string) => void }) {
   const { t } = labels;
@@ -33,7 +34,7 @@ export function MerchantsView({ merchants, labels, selectedId, onOpen }: { merch
       <FilterChip active={stage === "live"} onClick={() => setStage("live")} count={live}>{t("Fully set up", "مكتمل")}</FilterChip>
       </div>
     </div>
-    <p className="max-w-2xl text-xs leading-5 text-muted-foreground">{t("One Reload WhatsApp number serves the current pilot store. Open a merchant to review or manage its channel.", "رقم واتساب ريلود مخصص حاليًا لمتجر تجريبي واحد. افتح المتجر لمراجعة قناته أو إدارتها.")}</p>
+    <p className="max-w-2xl text-xs leading-5 text-muted-foreground">{t("Each store has its own customer link on the shared Reload WhatsApp number. Open a workspace to help with setup or inspect activity.", "لكل متجر رابط عملاء خاص على رقم ريلود المشترك. افتح مساحة العمل للمساعدة في الإعداد أو متابعة النشاط.")}</p>
     <div className="admin-card overflow-hidden rounded-2xl border border-border bg-card">
       <div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_120px_80px_24px] gap-4 border-b border-border bg-muted/40 px-5 py-3 text-xs font-medium text-muted-foreground md:grid">
         <span>{t("Store", "المتجر")}</span><span>{t("Setup", "الإعداد")}</span><span>{t("WhatsApp", "واتساب")}</span><span className="text-end">{t("Cases", "الحالات")}</span><span />
@@ -60,7 +61,7 @@ function ConnectionBadge({ status, labels }: { status?: string; labels: Labels }
   const { t } = labels;
   const ok = status === "CONNECTED" || status === "ACTIVE";
   const bad = status === "ERROR" || status === "RESTRICTED" || status === "EXPIRED";
-  return <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium", ok ? "bg-eligible-muted text-eligible" : bad ? "bg-review-muted text-review" : "bg-muted text-muted-foreground")}>
+  return <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium", ok ? "bg-eligible-muted text-eligible" : bad ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground")}>
     <span className="size-1.5 rounded-full bg-current" />{status ? labels.code(status) : t("Not connected", "غير متصل")}
   </span>;
 }
@@ -71,7 +72,7 @@ export function MerchantDrawer({ merchant, data, labels, onClose, canManageChann
   const decisions = merchant ? data.decisions.filter((row) => row.store_id === merchant.id) : [];
   const timeline = merchant ? [
     { done: merchant.account, label: t("Account created", "إنشاء الحساب"), at: merchant.created_at },
-    { done: merchant.commerce?.status === "CONNECTED", label: t("Salla connected", "ربط سلة"), at: merchant.commerce?.connected_at ?? undefined },
+    { done: merchant.commerce?.status === "CONNECTED", label: t("Store connected", "ربط المتجر"), at: merchant.commerce?.connected_at ?? undefined },
     { done: merchant.policy, label: t("Return policy published", "نشر سياسة الإرجاع"), at: merchant.policyAt },
     { done: merchant.firstDecision, label: t("First return decision", "أول قرار إرجاع"), at: merchant.firstDecisionAt },
   ] : [];
@@ -86,6 +87,7 @@ export function MerchantDrawer({ merchant, data, labels, onClose, canManageChann
           <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label={t("Close", "إغلاق")}><X className="size-4" /></Button>
         </div>
         <div className="admin-fade min-h-0 flex-1 space-y-7 overflow-y-auto px-6 py-6">
+          <Button asChild className="w-full rounded-xl active:scale-[.98]"><Link href={`/admin/workspaces/${merchant.id}`}>{t("Open support workspace", "فتح مساحة المساعدة")}</Link></Button>
           <section className="space-y-4"><SectionLabel>{t("Setup", "الإعداد")}</SectionLabel>
             <ol className="relative space-y-5 border-s border-border ps-6">
               {timeline.map((item) => <li key={item.label} className="relative">
@@ -97,8 +99,8 @@ export function MerchantDrawer({ merchant, data, labels, onClose, canManageChann
           </section>
           <section className="space-y-3"><SectionLabel>{t("Connections", "الاتصالات")}</SectionLabel>
             <div className="grid gap-2">
-              <div className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-3"><span className="text-sm">Salla{merchant.commerce?.external_store_name ? <span className="text-muted-foreground"> · {merchant.commerce.external_store_name}</span> : null}</span><ConnectionBadge status={merchant.commerce?.status} labels={labels} /></div>
-              {merchant.commerce?.last_error_code && <p className="px-1 text-xs text-review">{t("Last error", "آخر خطأ")}: {merchant.commerce.last_error_code}</p>}
+              <div className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-3"><span className="text-sm">{merchant.commerce?.platform === "zid" ? "Zid" : merchant.commerce?.platform === "salla" ? "Salla" : t("Store", "المتجر")}{merchant.commerce?.external_store_name ? <span className="text-muted-foreground"> · {merchant.commerce.external_store_name}</span> : null}</span><ConnectionBadge status={merchant.commerce?.status} labels={labels} /></div>
+              {merchant.commerce?.last_error_code && <p className="px-1 text-xs text-review">{t("Last error", "آخر خطأ")}: {t("The store connection needs attention.", "اتصال المتجر يحتاج مراجعة.")}</p>}
               {merchant.commerce?.last_synced_at && <p className="px-1 text-xs text-muted-foreground">{t("Last synced", "آخر مزامنة")} {labels.datetime(merchant.commerce.last_synced_at)}</p>}
               <div className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-3"><span className="text-sm">WhatsApp</span><ConnectionBadge status={merchant.whatsapp?.status} labels={labels} /></div>
               {merchant.whatsapp?.last_webhook_at && <p className="px-1 text-xs text-muted-foreground">{t("Last message event", "آخر حدث رسائل")} {labels.datetime(merchant.whatsapp.last_webhook_at)}</p>}

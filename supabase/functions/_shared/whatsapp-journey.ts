@@ -1,3 +1,4 @@
+import { customerFirstName, merchantDisplayName } from "./presentation.ts";
 import { decrypt } from "./crypto.ts";
 import { requestOrderOtp, verifyOrderOtp } from "./email-otp.ts";
 import { reviseTicketDraft } from "./ticket-draft.ts";
@@ -74,6 +75,13 @@ async function setFlow(admin: Admin, id: string, step: string, context: Context 
   if (error) throw error;
 }
 
+async function recordJourneyIssue(admin: Admin, conversation: string, kind: string, message?: string) {
+  try {
+    const { error } = await admin.rpc("record_journey_issue", { p_conversation: conversation, p_kind: kind, p_message: message ?? null });
+    if (error) console.error("journey_issue_record_failed");
+  } catch { console.error("journey_issue_record_failed"); }
+}
+
 async function saveOutbound(admin: Admin, storeId: string, conversationId: string, result: WhatsAppSendResult, body: string, type: "TEXT" | "INTERACTIVE") {
   const { error } = await admin.from("whatsapp_messages").upsert({
     store_id: storeId, conversation_id: conversationId, external_message_id: sentMessageId(result), direction: "OUTBOUND",
@@ -101,16 +109,16 @@ async function claim(admin: Admin, storeId: string | null, messageId: string, ev
 }
 
 function firstName(value?: string) {
-  return value?.trim().split(/\s+/)[0]?.slice(0, 40) || "";
+  return customerFirstName(value);
 }
 
-async function languagePrompt(to: string, profileName?: string) {
+async function languagePrompt(to: string, profileName?: string, storeName = "Reload") {
   const name = firstName(profileName);
   const body = [
-    `يا هلا${name ? ` ${name}` : ""}، حيّاك الله في ريلود 👋`,
+    `يا هلا${name ? ` ${name}` : ""}، حيّاك الله في ${storeName} 👋`,
     "نساعدك في استفسارات المنتجات، متابعة طلبك، والإرجاع. خطوة بخطوة.",
     "",
-    `Hi${name ? ` ${name}` : ""}, welcome to Reload 👋`,
+    `Hi${name ? ` ${name}` : ""}, welcome to ${storeName} 👋`,
     "We can help with product questions, your order, and returns—all here in WhatsApp.",
     "",
     "اختر لغتك للمتابعة · Choose your language",
@@ -308,7 +316,7 @@ Choose Continue to pick up where you left off, or New return to start again.`;
   }
   if (isWelcomeMessage) {
     await setFlow(admin, conversation.id, "AWAITING_LANGUAGE");
-    return languagePrompt(to, profileName);
+    return languagePrompt(to, profileName, store.name);
   }
   if (["english", "en", "language_en"].includes(normalized) || ["العربية", "عربي", "ar", "language_ar"].includes(normalized)) {
     language = ["english", "en", "language_en"].includes(normalized) ? "en" : "ar";
@@ -317,7 +325,7 @@ Choose Continue to pick up where you left off, or New return to start again.`;
     await setFlow(admin, conversation.id, "MENU");
     return menu(to, language, store.name, Boolean(flow.context.returnResume));
   }
-  if (flow.step === "AWAITING_LANGUAGE") return languagePrompt(to, profileName);
+  if (flow.step === "AWAITING_LANGUAGE") return languagePrompt(to, profileName, store.name);
   if(normalized === "feedback_options") {
     const body=language === "ar" ? "كيف كانت تجربتك؟ اختر ملاحظة أو بلاغ عن خلل في ريلود. للشكوى عن طلبك، اختر «شكوى أو مشكلة» من القائمة." : "How was your experience? Share feedback or report a Reload issue. For a problem with your order, choose Complaint or issue from the menu.";
     return {body,result:await sendWhatsAppButtons(to,body,[{id:"send_feedback",title:language === "ar"?"ملاحظة أو اقتراح":"Feedback"},{id:"report_bug",title:language === "ar"?"بلاغ عن خلل":"Report a bug"}]),type:"INTERACTIVE" as const};
@@ -570,7 +578,7 @@ After the store reviews it, come back and tap Continue. Your order details stay 
     }
     if(message?.type === "image" && message.image?.id) {
       let reference:string|null=null;
-      try {const downloaded=await downloadWhatsAppImage(message.image.id);reference=await extractOrderReference(downloaded.bytes);}catch{/* Ask for typed order number if reading is unavailable. */}
+      try {const downloaded=await downloadWhatsAppImage(message.image.id);reference=await extractOrderReference(downloaded.bytes);}catch{await recordJourneyIssue(admin,conversation.id,"photo_read_unavailable",message.id);}
       if(reference){await setFlow(admin,conversation.id,"AWAITING_ORDER",{...flow.context,extractedOrder:reference});const body=language === "ar"?`قرأت رقم الطلب من الصورة: ${reference}\nهل هو صحيح؟ بنتحقق من ملكية الطلب بعد تأكيدك.`:`I read this order number: ${reference}\nIs it correct? We’ll verify the order belongs to you after you confirm.`;return {body,result:await sendWhatsAppButtons(to,body,[{id:"confirm_order",title:language === "ar"?"نعم، صحيح":"Yes, correct"},{id:"type_order",title:language === "ar"?"كتابة الرقم":"Type the number"}]),type:"INTERACTIVE" as const};}
       const body=language === "ar"?"ما قدرت أقرأ رقم الطلب بوضوح. اكتبه هنا مثل ما هو في تأكيد الشراء.":"I couldn’t read the order number clearly. Please type it exactly as it appears in your confirmation.";return {body,result:await sendWhatsAppText(to,body),type:"TEXT" as const};
     }
@@ -593,6 +601,7 @@ After the store reviews it, come back and tap Continue. Your order details stay 
       return itemPrompt(to, language, order);
     } catch (error) {
       if (!(error instanceof Error) || !error.message.endsWith("order_not_verified")) {
+        await recordJourneyIssue(admin,conversation.id,"order_lookup_unavailable",message?.id);
         const body = language === "ar" ? "تعذّر الاتصال بالمتجر الآن. حاول مرة ثانية بعد قليل؛ ما أرسلنا أي طلب." : "We couldn’t reach the store just now. Please try again shortly; nothing was submitted.";
         return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
       }
@@ -852,6 +861,9 @@ export async function handleMessage(phoneNumberId: string, message: MetaMessage,
   try {
     const { data: store, error: storeError } = await admin.from("stores").select("id,name,return_code").eq("id", connection.store_id).single();
     if (storeError || !store?.return_code) throw storeError ?? new Error("store_return_code_missing");
+    const { data: connectedStore, error: nameError } = await admin.from("commerce_connections").select("external_store_name").eq("store_id",store.id).eq("status","CONNECTED").limit(1).maybeSingle();
+    if (nameError) throw nameError;
+    store.name = merchantDisplayName(store.name, connectedStore?.external_store_name);
     const { data: contact, error: contactError } = await admin.from("whatsapp_contacts").upsert({ store_id: store.id, wa_id: waId, display_name: profileName?.slice(0, 120) || null, updated_at: new Date().toISOString() }, { onConflict: "store_id,wa_id" }).select("id,locale,display_name").single();
     if (contactError) throw contactError;
     let { data: conversation } = await admin.from("whatsapp_conversations").select("id,state,language,contact_id,return_case_id").eq("store_id", store.id).eq("contact_id", contact.id).neq("state", "CLOSED").order("last_message_at", { ascending: false }).limit(1).maybeSingle();

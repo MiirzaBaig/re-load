@@ -7,6 +7,9 @@ import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
 import { useLanguage } from "@/components/language-provider";
 import { QUICK, Segmented, TWEEN } from "@/components/desk/primitives";
+import { GuidedKnowledgeDialog } from "@/components/guided-knowledge-dialog";
+import { knowledgeStarters } from "@/lib/knowledge-starters";
+import { MotionConfig } from "framer-motion";
 import { KnowledgeImportDialog } from "@/components/knowledge-import-dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -15,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabase";
+import { recordWorkspaceIssue } from "@/lib/workspace-issues";
 import { cn } from "@/lib/utils";
 
 /*
@@ -55,12 +59,7 @@ const topics = (t: T): Array<[string, string]> => [
 ];
 
 /** One tap to start a common answer: the question and topic are filled in. */
-const starters = (t: T): Array<{ category: string; title: string }> => [
-  { category: "DELIVERY", title: t("How long does delivery take?", "كم يستغرق التوصيل؟") },
-  { category: "WARRANTY", title: t("What does the warranty cover?", "ماذا يشمل الضمان؟") },
-  { category: "SUPPORT", title: t("How can I reach your team?", "كيف أتواصل مع فريقكم؟") },
-  { category: "PAYMENTS", title: t("Which payment methods do you accept?", "ما طرق الدفع المتاحة؟") },
-];
+const starters = knowledgeStarters;
 
 const selectItem = "min-h-10 rounded-lg rtl:pl-8 rtl:pr-2 rtl:[&>[data-slot=select-item-indicator]]:right-auto rtl:[&>[data-slot=select-item-indicator]]:left-2";
 
@@ -86,7 +85,7 @@ export function KnowledgePage() {
       .select("id,title,content,category,language,published,source_url,source_excerpt,source_type")
       .eq("store_id", workspace.storeId)
       .order("updated_at", { ascending: false });
-    if (error) toast.error(t("Could not load store knowledge.", "تعذّر تحميل معلومات المتجر."));
+    if (error) { recordWorkspaceIssue(workspace.storeId,"knowledge","load_failed"); toast.error(t("Could not load store knowledge.", "تعذّر تحميل معلومات المتجر.")); }
     else setEntries(data ?? []);
     setLoading(false);
   }, [workspace, t]);
@@ -135,7 +134,7 @@ export function KnowledgePage() {
     const { data, error } = await supabase.functions.invoke("customer-service", {
       body: { action: "knowledge_save", storeId: workspace.storeId, ...draft, published },
     });
-    if (error) toast.error(t("Could not save. Please try again.", "ما قدرنا نحفظ التعديلات. جرّب مرة ثانية."));
+    if (error) { recordWorkspaceIssue(workspace.storeId,"knowledge","save_failed"); toast.error(t("Could not save. Please try again.", "ما قدرنا نحفظ التعديلات. جرّب مرة ثانية.")); }
     else {
       setDraft((value) => ({ ...value, id: data.id, published }));
       setDirty(false);
@@ -181,7 +180,7 @@ export function KnowledgePage() {
   const used = draft.content.length / MAX_CONTENT;
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 pb-4">
+    <MotionConfig reducedMotion="user"><div className="mx-auto flex w-full max-w-6xl flex-col gap-6 pb-4">
       {/* ── Header ── */}
       <motion.header initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={TWEEN} className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
@@ -191,6 +190,7 @@ export function KnowledgePage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {workspace && <GuidedKnowledgeDialog storeId={workspace.storeId} onSaved={load} />}
           {workspace && (
             <KnowledgeImportDialog
               storeId={workspace.storeId}
@@ -243,7 +243,7 @@ export function KnowledgePage() {
               <div className="px-3 py-6">
                 <span className="grid size-10 place-items-center rounded-xl bg-muted text-muted-foreground"><BookOpen className="size-4" /></span>
                 <p className="mt-3 text-sm font-medium">{t("Start with a question customers ask a lot", "ابدأ بسؤال يتكرر من عملائك")}</p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">{t("Pick one to begin, or write your own.", "اختر واحدًا للبدء، أو اكتب سؤالك.")}</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">{t("No help page? Use guided setup, pick a question, or paste your existing answers.", "ما عندك صفحة مساعدة؟ استخدم الإعداد خطوة بخطوة أو اختر سؤالًا أو انسخ إجاباتك الحالية.")}</p>
                 <div className="mt-4 space-y-1.5">
                   {starters(t).map((starter, index) => (
                     <motion.button key={starter.title} type="button" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ ...QUICK, delay: 0.1 + index * 0.05 }}
@@ -412,7 +412,7 @@ export function KnowledgePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </div></MotionConfig>
   );
 }
 
