@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { PolicyListSkeleton } from "@/components/merchant-skeletons";
 import { useDelayedLoad } from "@/hooks/use-delayed-load";
 import { ScrollReveal } from "@/components/scroll-reveal";
+import { Key, PageHeader } from "@/components/desk/page-header";
 import { formatDate, type PolicyDraft, type PolicyRule, type PolicyVersion } from "@/lib/domain";
 import { Plus, FileText, CheckCircle2, Clock, ChevronDown, ArrowRight, ShieldCheck, History, GitBranch } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -53,18 +54,11 @@ export function PolicyListPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <ScrollReveal>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">{t("Policies", "السياسات")}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{t("Manage your return policy versions and drafts.", "إدارة إصدارات سياسة الإرجاع والمسودات.")}</p>
-          </div>
-          <Button onClick={() => router.push("/app/policies/new")} className="group">
-            <Plus className="size-4 transition-transform group-hover:rotate-90" />
-            {t("New policy", "سياسة جديدة")}
-          </Button>
-        </div>
-      </ScrollReveal>
+      <PageHeader icon={FileText} title={t("Return policy", "سياسة الإرجاع")} helpId="policies"
+        actions={<Button onClick={() => router.push("/app/policies/new")} className="group h-10 rounded-xl"><Plus className="size-4 transition-transform duration-300 group-hover:rotate-90" />{t("New policy", "سياسة جديدة")}</Button>}
+        help={t("Your return policy is the set of rules Reload follows: how many days, which reasons, which items. You paste it once, approve the rules, and publish. Changing it later creates a new version, and old decisions keep the version they were made with.", "سياسة الإرجاع هي القواعد التي يتبعها ريلود: عدد الأيام، والأسباب، والمنتجات. تلصقها مرة واحدة، تعتمد القواعد، ثم تنشرها. أي تعديل لاحق ينشئ إصدارًا جديدًا، والقرارات السابقة تحتفظ بإصدارها.")}>
+        <Key>{t("Your rules, written once.", "قواعدك، تُكتب مرة واحدة.")}</Key> {t("Reload applies them the same way to every return.", "يطبّقها ريلود بالطريقة نفسها على كل إرجاع.")}
+      </PageHeader>
 
       {/* Draft-to-published timeline */}
       <ScrollReveal delay={50}>

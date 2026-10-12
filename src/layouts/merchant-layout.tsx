@@ -294,7 +294,8 @@ export function MerchantLayout({ children }: { children: ReactNode }) {
             <ModeToggle className="size-8" />
           </div>
         </header>
-        <div className="mx-auto w-full max-w-[1280px] px-4 pb-28 pt-6 sm:px-8 sm:pt-9 md:pb-9 lg:px-10">
+        {/* The inbox manages its own width so its full view can use the whole screen. */}
+        <div className={cn("mx-auto w-full px-4 pb-28 pt-6 sm:px-8 sm:pt-9 md:pb-9 lg:px-10", pathname.startsWith("/app/inbox") ? "max-w-[2480px]" : "max-w-[1280px]")}>
           {auth.configured && auth.loading ? (
             <div role="status" aria-label={t("Loading your workspace", "جارٍ تحميل مساحة العمل")}>
               <MerchantRouteSkeleton />

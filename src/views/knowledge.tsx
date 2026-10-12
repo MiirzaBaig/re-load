@@ -11,6 +11,7 @@ import { GuidedKnowledgeDialog } from "@/components/guided-knowledge-dialog";
 import { knowledgeStarters } from "@/lib/knowledge-starters";
 import { MotionConfig } from "framer-motion";
 import { KnowledgeImportDialog } from "@/components/knowledge-import-dialog";
+import { Key, PageHeader } from "@/components/desk/page-header";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabase";
+import { refreshWorkspace, useWorkspaceData, workspaceKey } from "@/lib/workspace-data";
 import { recordWorkspaceIssue } from "@/lib/workspace-issues";
 import { cn } from "@/lib/utils";
 
@@ -64,7 +66,10 @@ const starters = knowledgeStarters;
 const selectItem = "min-h-10 rounded-lg rtl:pl-8 rtl:pr-2 rtl:[&>[data-slot=select-item-indicator]]:right-auto rtl:[&>[data-slot=select-item-indicator]]:left-2";
 
 export function KnowledgePage() {
-  const { workspace } = useAuth();
+  const auth = useAuth();
+  const { workspace } = auth;
+  const workspaceData = useWorkspaceData(workspaceKey(auth));
+  const [guidedRequest, setGuidedRequest] = useState(0);
   const { t, isArabic } = useLanguage();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [draft, setDraft] = useState<Entry>(empty);
@@ -88,6 +93,8 @@ export function KnowledgePage() {
     if (error) { recordWorkspaceIssue(workspace.storeId,"knowledge","load_failed"); toast.error(t("Could not load store knowledge.", "تعذّر تحميل معلومات المتجر.")); }
     else setEntries(data ?? []);
     setLoading(false);
+    // Overview's setup list counts approved answers; keep it current.
+    void refreshWorkspace();
   }, [workspace, t]);
   useEffect(() => { void load(); }, [load]);
 
@@ -182,18 +189,14 @@ export function KnowledgePage() {
   return (
     <MotionConfig reducedMotion="user"><div className="mx-auto flex w-full max-w-6xl flex-col gap-6 pb-4">
       {/* ── Header ── */}
-      <motion.header initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={TWEEN} className="flex flex-wrap items-end justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="font-display text-[28px] font-semibold leading-tight tracking-[-0.03em] sm:text-[32px]">{t("Store knowledge", "معلومات المتجر")}</h1>
-          <p className="mt-1.5 max-w-xl text-sm leading-6 text-muted-foreground">
-            {t("The answers your WhatsApp assistant may give. It only uses what you approve.", "الإجابات التي يُسمح لمساعد واتساب بتقديمها. لا يستخدم إلا ما تعتمده.")}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {workspace && <GuidedKnowledgeDialog storeId={workspace.storeId} onSaved={load} />}
+      <PageHeader icon={BookOpen} title={t("Store knowledge", "معلومات المتجر")} helpId="knowledge"
+        actions={<>
+          {workspace && <GuidedKnowledgeDialog storeId={workspace.storeId} onSaved={load} openRequest={guidedRequest} />}
           {workspace && (
             <KnowledgeImportDialog
               storeId={workspace.storeId}
+              platform={workspaceData.store?.platform}
+              onGuidedSetup={() => setGuidedRequest(value => value + 1)}
               onImported={async (ids) => {
                 await load();
                 setFilter("DRAFT");
@@ -208,8 +211,10 @@ export function KnowledgePage() {
           <Button variant="outline" onClick={() => select({ ...empty })} className="transition-transform active:scale-[.98]">
             <Plus className="size-4" />{t("New answer", "إجابة جديدة")}
           </Button>
-        </div>
-      </motion.header>
+        </>}
+        help={t("These are the answers your WhatsApp assistant gives to common questions: delivery, warranty, how to reach you. Write them in your own words, or import them from a help page. Drafts are never shown to customers.", "هذه الإجابات التي يقدّمها مساعد واتساب للأسئلة الشائعة: التوصيل، الضمان، وطريقة التواصل. اكتبها بكلماتك أو استوردها من صفحة مساعدة. المسودات لا تُعرض للعملاء أبدًا.")}>
+        {t("The answers your WhatsApp assistant may give.", "الإجابات التي يُسمح لمساعد واتساب بتقديمها.")} <Key>{t("It only uses what you approve.", "لا يستخدم إلا ما تعتمده.")}</Key>
+      </PageHeader>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
         {/* ── List ── */}

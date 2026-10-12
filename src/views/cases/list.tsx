@@ -11,9 +11,9 @@ import { useDelayedLoad } from "@/hooks/use-delayed-load";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OutcomeBadge, CaseStatusBadge } from "@/components/outcome-badge";
 import { ScrollReveal } from "@/components/scroll-reveal";
+import { Key, PageHeader } from "@/components/desk/page-header";
 import { formatDateTime, type ReturnCase } from "@/lib/domain";
-import { Tone } from "@/components/heading-accent";
-import { Search, ArrowRight, PackageOpen, AlertCircle, X, Calendar, Bookmark, Plus, Check } from "lucide-react";
+import { Search, ArrowRight, Package, PackageOpen, AlertCircle, X, Calendar, Bookmark, Plus, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/language-provider";
 import { useAuth } from "@/components/auth-provider";
@@ -151,17 +151,9 @@ export function CaseListPage() {
   return (
     <div className="flex flex-col gap-6">
       <IdentityReviews />
-      <ScrollReveal>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
-              {t("Return ", "طلبات ")}<Tone>{t("cases", "الإرجاع")}</Tone>
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t(`${filtered.length} of ${allCases.length} cases`, `${filtered.length} من ${allCases.length} حالة`)}
-              {hasFilters && t(" · filtered", " · مُصفّاة")}
-            </p>
-          </div>
+      <PageHeader icon={Package} title={t("Return cases", "طلبات الإرجاع")} helpId="cases"
+        meta={<span className="text-xs tabular-nums text-muted-foreground">{t(`${filtered.length} of ${allCases.length} cases`, `${filtered.length} من ${allCases.length} حالة`)}{hasFilters && t(" · filtered", " · مُصفّاة")}</span>}
+        actions={<>
           {reviewCount > 0 && activeView !== "review" && (
             <button type="button" onClick={() => applyView(reviewView)} className="cases-review-pill">
               <span className="cases-review-dot" aria-hidden="true" />
@@ -169,8 +161,10 @@ export function CaseListPage() {
               <ArrowRight className={cn("size-3.5", isArabic && "rotate-180")} />
             </button>
           )}
-        </div>
-      </ScrollReveal>
+        </>}
+        help={t("A case is one return request. Reload has already checked it against the order and your policy, so most arrive decided. The ones marked for review are waiting for you because something about the order couldn't be confirmed.", "الحالة هي طلب إرجاع واحد. يتحقق ريلود منه مقابل الطلب وسياستك، فتصل أغلب الحالات وقد تقرّرت. أما المحالة للمراجعة فتنتظرك لأن شيئًا في الطلب لم يتأكد.")}>
+        {t("Every return request and its decision.", "كل طلب إرجاع وقراره.")} <Key>{t("Start with the ones that need you.", "ابدأ بما يحتاجك.")}</Key>
+      </PageHeader>
 
       {/* Views, with live counts */}
       <ScrollReveal delay={50}>

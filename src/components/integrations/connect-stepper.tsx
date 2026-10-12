@@ -44,7 +44,7 @@ export function ConnectStepper({ steps, current, busy = false, onBack, backLabel
               <motion.span
                 layout
                 className={cn("relative z-[1] grid size-8 place-items-center rounded-full border-2 text-xs font-semibold transition-colors duration-300",
-                  done ? "border-eligible bg-eligible text-white" : open ? "text-white" : "border-border bg-card text-muted-foreground")}
+                  done ? "border-eligible bg-eligible text-eligible-foreground" : open ? "text-white" : "border-border bg-card text-muted-foreground")}
                 style={open && !done ? { background: accent, borderColor: accent } : undefined}
                 animate={open ? { scale: [0.9, 1] } : { scale: 1 }} transition={QUICK}>
                 <AnimatePresence initial={false} mode="wait">
@@ -103,7 +103,7 @@ export function ProgressChecklist({ items, done }: { items: string[]; done: numb
           <motion.li key={item} initial={{ opacity: 0, y: 4 }} animate={{ opacity: index <= done ? 1 : 0.45, y: 0 }} transition={{ ...QUICK, delay: index * 0.05 }}
             className="flex items-center gap-3 text-sm">
             <span className={cn("grid size-5 shrink-0 place-items-center rounded-full transition-colors duration-300",
-              finished ? "bg-eligible text-white" : active ? "text-foreground" : "border border-border text-transparent")}>
+              finished ? "bg-eligible text-eligible-foreground" : active ? "text-foreground" : "border border-border text-transparent")}>
               {finished ? <Check className="size-3" strokeWidth={3} /> : active ? <Loader2 className="size-4 animate-spin" /> : null}
             </span>
             <span className={cn(finished || active ? "text-foreground" : "text-muted-foreground")}>{item}</span>

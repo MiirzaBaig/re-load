@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Bug, CheckCircle2, MessageSquareText, RefreshCw } from "lucide-react";
+import { Bug, CheckCircle2, MessageSquareText, MessageSquareWarning, RefreshCw } from "lucide-react";
+import { Key, PageHeader } from "@/components/desk/page-header";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
 import { useLanguage } from "@/components/language-provider";
@@ -45,10 +46,10 @@ export function ReportsPage() {
   const visible = filter === "ALL" ? reports : reports.filter((report) => report.report_type === filter);
 
   return <div className="mx-auto flex w-full max-w-5xl flex-col gap-7 animate-fade-in">
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div><h1 className="font-display text-2xl font-semibold tracking-tight">{t("Feedback and reports", "الملاحظات والبلاغات")}</h1><p className="mt-1 max-w-xl text-sm leading-6 text-muted-foreground">{t("See what merchants encountered in WhatsApp, with the workflow context attached automatically.", "اطّلع على ما واجهه التجار في واتساب، مع حفظ سياق الخطوة تلقائيًا.")}</p></div>
-      <Button variant="outline" size="sm" onClick={() => void load()}><RefreshCw className="size-4" />{t("Refresh", "تحديث")}</Button>
-    </div>
+    <PageHeader icon={MessageSquareWarning} title={t("Feedback", "الملاحظات")}
+      actions={<Button variant="outline" size="sm" className="h-9 rounded-xl" onClick={() => void load()}><RefreshCw className="size-4" />{t("Refresh", "تحديث")}</Button>}>
+      {t("Problems and suggestions reported from WhatsApp.", "المشكلات والاقتراحات المبلَّغ عنها من واتساب.")} <Key>{t("Each one keeps the step it happened at.", "كل بلاغ يحتفظ بالخطوة التي حدث عندها.")}</Key>
+    </PageHeader>
     <div className="flex flex-wrap gap-2" role="group" aria-label={t("Filter reports", "تصفية البلاغات")}>
       {(["ALL", "BUG", "FEEDBACK"] as const).map((value) => <Button key={value} size="sm" variant={filter === value ? "default" : "outline"} onClick={() => setFilter(value)}>{value === "ALL" ? t("All", "الكل") : value === "BUG" ? t("Problems", "المشكلات") : t("Feedback", "الملاحظات")}</Button>)}
     </div>

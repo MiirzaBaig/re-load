@@ -9,6 +9,7 @@ import { QUICK, Segmented, TWEEN } from "@/components/desk/primitives";
 import { ProgressChecklist, SuccessMark } from "@/components/integrations/connect-stepper";
 import { useLanguage } from "@/components/language-provider";
 import { supabase } from "@/lib/supabase";
+import { KnowledgeLinkGuide } from "@/components/knowledge-link-guide";
 import { cn } from "@/lib/utils";
 
 /** The link field and the text box trade places: one folds, the other opens. */
@@ -23,8 +24,12 @@ function isPublicUrl(value: string) {
 export function KnowledgeImportDialog({
   storeId,
   onImported,
+  platform,
+  onGuidedSetup,
 }: {
   storeId: string;
+  platform?: "zid" | "salla";
+  onGuidedSetup: () => void;
   onImported: (ids: string[]) => Promise<void>;
 }) {
   const { t } = useLanguage();
@@ -34,14 +39,17 @@ export function KnowledgeImportDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  const requestInFlight = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [result, setResult] = useState<{
     created: number;
     duplicates: number;
     warnings: string[];
+    sourceLabel: string;
   } | null>(null);
   async function run() {
-    if (!supabase) return;
+    if (!supabase || requestInFlight.current) return;
+    requestInFlight.current = true;
     setBusy(true);
     setError("");
 
@@ -67,6 +75,7 @@ export function KnowledgeImportDialog({
         created: data.created,
         duplicates: data.duplicates ?? 0,
         warnings: data.warnings ?? [],
+        sourceLabel: kind === "URL" ? (typeof data.sourceUrl === "string" ? data.sourceUrl : source.trim()) : "",
       });
       await onImported(data.ids ?? []);
     } catch (e) {
@@ -89,6 +98,7 @@ export function KnowledgeImportDialog({
       );
     } finally {
 
+      requestInFlight.current = false;
       setBusy(false);
     }
   }
@@ -108,7 +118,7 @@ export function KnowledgeImportDialog({
           <DialogHeader className="border-b border-border px-6 pb-5 pt-6 text-start">
             <DialogTitle className="font-display text-xl tracking-tight">{t("Import what you already have", "استورد ما لديك")}</DialogTitle>
             <DialogDescription className="leading-6">
-              {t("Give us a help page or its text. We turn it into draft answers for you to review.", "أعطنا صفحة المساعدة أو نصها. نحوّلها إلى مسودات إجابات لتراجعها.")}
+              {t("Bring a page from your own store, or paste your answers. We’ll prepare drafts for you to approve.", "أضف صفحة من متجرك أو انسخ إجاباتك. نجهّز مسودات تراجعها وتعتمدها.")}
             </DialogDescription>
           </DialogHeader>
 
@@ -124,6 +134,10 @@ export function KnowledgeImportDialog({
                     ? t(`${result.duplicates} existing answers were left untouched.`, `${result.duplicates} إجابات موجودة بقيت بدون تغيير.`)
                     : t("Open each answer, check its source, then edit or approve it.", "افتح كل إجابة، راجع مصدرها، ثم عدّلها أو اعتمدها.")}
                 </p>
+                <div className="mt-4 w-full rounded-xl border border-border bg-muted/30 p-3 text-start">
+                  <p className="text-[11px] font-medium text-muted-foreground">{t("Source", "المصدر")}</p>
+                  <p dir={result.sourceLabel ? "ltr" : "auto"} className="mt-1 break-words text-xs leading-5 [overflow-wrap:anywhere]">{result.sourceLabel || t("Your pasted store text", "نص متجرك المنسوخ")}</p>
+                </div>
                 {result.warnings.length > 0 && (
                   <div className="mt-5 w-full space-y-1.5 rounded-xl border border-review/25 bg-review-muted/40 p-4 text-start">
                     <p className="text-xs font-semibold text-review">{t("Worth checking", "تحتاج مراجعة")}</p>
@@ -163,6 +177,8 @@ export function KnowledgeImportDialog({
                             className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-muted px-3 text-xs font-medium transition-colors hover:bg-muted/70 active:scale-[.98]"><ClipboardPaste className="size-3.5" />{t("Paste", "لصق")}</motion.button>}
                     </AnimatePresence>
                   </div>
+                  <p className="mb-3 mt-1 text-xs leading-5 text-muted-foreground">{t("A public FAQ, delivery or support page from your own store.", "صفحة عامة من متجرك: أسئلة شائعة أو توصيل أو دعم.")}</p>
+                  <KnowledgeLinkGuide platform={platform} onPasteText={() => { setKind("TEXT"); setSource(""); setError(""); }} onGuided={() => { setOpen(false); onGuidedSetup(); }} />
                   </motion.div>
                 ) : (
                   <motion.div key="text" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={SWAP} className="-mx-1 overflow-hidden px-1">

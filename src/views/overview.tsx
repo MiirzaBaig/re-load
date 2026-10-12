@@ -5,18 +5,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, ArrowRight, Check, Copy, FileText, Inbox, Link2, Loader2, Package, Plug, ShieldCheck, Sparkles, Store, Timer } from "lucide-react";
+import { AlertCircle, BookOpen, LayoutDashboard, ArrowRight, Check, Copy, FileText, Inbox, Link2, Loader2, Package, ShieldCheck, Sparkles, Store } from "lucide-react";
 import { toast } from "sonner";
 import { useDelayedLoad } from "@/hooks/use-delayed-load";
 import { OverviewPageSkeleton } from "@/components/merchant-skeletons";
 import { Button } from "@/components/ui/button";
 import { OutcomeBadge } from "@/components/outcome-badge";
-import { services } from "@/lib/services";
 import { needsDecision, setCaseStatus, useWorkspaceData, workspaceKey } from "@/lib/workspace-data";
 import { useAuth } from "@/components/auth-provider";
 import { CaseDrawer, useOpenCase } from "@/components/case-drawer";
 import { EmptyState, Metric, Panel, QUICK, TWEEN } from "@/components/desk/primitives";
-import { ProgressRing } from "@/components/desk/progress-ring";
+import { SetupChecklist, type SetupStep } from "@/components/setup-checklist";
+import { HeaderChip, Key, PageHeader } from "@/components/desk/page-header";
 import { SuccessMark } from "@/components/integrations/connect-stepper";
 import { WhatsAppLogo } from "@/components/phone-frame";
 import { dailySeries } from "@/components/admin/use-labels";
@@ -24,7 +24,6 @@ import type { ReturnCase } from "@/lib/domain";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/language-provider";
-import { StoreIdentity } from "@/components/store-identity";
 
 /*
  * Overview has two moods.
@@ -35,7 +34,6 @@ import { StoreIdentity } from "@/components/store-identity";
  */
 
 type T = (en: string, ar: string) => string;
-type StepId = "store" | "policy" | "try";
 
 export function OverviewPage() {
   const router = useRouter();
@@ -48,7 +46,6 @@ export function OverviewPage() {
   const [accepting, setAccepting] = useState<string | null>(null);
 
   const { cases, policy, draftCount, store } = live;
-  const storeName = auth.workspace?.storeName ?? services.getStoreName();
   const storeConnected = store?.status === "CONNECTED";
   const hasPolicy = Boolean(policy);
   const setupComplete = storeConnected && hasPolicy;
@@ -72,19 +69,36 @@ export function OverviewPage() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? t("Good morning", "صباح الخير") : hour < 18 ? t("Good afternoon", "مساء الخير") : t("Good evening", "مساء الخير");
 
-  const steps: Array<{ id: StepId; done: boolean; label: string; title: string; body: string; cta: string; href: string }> = [
-    { id: "store", done: storeConnected, label: t("Store", "المتجر"), title: t("Connect your store", "اربط متجرك"),
-      body: t("Reload reads the real order behind every return: what was bought, when it arrived, who bought it.", "يقرأ ريلود الطلب الفعلي خلف كل إرجاع: ماذا اشتُري، ومتى وصل، ومن اشتراه."),
-      cta: t("Connect Zid or Salla", "اربط زد أو سلة"), href: "/app/integrations" },
-    { id: "policy", done: hasPolicy, label: t("Policy", "السياسة"), title: t("Publish your return policy", "انشر سياسة الإرجاع"),
-      body: t("Write your rules once. Reload applies them to every request, the same way, every time.", "اكتب قواعدك مرة واحدة. يطبّقها ريلود على كل طلب بالطريقة نفسها في كل مرة."),
-      cta: draftCount ? t("Finish your draft", "أكمل المسودة") : t("Create policy", "إنشاء سياسة"), href: draftCount ? "/app/policies" : "/app/policies/new" },
-    { id: "try", done: caseTotal > 0, label: t("Test return", "تجربة إرجاع"), title: t("Try it as a customer", "جرّبه كعميل"),
-      body: t("Start a return with one of your real order numbers and watch the decision land here.", "ابدأ إرجاعًا برقم طلب حقيقي من متجرك وشاهد القرار يصل هنا."),
-      cta: t("Open the return page", "افتح صفحة الإرجاع"), href: returnPath },
+  const { knowledge } = live;
+  const whatsAppOn = live.whatsApp === "CONNECTED";
+  const platformName = store?.platform === "salla" ? t("Salla", "سلة") : t("Zid", "زد");
+  const steps: SetupStep[] = [
+    { id: "store", done: storeConnected, minutes: 2, title: t("Connect your store", "اربط متجرك"),
+      status: storeConnected ? t(`${platformName} connected${store?.storeName ? ` · ${store.storeName}` : ""}`, `${platformName} مربوط${store?.storeName ? ` · ${store.storeName}` : ""}`) : t("So Reload can read the real order behind every request", "ليقرأ ريلود الطلب الفعلي خلف كل طلب"),
+      body: t("Reload checks what was bought, when it arrived and who bought it. It reads orders and creates returns, nothing else.", "يتحقق ريلود مما اشتُري ومتى وصل ومن اشتراه. يقرأ الطلبات وينشئ المرتجعات فقط."),
+      cta: storeConnected ? t("Manage connection", "إدارة الربط") : t("Connect Zid or Salla", "اربط زد أو سلة"), href: "/app/integrations" },
+    { id: "policy", done: hasPolicy, minutes: 5, title: t("Publish your return policy", "انشر سياسة الإرجاع"),
+      status: policy ? t(`${policy.versionLabel} published · ${policy.ruleCount} rules`, `${policy.versionLabel} منشورة · ${policy.ruleCount} قواعد`) : t("Your rules, applied the same way to every return", "قواعدك تُطبّق بالطريقة نفسها على كل إرجاع"),
+      body: t("Write your rules once: the return window, what can come back and what can't. Reload uses them to say yes or no, with the reason.", "اكتب قواعدك مرة واحدة: مدة الإرجاع، وما يُقبل وما لا يُقبل. يستخدمها ريلود للقبول أو الرفض مع ذكر السبب."),
+      cta: hasPolicy ? t("View policy", "عرض السياسة") : draftCount ? t("Finish your draft", "أكمل المسودة") : t("Create policy", "إنشاء سياسة"), href: hasPolicy || draftCount ? "/app/policies" : "/app/policies/new" },
+    { id: "knowledge", done: knowledge.approved > 0, minutes: 5, title: t("Add your store's answers", "أضف إجابات متجرك"),
+      status: knowledge.approved > 0
+        ? t(`${knowledge.approved} approved${knowledge.drafts ? ` · ${knowledge.drafts} waiting for you` : ""}`, `${knowledge.approved} معتمدة${knowledge.drafts ? ` · ${knowledge.drafts} بانتظارك` : ""}`)
+        : knowledge.drafts ? t(`${knowledge.drafts} drafts waiting for your approval`, `${knowledge.drafts} مسودات بانتظار اعتمادك`) : t("Delivery, warranty, how to reach you", "التوصيل، الضمان، وطريقة التواصل"),
+      body: t("Your WhatsApp assistant only says what you approve here. Import a help page, paste your answers, or answer a few guided questions.", "مساعد واتساب لا يقول إلا ما تعتمده هنا. استورد صفحة مساعدة، أو الصق إجاباتك، أو أجب عن أسئلة موجّهة."),
+      cta: knowledge.approved > 0 || knowledge.drafts ? t("Review answers", "مراجعة الإجابات") : t("Add answers", "إضافة إجابات"), href: "/app/knowledge" },
+    { id: "whatsapp", done: whatsAppOn, minutes: 1, title: t("Turn on WhatsApp", "فعّل واتساب"),
+      status: whatsAppOn ? t("Active. Customers can message you.", "مفعّل. يستطيع العملاء مراسلتك.") : t("Where your customers will reach you", "حيث يصل إليك عملاؤك"),
+      body: t("One tap gives your store its own WhatsApp link and QR code on Reload's number. No new number, no app to install.", "بضغطة واحدة يحصل متجرك على رابط واتساب ورمز QR خاص به على رقم ريلود. بدون رقم جديد ولا تطبيق.") ,
+      cta: whatsAppOn ? t("Get your link and QR", "احصل على الرابط والرمز") : t("Activate WhatsApp", "تفعيل واتساب"), href: "/app/integrations",
+      locked: !storeConnected ? t("Connect your store first", "اربط متجرك أولًا") : !hasPolicy ? t("Publish your policy first", "انشر سياستك أولًا") : undefined },
+    { id: "try", done: caseTotal > 0, minutes: 2, title: t("Try it as a customer", "جرّبه كعميل"),
+      status: caseTotal > 0 ? t("Your first return came through", "وصل أول طلب إرجاع") : t("See exactly what your customers will see", "شاهد ما سيراه عملاؤك تمامًا"),
+      body: t("Start a return with one of your real order numbers and watch the decision land on this page.", "ابدأ إرجاعًا برقم طلب حقيقي من متجرك وشاهد القرار يصل إلى هذه الصفحة."),
+      cta: t("Open the return page", "افتح صفحة الإرجاع"), href: returnPath, external: true,
+      locked: !storeConnected ? t("Connect your store first", "اربط متجرك أولًا") : !hasPolicy ? t("Publish your policy first", "انشر سياستك أولًا") : undefined },
   ];
   const doneCount = steps.filter((s) => s.done).length;
-  const next = steps.find((s) => !s.done) ?? steps[steps.length - 1];
 
   const accept = async (c: ReturnCase) => {
     if (!supabase) return;
@@ -101,75 +115,19 @@ export function OverviewPage() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-7 pb-4 sm:gap-8">
       {/* ── Greeting ── */}
-      <motion.header initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={TWEEN} className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">{greeting}{firstName && `${isArabic ? "،" : ","} ${firstName}`} <span className="inline-block origin-[70%_70%] motion-safe:animate-[wave_1.6s_ease-in-out_0.4s_1]">👋</span></p>
-          <h1 className="mt-1 font-display text-[28px] font-semibold leading-tight tracking-[-0.03em] sm:text-[32px]">
-            {setupComplete ? t("Here's your returns today.", "هذه مرتجعاتك اليوم.") : t("Let's get you live.", "لنجهّزك للانطلاق.")}
-          </h1>
-          <div className="mt-1.5 text-sm text-muted-foreground"><StoreIdentity name={storeName} markSize="sm" /></div>
-        </div>
-        <span className={cn("inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium",
-          setupComplete ? "border-eligible/30 bg-eligible-muted/60 text-eligible" : "border-border bg-card text-muted-foreground")}>
-          <span className="relative grid size-2 place-items-center">
-            {setupComplete && <span className="absolute size-2 animate-ping rounded-full bg-eligible/60 motion-reduce:hidden" />}
-            <span className={cn("size-2 rounded-full", setupComplete ? "bg-eligible" : "bg-review")} />
-          </span>
-          {setupComplete ? t("Live", "مباشر") : t(`Setup ${doneCount} of ${steps.length}`, `الإعداد ${doneCount} من ${steps.length}`)}
-        </span>
-      </motion.header>
+      <PageHeader icon={LayoutDashboard} helpId="overview"
+        eyebrow={<>{greeting}{firstName && `${isArabic ? "،" : ","} ${firstName}`} <span className="inline-block origin-[70%_70%] motion-safe:animate-[wave_1.6s_ease-in-out_0.4s_1]">👋</span></>}
+        title={setupComplete ? t("Here's your returns today", "هذه مرتجعاتك اليوم") : t("Let's get you live", "لنجهّزك للانطلاق")}
+        meta={<HeaderChip tone={setupComplete ? "ok" : "attention"} pulse={setupComplete}>{setupComplete ? t("Live", "مباشر") : t(`Setup ${doneCount} of ${steps.length}`, `الإعداد ${doneCount} من ${steps.length}`)}</HeaderChip>}
+        help={t("This is your home page. While you set up, it lists every step in order. Once you're live, it shows which returns need you and how the rest were decided.", "هذه صفحتك الرئيسية. أثناء الإعداد تعرض كل خطوة بالترتيب. وبعد التفعيل تعرض المرتجعات التي تحتاجك وكيف تقرّر الباقي.")}>
+        {setupComplete
+          ? <><Key>{t("Start with what needs you.", "ابدأ بما يحتاجك.")}</Key> {t("Everything else was decided by your policy.", "كل ما عداه قرّرته سياستك.")}</>
+          : <><Key>{t("A few short steps", "خطوات قصيرة")}</Key> {t("and your customers can return items on their own.", "ويستطيع عملاؤك إرجاع المنتجات بأنفسهم.")}</>}
+      </PageHeader>
 
       {!setupComplete ? (
         <>
-          {/* ── Next up ── */}
-          <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ ...TWEEN, delay: 0.06 }}
-            className="overflow-hidden rounded-3xl border border-border bg-card">
-            <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,340px)]">
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div key={next.id} initial={{ opacity: 0, x: isArabic ? -16 : 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: isArabic ? 16 : -16 }} transition={TWEEN}
-                  className="flex flex-col p-6 sm:p-8">
-                  <div className="flex items-center gap-4">
-                    <ProgressRing done={doneCount} total={steps.length} label={t(`${doneCount} of ${steps.length} done`, `${doneCount} من ${steps.length} مكتملة`)} />
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[.14em] text-muted-foreground">{t(`Next up · step ${steps.indexOf(next) + 1}`, `التالي · الخطوة ${steps.indexOf(next) + 1}`)}</p>
-                      <h2 className="mt-1 font-display text-xl font-semibold tracking-tight sm:text-2xl">{next.title}</h2>
-                    </div>
-                  </div>
-                  <p className="mt-4 max-w-md text-sm leading-6 text-muted-foreground">{next.body}</p>
-                  <div className="mt-6 flex flex-wrap items-center gap-3">
-                    <Button asChild className="group h-11 rounded-xl px-5 transition-transform active:scale-[.98]">
-                      <Link href={next.href} target={next.id === "try" ? "_blank" : undefined}>{next.cta}<ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5" /></Link>
-                    </Button>
-                    {next.id === "store" && <span className="text-xs text-muted-foreground">{t("Zid is free and takes about 2 minutes.", "زد مجاني ويستغرق دقيقتين تقريبًا.")}</span>}
-                  </div>
-                  <ol className="mt-auto flex flex-wrap gap-1.5 pt-7">
-                    {steps.map((step, index) => {
-                      const current = step.id === next.id;
-                      return (
-                        <motion.li key={step.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ ...QUICK, delay: 0.15 + index * 0.06 }}>
-                          <Link href={step.href} className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors duration-200",
-                            step.done ? "border-eligible/25 bg-eligible-muted text-eligible" : current ? "border-foreground/20 bg-foreground/[.06] text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}>
-                            {step.done ? <Check className="size-3.5" strokeWidth={2.75} />
-                              : current ? <span className="relative grid size-3.5 place-items-center"><span className="absolute size-2 animate-ping rounded-full bg-foreground/40 motion-reduce:hidden" /><span className="size-1.5 rounded-full bg-foreground" /></span>
-                                : <span className="grid size-3.5 place-items-center text-[10px] tabular-nums opacity-70">{index + 1}</span>}
-                            {step.label}
-                          </Link>
-                        </motion.li>
-                      );
-                    })}
-                  </ol>
-                </motion.div>
-              </AnimatePresence>
-              <div className="relative hidden border-s border-border bg-muted/25 p-6 md:flex md:items-center md:justify-center">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,color-mix(in_oklab,var(--foreground)_8%,transparent)_1px,transparent_0)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_at_center,#000_30%,transparent_75%)]" />
-                <AnimatePresence mode="wait">
-                  <motion.div key={next.id} initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6 }} transition={TWEEN} className="relative w-full max-w-[280px]">
-                    <StepPreview step={next.id} t={t} />
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </div>
-          </motion.section>
+          <SetupChecklist steps={steps} />
 
           {/* ── How it works ── */}
           <section aria-label={t("How Reload works", "كيف يعمل ريلود")} className="desk-stagger grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-3">
@@ -192,15 +150,19 @@ export function OverviewPage() {
         <>
           {/* ── Health strip ── */}
           <motion.section initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ ...TWEEN, delay: 0.05 }}
-            aria-label={t("Connections", "الاتصالات")} className="grid grid-cols-2 overflow-hidden rounded-2xl border border-border bg-card lg:grid-cols-4">
+            aria-label={t("Connections", "الاتصالات")} className="grid grid-cols-2 overflow-hidden rounded-2xl border border-border bg-card lg:grid-cols-5">
             <HealthItem href="/app/integrations" ok icon={store?.platform === "zid" ? <Image src="/zid-logo.png" alt="" width={20} height={20} className="size-5 rounded-md" /> : <Store className="size-4" />}
               label={store?.platform === "zid" ? t("Zid", "زد") : t("Salla", "سلة")} value={store?.storeName ?? t("Connected", "متصل")} />
             <HealthItem href="/app/policies" ok icon={<FileText className="size-4" />} label={t("Policy", "السياسة")}
               value={policy ? t(`${policy.versionLabel} · ${policy.ruleCount} rules`, `${policy.versionLabel} · ${policy.ruleCount} قواعد`) : ""} />
+            <HealthItem href="/app/knowledge" ok={knowledge.approved > 0} icon={<BookOpen className="size-4" />} label={t("Knowledge", "المعلومات")}
+              value={knowledge.approved > 0 ? t(`${knowledge.approved} answers`, `${knowledge.approved} إجابات`) : t("No answers yet", "لا توجد إجابات")} />
             <ReturnLinkItem path={returnPath} t={t} />
-            <HealthItem href="/app/integrations" ok={live.whatsApp === "CONNECTED"} icon={<WhatsAppLogo className="size-4" />} label="WhatsApp"
-              value={live.whatsApp === "CONNECTED" ? t("Connected", "متصل") : t("Coming soon", "قريبًا")} />
+            <HealthItem href="/app/integrations" ok={whatsAppOn} icon={<WhatsAppLogo className="size-4" />} label="WhatsApp"
+              value={whatsAppOn ? t("Active", "مفعّل") : t("Not active yet", "غير مفعّل بعد")} />
           </motion.section>
+
+          {doneCount < steps.length && <SetupChecklist steps={steps} compact />}
 
           {caseTotal === 0 ? (
             /* ── Just went live ── */
@@ -309,7 +271,7 @@ function CaseIcon({ c }: { c: ReturnCase }) {
 
 function HealthItem({ href, ok, icon, label, value }: { href: string; ok: boolean; icon: ReactNode; label: string; value: string }) {
   return (
-    <Link href={href} className="store-tile group flex min-w-0 items-center gap-3 border-b border-e border-border p-4 transition-colors hover:bg-muted/40 [&:nth-child(2n)]:border-e-0 lg:border-b-0 lg:[&:nth-child(2n)]:border-e lg:last:border-e-0">
+    <Link href={href} className="store-tile group flex min-w-0 items-center gap-3 border-b border-e border-border p-4 transition-colors last:border-b-0 hover:bg-muted/40 max-lg:last:col-span-2 [&:nth-child(2n)]:border-e-0 lg:border-b-0 lg:[&:nth-child(2n)]:border-e lg:last:border-e-0">
       <span className="hidden size-9 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground sm:grid">{icon}</span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><span className={cn("size-1.5 rounded-full", ok ? "bg-eligible" : "bg-review")} />{label}</span>
@@ -326,10 +288,10 @@ function ReturnLinkItem({ path, t }: { path: string; t: T }) {
     catch { toast.error(t("Couldn't copy the link.", "تعذّر نسخ الرابط.")); }
   };
   return (
-    <div className="flex min-w-0 items-center gap-3 border-e border-border p-4 [&:nth-child(2n)]:border-e-0 lg:[&:nth-child(2n)]:border-e">
+    <div className="flex min-w-0 items-center gap-3 border-b border-e border-border p-4 [&:nth-child(2n)]:border-e-0 lg:border-b-0 lg:[&:nth-child(2n)]:border-e">
       <span className="hidden size-9 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground sm:grid"><Link2 className="size-4" /></span>
       <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><span className="size-1.5 rounded-full bg-eligible" />{t("Return page", "صفحة الإرجاع")}</span>
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><span className="size-1.5 shrink-0 rounded-full bg-eligible" />{t("Return link", "رابط الإرجاع")}</span>
         <span className="block truncate text-sm font-medium">{t("Live", "مفعّلة")}</span>
       </span>
       <button type="button" onClick={() => void copy()} aria-label={t("Copy return link", "نسخ رابط الإرجاع")} className="grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95">
@@ -339,60 +301,6 @@ function ReturnLinkItem({ path, t }: { path: string; t: T }) {
             : <motion.span key="copy" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={QUICK}><Copy className="size-3.5" /></motion.span>}
         </AnimatePresence>
       </button>
-    </div>
-  );
-}
-
-/** A small, still-once animation of what the step unlocks. */
-function StepPreview({ step, t }: { step: StepId; t: T }) {
-  const row = (index: number) => ({ initial: { opacity: 0, x: -6 }, animate: { opacity: 1, x: 0 }, transition: { ...QUICK, delay: 0.35 + index * 0.18 } });
-  const tick = (index: number) => ({ initial: { scale: 0 }, animate: { scale: 1 }, transition: { ...QUICK, delay: 0.5 + index * 0.18 } });
-  const card = "rounded-2xl border border-border bg-card p-4 shadow-[0_20px_50px_-30px_rgba(0,0,0,.45)]";
-
-  if (step === "store") {
-    const lines = [t("Order found in your store", "الطلب موجود في متجرك"), t("Delivered 3 days ago", "وصل قبل ٣ أيام"), t("Phone matches the order", "الجوال يطابق الطلب")];
-    return (
-      <div className={card}>
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold" dir="ltr">#10428</p>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{t("Sara · 2 items", "سارة · منتجان")}</span>
-        </div>
-        <ul className="mt-3 space-y-2">
-          {lines.map((line, index) => (
-            <motion.li key={line} {...row(index)} className="flex items-center gap-2 text-xs">
-              <motion.span {...tick(index)} className="grid size-4 place-items-center rounded-full bg-eligible text-white"><Check className="size-2.5" strokeWidth={3.5} /></motion.span>{line}
-            </motion.li>
-          ))}
-        </ul>
-      </div>
-    );
-  }
-  if (step === "policy") {
-    const rules = [t("Return within 14 days", "الإرجاع خلال ١٤ يومًا"), t("Unopened items only", "المنتجات غير المفتوحة فقط"), t("Sale items excluded", "منتجات التخفيض مستثناة")];
-    return (
-      <div className={card}>
-        <p className="flex items-center gap-1.5 text-xs font-semibold"><FileText className="size-3.5 text-muted-foreground" />{t("Your policy", "سياستك")}</p>
-        <ul className="mt-3 space-y-1.5">
-          {rules.map((rule, index) => (
-            <motion.li key={rule} {...row(index)} className="flex items-center gap-2 rounded-lg bg-muted/60 px-2.5 py-1.5 text-xs">
-              <span className="size-1.5 rounded-full bg-foreground/60" />{rule}
-            </motion.li>
-          ))}
-        </ul>
-      </div>
-    );
-  }
-  return (
-    <div className={card}>
-      <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Timer className="size-3.5" />{t("Decided in 2 seconds", "قُرر في ثانيتين")}</p>
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ ...QUICK, delay: 0.4 }} className="mt-3 flex items-center gap-3 rounded-xl bg-eligible-muted/70 p-3">
-        <motion.span {...tick(0)} className="grid size-8 place-items-center rounded-full bg-eligible text-white"><Check className="size-4" strokeWidth={3} /></motion.span>
-        <div>
-          <p className="text-sm font-semibold text-eligible">{t("Eligible for return", "مؤهل للإرجاع")}</p>
-          <p className="text-[11px] text-muted-foreground">{t("Within 14 days · unopened", "خلال ١٤ يومًا · غير مفتوح")}</p>
-        </div>
-      </motion.div>
-      <motion.p {...row(2)} className="mt-2.5 flex items-center gap-1.5 text-[11px] text-muted-foreground"><Plug className="size-3" />{t("Checked against your real order", "تم التحقق مقابل طلبك الفعلي")}</motion.p>
     </div>
   );
 }

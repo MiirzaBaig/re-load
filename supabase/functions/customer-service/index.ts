@@ -64,6 +64,7 @@ Deno.serve(async (request) => {
             ids: [],
             warnings: extracted.warnings,
             empty: true,
+            sourceUrl: source.url,
           });
         const rows = await Promise.all(
           extracted.entries.map(async (entry) => ({
@@ -94,12 +95,14 @@ Deno.serve(async (request) => {
             event_type: "knowledge.import.completed",
             entity_type: "store_knowledge",
             metadata: {
-              created: saved.data.length,
+              sourceUrl: source.url,
+          created: saved.data.length,
               duplicates: rows.length - saved.data.length,
             },
           });
         if (completed.error) throw completed.error;
         return json({
+          sourceUrl: source.url,
           created: saved.data.length,
           ids: saved.data.map((row) => row.id),
           warnings: extracted.warnings,

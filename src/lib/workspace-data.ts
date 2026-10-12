@@ -44,9 +44,11 @@ export type WorkspaceData = {
   store: StoreConnection;
   whatsApp: string | null;
   returnCode: string | null;
+  /** Store knowledge: answers the assistant may use, and ones still waiting for approval. */
+  knowledge: { approved: number; drafts: number };
 };
 
-const EMPTY: WorkspaceData = { ready: false, storeId: null, cases: [], policy: null, draftCount: 0, store: null, whatsApp: null, returnCode: null };
+const EMPTY: WorkspaceData = { ready: false, storeId: null, cases: [], policy: null, draftCount: 0, store: null, whatsApp: null, returnCode: null, knowledge: { approved: 0, drafts: 0 } };
 
 let state: WorkspaceData = EMPTY;
 let inflight: Promise<void> | null = null;
@@ -56,14 +58,16 @@ const set = (next: WorkspaceData) => { state = next; emit(); };
 
 async function load(storeId: string) {
   if (!supabase) { set({ ...EMPTY, ready: true, storeId }); return; }
-  const [cases, policies, drafts, connections, whatsApp, store] = await Promise.all([
+  const [cases, policies, drafts, connections, whatsApp, store, knowledge] = await Promise.all([
     supabase.from("return_cases").select(CASE_SELECT).eq("store_id", storeId).order("created_at", { ascending: false }),
     supabase.from("policy_versions").select("version_label, published_at, rules_snapshot").eq("store_id", storeId).order("published_at", { ascending: false }).limit(1),
     supabase.from("policy_drafts").select("id", { count: "exact", head: true }).eq("store_id", storeId),
     supabase.from("commerce_connections").select("platform, status, external_store_name, connected_at").eq("store_id", storeId),
     supabase.from("whatsapp_connections").select("status").eq("store_id", storeId).maybeSingle(),
     supabase.from("stores").select("return_code").eq("id", storeId).maybeSingle(),
+    supabase.from("store_knowledge").select("published").eq("store_id", storeId),
   ]);
+  const answers = (knowledge.data ?? []) as Array<{ published: boolean }>;
   const rows = (connections.data ?? []) as Array<Record<string, any>>;
   const connection = rows.find((row) => row.status === "CONNECTED") ?? rows[0];
   const latest = (policies.data ?? [])[0] as Record<string, unknown> | undefined;
@@ -76,6 +80,7 @@ async function load(storeId: string) {
     store: connection ? { platform: connection.platform, status: String(connection.status), storeName: connection.external_store_name ?? null, connectedAt: connection.connected_at ?? null } : null,
     whatsApp: whatsApp.data ? String(whatsApp.data.status) : null,
     returnCode: typeof store.data?.return_code === "string" ? store.data.return_code : null,
+    knowledge: { approved: answers.filter((row) => row.published).length, drafts: answers.filter((row) => !row.published).length },
   });
 }
 

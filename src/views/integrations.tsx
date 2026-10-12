@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  AlertTriangle, ArrowRight, ArrowUpRight, Check, ChevronRight, Copy, Download, ExternalLink, FileText, Link2, Loader2,
+  AlertTriangle, ArrowRight, ArrowUpRight, Check, Plug, ChevronRight, Copy, Download, ExternalLink, FileText, Link2, Loader2,
   Lock, QrCode, RefreshCw, ShieldCheck, ShoppingBag, Unplug,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ import { WhatsAppLogo } from "@/components/phone-frame";
 import { ZidConnectCard } from "@/components/zid-connect-card";
 import { ConnectStepper } from "@/components/integrations/connect-stepper";
 import { ProgressRing } from "@/components/desk/progress-ring";
+import { Key, PageHeader } from "@/components/desk/page-header";
 import { QUICK, TWEEN } from "@/components/desk/primitives";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -151,10 +152,10 @@ export function IntegrationsPage() {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-10 pb-6">
       {/* ── Header + progress ── */}
       <section>
-        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={TWEEN}>
-          <h1 className="font-display text-[28px] font-semibold leading-tight tracking-[-0.03em] sm:text-[32px]">{t("Integrations", "التكاملات")}</h1>
-          <p className="mt-1.5 max-w-xl text-sm leading-6 text-muted-foreground">{t("Connect your store once. Every return is checked against the real order, and customers start returns from one link.", "اربط متجرك مرة واحدة. يُتحقق من كل إرجاع مقابل الطلب الفعلي، ويبدأ العملاء الإرجاع من رابط واحد.")}</p>
-        </motion.div>
+        <PageHeader icon={Plug} title={t("Integrations", "التكاملات")} helpId="integrations"
+          help={t("Connecting your store lets Reload look up the real order behind each return. WhatsApp and the return page are the two places your customers start from. Reload can read orders and create returns. It cannot change your products or prices.", "ربط متجرك يتيح لريلود الرجوع إلى الطلب الفعلي خلف كل إرجاع. واتساب وصفحة الإرجاع هما المكانان اللذان يبدأ منهما عملاؤك. يستطيع ريلود قراءة الطلبات وإنشاء المرتجعات، ولا يستطيع تغيير منتجاتك أو أسعارك.")}>
+          <Key>{t("Connect your store once.", "اربط متجرك مرة واحدة.")}</Key> {t("Every return is then checked against the real order.", "بعدها يُتحقق من كل إرجاع مقابل الطلب الفعلي.")}
+        </PageHeader>
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ ...TWEEN, delay: 0.06 }}
           className="mt-6 rounded-2xl border border-border bg-card">
           <div className="flex items-center gap-4 p-4 sm:p-5">
@@ -338,7 +339,7 @@ function ConnectedStore({ platform, name, tone, storeName, connectedAt, lastChec
         <span className="relative">
           <PlatformLogo platform={platform} size={52} />
           <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ ...QUICK, delay: 0.3 }}
-            className={cn("absolute -bottom-1 -end-1 grid size-5 place-items-center rounded-full border-2 border-card text-white", tone === "attention" ? "bg-review" : "bg-eligible")}>
+            className={cn("absolute -bottom-1 -end-1 grid size-5 place-items-center rounded-full border-2 border-card", tone === "attention" ? "bg-review text-review-foreground" : "bg-eligible text-eligible-foreground")}>
             {tone === "attention" ? <AlertTriangle className="size-2.5" strokeWidth={3} /> : <Check className="size-3" strokeWidth={3} />}
           </motion.span>
         </span>

@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { Check, ChevronRight, Loader2, MessageSquare } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
@@ -29,8 +29,10 @@ import { knowledgeStarters } from "@/lib/knowledge-starters";
 export function GuidedKnowledgeDialog({
   storeId,
   onSaved,
+  openRequest = 0,
 }: {
   storeId: string;
+  openRequest?: number;
   onSaved: () => Promise<void>;
 }) {
   const { t, isArabic } = useLanguage();
@@ -45,6 +47,14 @@ export function GuidedKnowledgeDialog({
     [discard, setDiscard] = useState(false);
   const inFlight = useRef(false);
   const q = questions[index];
+  useEffect(() => {
+    if (!openRequest) return;
+    setOpen(true);
+    setIndex(0);
+    setSaved(0);
+    setAnswer("");
+    setError("");
+  }, [openRequest]);
   function close() {
     if (busy) return;
     if (answer.trim()) setDiscard(true);

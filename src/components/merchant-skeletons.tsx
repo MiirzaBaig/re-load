@@ -36,19 +36,17 @@ export function OverviewPageSkeleton() {
         </div>
         <SkeletonBlock className="h-7 w-28 rounded-full" />
       </div>
-      <div className="grid overflow-hidden rounded-3xl border border-border bg-card md:grid-cols-[minmax(0,1fr)_minmax(0,340px)]">
-        <div className="space-y-4 p-6 sm:p-8">
-          <div className="flex items-center gap-4">
-            <SkeletonBlock className="size-14 shrink-0 rounded-full" />
-            <div className="space-y-2"><SkeletonBlock className="h-3 w-24" /><SkeletonBlock className="h-6 w-52" /></div>
+      <div className="overflow-hidden rounded-3xl border border-border bg-card">
+        <div className="flex items-center gap-4 p-5 sm:px-7 sm:py-6">
+          <SkeletonBlock className="size-14 shrink-0 rounded-full" />
+          <div className="space-y-2"><SkeletonBlock className="h-5 w-52" /><SkeletonBlock className="h-4 w-36" /></div>
+        </div>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 border-t border-border px-5 py-4 sm:px-7">
+            <SkeletonBlock className="size-8 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1 space-y-2"><SkeletonBlock className="h-4 w-44 max-w-[60%]" /><SkeletonBlock className="h-3 w-64 max-w-[85%]" /></div>
           </div>
-          <SkeletonBlock className="h-4 w-full max-w-md" />
-          <SkeletonBlock className="h-11 w-48 rounded-xl" />
-          <div className="flex gap-2 pt-4"><SkeletonBlock className="h-6 w-20 rounded-full" /><SkeletonBlock className="h-6 w-20 rounded-full" /><SkeletonBlock className="h-6 w-24 rounded-full" /></div>
-        </div>
-        <div className="hidden border-s border-border bg-muted/25 p-6 md:flex md:items-center md:justify-center">
-          <SkeletonBlock className="h-36 w-full max-w-[280px] rounded-2xl" />
-        </div>
+        ))}
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => <SkeletonBlock key={i} className="h-[76px] rounded-2xl" />)}

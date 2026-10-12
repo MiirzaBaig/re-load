@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { toast } from "sonner";
-import { Users, Globe, Shield, User } from "lucide-react";
+import { Users, Globe, Settings, Shield, User } from "lucide-react";
+import { PageHeader } from "@/components/desk/page-header";
 import { useAuth } from "@/components/auth-provider";
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/components/language-provider";
@@ -54,12 +55,9 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-7 animate-fade-in">
-      <ScrollReveal>
-        <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">{t("Settings", "الإعدادات")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("Manage your store and workspace configuration.", "إدارة إعدادات المتجر ومساحة العمل.")}</p>
-        </div>
-      </ScrollReveal>
+      <PageHeader icon={Settings} title={t("Settings", "الإعدادات")}>
+        {t("Your store name, language and who can open this workspace.", "اسم متجرك، واللغة، ومن يستطيع فتح مساحة العمل.")}
+      </PageHeader>
 
       <ScrollReveal delay={100}>
         <div className="mb-5 flex flex-wrap items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
