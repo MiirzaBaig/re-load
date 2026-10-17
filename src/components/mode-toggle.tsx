@@ -21,7 +21,10 @@ export function ModeToggle({ className }: { className?: string }) {
   return (
     <button
       type="button"
-      onClick={toggleTheme}
+      onClick={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        toggleTheme({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+      }}
       aria-label={
         isDark
           ? t("Switch to light theme", "التبديل إلى المظهر الفاتح")

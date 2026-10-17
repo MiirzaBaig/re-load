@@ -27,12 +27,29 @@ const SHOW_NAV_WHATSAPP = false;
 /** "Get started" (desktop navbar + mobile menu). Off: Sign in is the only navbar action. */
 const SHOW_GET_STARTED = false;
 
+// Every public page fades in, on a fresh load and on each page change. The
+// home page is the exception on a fresh load: it has its own intro. The
+// navigation memory lives outside React so a language switch (which remounts
+// this layout) still counts as a page change. Deterministic per path on the
+// server and first browser render, so hydration matches.
+const HOME_PATHS = new Set(["/", "/ar", "/en"]);
+let firstPublicPath: string | null = null;
+let publicNavigated = false;
+function routeEntered(pathname: string) {
+  if (typeof window !== "undefined") {
+    if (firstPublicPath === null) firstPublicPath = pathname;
+    else if (pathname !== firstPublicPath) publicNavigated = true;
+  }
+  return publicNavigated || !HOME_PATHS.has(pathname);
+}
+
 export function PublicLayout({ children }: { children: ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
+  const enter = routeEntered(pathname);
   const router = useRouter();
   // The query string is read in an effect, not with useSearchParams(). That
   // hook forced a <Suspense> boundary around this whole layout, and on slow
@@ -213,7 +230,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   return (
-    <div className="flex min-h-svh flex-col">
+    <div className="public-site flex min-h-svh flex-col">
       <PublicAnalytics />
       <IntroSplash />
       <header
@@ -419,7 +436,12 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       </div>
 
       <main className="relative isolate min-h-svh bg-background pt-16">
-        {children}
+        {/* Keyed on the path: each page change remounts this wrapper and
+            plays a short entrance. Skipped on the first load (the home page
+            has its own intro). */}
+        <div key={pathname} className={enter ? "route-enter" : undefined}>
+          {children}
+        </div>
       </main>
       <SiteFooter />
       {isHome && (

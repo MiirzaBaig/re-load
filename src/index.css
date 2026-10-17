@@ -417,12 +417,15 @@ html[data-theme-transition="view"] :where(
   transition: none !important;
 }
 
+/* Theme switch: the new theme grows as a circle from the toggle (animated
+   in theme-provider.tsx); the old snapshot stays still underneath. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 380ms;
-  animation-timing-function: var(--theme-ease);
+  animation: none;
   mix-blend-mode: normal;
 }
+::view-transition-new(root) { z-index: 2; }
+::view-transition-old(root) { z-index: 1; }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
@@ -5403,31 +5406,65 @@ html[data-admin-welcome="play"] .admin-grow { transform: scaleX(0); }
 }
 
 /* Public FAQ: native disclosure keeps every answer in the server HTML. */
-/* FAQ: plus turns into a cross, the circle fills, the open question
-   brightens; the answer's height is animated in public-faq.tsx. */
+/* FAQ: one open at a time (public-faq.tsx animates the height). Neutral
+   ink only: the chevron sits in a soft circle that darkens on hover and
+   turns when open. */
+.faq-q { color: color-mix(in oklab, var(--foreground) 88%, transparent); transition: color 250ms var(--ease-brand); }
+.public-faq > summary:hover .faq-q,
+.public-faq[open]:not([data-closing]) .faq-q { color: var(--foreground); }
 .faq-icon {
-  position: relative;
   color: var(--muted-foreground);
-  transition: background-color 300ms var(--ease-brand), border-color 300ms var(--ease-brand), color 300ms var(--ease-brand), transform 400ms var(--ease-brand);
+  background: color-mix(in oklab, var(--foreground) 4%, transparent);
+  transition: background-color 250ms var(--ease-brand), color 250ms var(--ease-brand);
 }
-.faq-icon-bar {
-  position: absolute;
-  width: 10px;
-  height: 1.5px;
-  border-radius: 2px;
-  background: currentColor;
-  transition: transform 300ms var(--ease-brand);
-}
-.faq-icon-bar-v { transform: rotate(90deg); }
-.public-faq[open]:not([data-closing]) .faq-icon {
-  background: var(--foreground);
-  border-color: var(--foreground);
-  color: var(--background);
-  transform: rotate(135deg);
-}
-.public-faq summary:hover .faq-icon { border-color: color-mix(in oklab, var(--foreground) 35%, transparent); }
-.public-faq > summary > span:first-child { transition: color 300ms var(--ease-brand); }
-.public-faq:not([open]) > summary > span:first-child { color: color-mix(in oklab, var(--foreground) 88%, transparent); }
+.faq-chevron { transition: transform 420ms var(--ease-brand); }
+.public-faq > summary:hover .faq-icon { background: color-mix(in oklab, var(--foreground) 9%, transparent); color: var(--foreground); }
+.public-faq[open]:not([data-closing]) .faq-icon { background: color-mix(in oklab, var(--foreground) 9%, transparent); color: var(--foreground); }
+.public-faq[open]:not([data-closing]) .faq-chevron { transform: rotate(-180deg); }
 @media (prefers-reduced-motion: reduce) {
-  .faq-icon, .faq-icon-bar { transition: none; }
+  .faq-icon, .faq-chevron, .faq-q { transition: none; }
+}
+
+/* Public website: neutral ink instead of the indigo accent (owner decision
+   2026-10-18). Workspace and admin keep the accent for unread/status cues. */
+.public-site {
+  --brand-accent: var(--foreground);
+  --brand-accent-fill: var(--foreground);
+  --brand-accent-soft: var(--muted);
+  --color-brand-accent: var(--foreground);
+  --color-brand-accent-fill: var(--foreground);
+  --color-brand-accent-soft: var(--muted);
+}
+
+
+/* Landing pricing: flat cards, crisp borders, no glow. The recommended
+   plan is marked by a solid border and a tag, not by colour effects. */
+.price-card {
+  transition: border-color 250ms var(--ease-brand), box-shadow 250ms var(--ease-brand);
+}
+.price-card-pick {
+  border-color: var(--foreground);
+  box-shadow: 0 0 0 1px var(--foreground);
+}
+@media (hover: hover) {
+  .price-card:not(.price-card-pick):hover { border-color: color-mix(in oklab, var(--foreground) 30%, var(--border)); }
+}
+
+/* Public page changes: a short fade-up, then the page's sections follow a
+   beat apart. Opacity/transform only and backwards fill, so nothing is left
+   transformed once it finishes (sticky and fixed children behave normally). */
+.route-enter { animation: route-in 420ms var(--ease-brand) backwards; }
+.route-enter > * > * { animation: route-section-in 520ms var(--ease-brand) backwards; }
+.route-enter > * > :nth-child(1) { animation-delay: 30ms; }
+.route-enter > * > :nth-child(2) { animation-delay: 80ms; }
+.route-enter > * > :nth-child(3) { animation-delay: 130ms; }
+.route-enter > * > :nth-child(4) { animation-delay: 180ms; }
+.route-enter > * > :nth-child(n + 5) { animation-delay: 220ms; }
+@keyframes route-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes route-section-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-enter, .route-enter > * > * { animation: none; }
 }

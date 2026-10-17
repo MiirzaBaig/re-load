@@ -15,7 +15,6 @@ import {
   Plus,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { useLanguage } from "@/components/language-provider";
@@ -572,7 +571,7 @@ export function BillingPage() {
 
                 {extra > 0 && (
                   <div className="billing-enter mt-6 flex items-start gap-3 text-sm">
-                    <Plus className="mt-0.5 size-4 shrink-0 text-[var(--brand-accent)]" />
+                    <Plus className="mt-0.5 size-4 shrink-0 text-[var(--foreground)]" />
                     <div className="min-w-0">
                       <p className="font-medium">
                         <CountUp value={extra} /> {t("extra messages ready", "رسالة إضافية جاهزة")}
@@ -706,8 +705,7 @@ export function BillingPage() {
                         {t("Your plan", "اشتراكك")}
                       </span>
                     ) : premium ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--brand-accent)]/30 bg-[var(--brand-accent)]/10 px-2.5 py-1 text-[11px] font-medium text-[var(--brand-accent)]">
-                        <Sparkles className="size-3" />
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--foreground)]/30 bg-[var(--foreground)]/10 px-2.5 py-1 text-[11px] font-medium text-[var(--foreground)]">
                         {t("Includes AI support", "يشمل دعم الذكاء الاصطناعي")}
                       </span>
                     ) : null}
@@ -738,7 +736,7 @@ export function BillingPage() {
                   <ul className="my-6 space-y-3 text-sm">
                     {features.map((item) => (
                       <li key={item} className="flex items-start gap-2.5">
-                        <span className={cn("mt-0.5 grid size-4 shrink-0 place-items-center rounded-full", premium ? "bg-[var(--brand-accent)]/15 text-[var(--brand-accent)]" : "bg-muted text-foreground")}>
+                        <span className={cn("mt-0.5 grid size-4 shrink-0 place-items-center rounded-full", premium ? "bg-[var(--foreground)]/15 text-[var(--foreground)]" : "bg-muted text-foreground")}>
                           <Check className="size-3" strokeWidth={3} />
                         </span>
                         {item}
@@ -856,8 +854,7 @@ export function BillingPage() {
 
 function PlanBadge({ premium, children }: { premium: boolean; children: React.ReactNode }) {
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium", premium ? "bg-[var(--brand-accent)]/12 text-[var(--brand-accent)]" : "bg-muted text-foreground")}>
-      {premium && <Sparkles className="size-3" />}
+    <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium", premium ? "bg-[var(--foreground)]/12 text-[var(--foreground)]" : "bg-muted text-foreground")}>
       {children}
     </span>
   );

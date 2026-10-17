@@ -52,7 +52,7 @@ export function PolicyTemplatePage({ locale, category }: { locale: Locale; categ
           <ul className="mt-8 max-w-2xl space-y-3">
             {category.tips.map((tip) => (
               <li key={tip[0]} className="flex gap-3 text-sm leading-7 text-muted-foreground">
-                <span aria-hidden="true" className="mt-2.5 size-1.5 shrink-0 rounded-full bg-[var(--brand-accent)]" />
+                <span aria-hidden="true" className="mt-2.5 size-1.5 shrink-0 rounded-full bg-[var(--foreground)]" />
                 {tip[i]}
               </li>
             ))}

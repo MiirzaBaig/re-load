@@ -58,7 +58,7 @@ export function AdminCommand({ open, onOpenChange, nav, leads, merchants, labels
       <CommandGroup heading={t("Actions", "إجراءات")}>
         {canEdit && <CommandItem value="import event sheet csv" onSelect={() => run(onImport)} className="palette-item"><Upload className="size-4" /><span>{t("Import event sheet", "استيراد قائمة فعالية")}</span></CommandItem>}
         {canEdit && <CommandItem value="export leads csv download" onSelect={() => run(() => { window.location.href = "/api/admin/leads/export"; })} className="palette-item"><Download className="size-4" /><span>{t("Export leads (CSV)", "تصدير العملاء (CSV)")}</span></CommandItem>}
-        <CommandItem value="theme dark light mode" onSelect={() => run(toggleTheme)} className="palette-item">{resolvedTheme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}<span>{resolvedTheme === "dark" ? t("Light mode", "الوضع الفاتح") : t("Dark mode", "الوضع الداكن")}</span></CommandItem>
+        <CommandItem value="theme dark light mode" onSelect={() => run(() => toggleTheme())} className="palette-item">{resolvedTheme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}<span>{resolvedTheme === "dark" ? t("Light mode", "الوضع الفاتح") : t("Dark mode", "الوضع الداكن")}</span></CommandItem>
         <CommandItem value="language arabic english عربي" onSelect={() => run(toggleLocale)} className="palette-item"><Languages className="size-4" /><span>{t("العربية", "English")}</span></CommandItem>
         <CommandItem value="keyboard shortcuts help" onSelect={() => run(onShortcuts)} className="palette-item"><Keyboard className="size-4" /><span>{t("Keyboard shortcuts", "اختصارات لوحة المفاتيح")}</span><CommandShortcut>?</CommandShortcut></CommandItem>
       </CommandGroup>

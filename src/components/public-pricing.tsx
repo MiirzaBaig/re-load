@@ -1,176 +1,277 @@
 "use client";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, Check, Minus } from "lucide-react";
 import { useSsrReducedMotion } from "@/hooks/use-ssr-reduced-motion";
 import { BILLING_PLANS } from "../../supabase/functions/_shared/billing-contract";
-import { useState } from "react";
 import { Segmented } from "@/components/desk/primitives";
 import { publicEvent } from "@/components/public-analytics";
-import Link from "next/link";
-import { Check } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
 import { ScrollReveal } from "@/components/scroll-reveal";
-import { Button } from "@/components/ui/button";
-export function PublicPricing() {
-  const [interval, setIntervalChoice] = useState<"monthly" | "annual">(
-    "monthly",
-  );
-  const { t, locale } = useLanguage();
+import { cn } from "@/lib/utils";
+
+const EASE = [0.2, 0, 0, 1] as const;
+const fmt = (n: number, decimals = 0) =>
+  n.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+
+/**
+ * Starts at the real value (so the server HTML shows the true price for
+ * search engines) and only tweens when the value changes, e.g. monthly to
+ * yearly. Each frame keeps the final number's decimals.
+ */
+function RollingNumber({ value, decimals }: { value: number; decimals: number }) {
   const reduce = useSsrReducedMotion();
+  const [shown, setShown] = useState(value);
+  const from = useRef(value);
+  useEffect(() => {
+    if (reduce || from.current === value) {
+      from.current = value;
+      setShown(value);
+      return;
+    }
+    const start = performance.now();
+    const origin = from.current;
+    let frame = 0;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / 520);
+      const eased = 1 - Math.pow(1 - p, 4);
+      setShown(origin + (value - origin) * eased);
+      if (p < 1) frame = requestAnimationFrame(tick);
+      else from.current = value;
+    };
+    frame = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(frame);
+      from.current = value;
+    };
+  }, [value, reduce]);
+  return <span>{fmt(shown, decimals)}</span>;
+}
+
+export function PublicPricing() {
+  const [interval, setIntervalChoice] = useState<"monthly" | "annual">("monthly");
+  const { t, locale, isArabic } = useLanguage();
+  const reduce = useSsrReducedMotion();
+  const yearly = interval === "annual";
+  const plans = [
+    { key: "standard" as const, ...BILLING_PLANS.standard },
+    { key: "premium" as const, ...BILLING_PLANS.premium },
+  ];
+
+  // One source for the cards and the comparison table. [standard, premium]
+  const rows: Array<{ label: string; values: [boolean | string, boolean | string] }> = [
+    {
+      label: t("Delivered messages / month", "الرسائل المسلّمة شهريًا"),
+      values: [fmt(BILLING_PLANS.standard.messages), fmt(BILLING_PLANS.premium.messages)],
+    },
+    { label: t("Return requests on WhatsApp", "طلبات الإرجاع عبر واتساب"), values: [true, true] },
+    { label: t("Checks against your approved policy", "التحقق وفق سياستك المعتمدة"), values: [true, true] },
+    { label: t("Order verification", "التحقق من الطلب"), values: [true, true] },
+    { label: t("Merchant dashboard and case tracking", "لوحة التحكم ومتابعة الحالات"), values: [true, true] },
+    { label: t("Arabic and English", "العربية والإنجليزية"), values: [true, true] },
+    { label: t("AI customer support", "خدمة العملاء بالذكاء الاصطناعي"), values: [false, true] },
+    { label: t("Product questions from your answers", "أسئلة المنتجات من إجاباتك"), values: [false, true] },
+    { label: t("Verified order tracking", "تتبع الطلبات بعد التحقق"), values: [false, true] },
+    { label: t("Support tickets", "تذاكر الدعم"), values: [false, true] },
+    { label: t("Stores", "عدد المتاجر"), values: ["1", "1"] },
+  ];
+
   return (
-    <section id="pricing" className="scroll-mt-24 border-y bg-muted/20">
-      <div className="mx-auto max-w-5xl px-5 py-20 md:py-24">
+    <section id="pricing" className="scroll-mt-24 border-y bg-background">
+      <div className="mx-auto max-w-5xl px-5 py-20 md:py-28">
+        {/* Header */}
         <ScrollReveal>
-          <div className="mx-auto mb-9 max-w-xl text-center">
-            <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-              {t("Simple plans", "اشتراكات واضحة")}
-            </p>
-            <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight md:text-4xl">
-              {t("Start with what your store needs.", "ابدأ بما يحتاجه متجرك.")}
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-sm font-medium text-muted-foreground">{t("Pricing", "الأسعار")}</p>
+            <h2 className="mt-3 font-display text-[34px] font-semibold leading-[1.1] tracking-[-0.03em] text-balance md:text-5xl">
+              {t("Simple pricing for every store.", "أسعار واضحة لكل متجر.")}
             </h2>
-            <p className="mt-4 leading-7 text-muted-foreground">
+            <p className="mx-auto mt-4 max-w-lg text-base leading-7 text-muted-foreground text-pretty">
               {t(
-                "Prepare your store for free. Subscribe when you’re ready to activate your assistant. All prices include VAT.",
-                "جهّز متجرك مجانًا، واشترك عندما تكون جاهزًا لتفعيل المساعد. جميع الأسعار شاملة الضريبة.",
+                "Set up for free. Pay when you’re ready to turn on WhatsApp for your customers. Prices include VAT.",
+                "جهّز متجرك مجانًا، وادفع عندما تكون جاهزًا لتفعيل واتساب لعملائك. الأسعار شاملة الضريبة.",
               )}
             </p>
           </div>
         </ScrollReveal>
-        <div className="mb-7 flex justify-center">
-          <Segmented
-            label={t("Billing frequency", "مدة الاشتراك")}
-            value={interval}
-            onChange={(value) => {
-              setIntervalChoice(value);
-              publicEvent("reload_pricing_interval_selected", {
-                billing_interval: value,
-                language: locale,
-              });
-            }}
-            options={[
-              { value: "monthly", label: t("Monthly", "شهري") },
-              {
-                value: "annual",
-                label: t("Yearly · save 20%", "سنوي · وفر 20٪"),
-              },
-            ]}
-          />
-        </div>
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5 sm:grid-cols-2">
-          {[
-            {
-              ...BILLING_PLANS.standard,
-              price: BILLING_PLANS.standard.price / 100,
-              premium: false,
-            },
-            {
-              ...BILLING_PLANS.premium,
-              price: BILLING_PLANS.premium.price / 100,
-              premium: true,
-            },
-          ].map((plan, i) => (
-            <ScrollReveal key={plan.name} delay={i * 70}>
-              <div className="flex h-full min-w-0 flex-col rounded-2xl border bg-card p-6 sm:p-8">
-                <h3 className="text-xl font-semibold">{plan.name}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {plan.premium
-                    ? t(
-                        "Customer support and returns on WhatsApp.",
-                        "خدمة العملاء والإرجاع على واتساب.",
-                      )
-                    : t(
-                        "Return requests and policy checks on WhatsApp.",
-                        "طلبات الإرجاع والتحقق من السياسة على واتساب.",
-                      )}
-                </p>
-                <div
-                  className="mt-6 min-h-28"
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
-                  <AnimatePresence mode="wait" initial={false}>
-                    <motion.div
-                      key={interval}
-                      initial={{ opacity: 0, y: reduce ? 0 : 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: reduce ? 0 : -4 }}
-                      transition={{
-                        duration: reduce ? 0 : 0.2,
-                        ease: [0.22, 1, 0.36, 1],
-                      }}
-                    >
-                      <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-4xl font-semibold tracking-tight tabular-nums">
-                        <span dir="ltr">
-                          {interval === "annual"
-                            ? (plan.annualPrice / 100).toLocaleString("en", {
-                                minimumFractionDigits: 2,
-                              })
-                            : plan.price}
-                        </span>
-                        <span className="text-sm font-normal text-muted-foreground">
-                          {interval === "annual"
-                            ? t("SAR / year", "ريال / سنة")
-                            : t("SAR / month", "ريال / شهر")}
-                        </span>
-                      </p>
-                      <p className="mt-3 text-xs leading-6 text-muted-foreground">
-                        {interval === "annual"
-                          ? t(
-                              "Paid upfront. Save 20%. Messages refresh monthly.",
-                              "دفع مقدم. وفر 20٪. الرصيد يتجدد شهريًا.",
-                            )
-                          : t(
-                              "Billed monthly. Messages refresh each billing month.",
-                              "دفع شهري. يتجدد الرصيد كل شهر فوترة.",
-                            )}
-                      </p>
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
-                <ul className="my-6 space-y-3 text-sm">
-                  {[
-                    t(
-                      `${plan.messages.toLocaleString()} outgoing messages each month`,
-                      `${plan.messages.toLocaleString()} رسالة صادرة شهريًا`,
-                    ),
-                    t("One store · guided setup", "متجر واحد · إعداد موجّه"),
-                    t(
-                      "Verified return requests and merchant dashboard",
-                      "طلبات إرجاع موثّقة ولوحة تحكم للمتجر",
-                    ),
-                    ...(plan.premium
-                      ? [
-                          t(
-                            "Product questions, order tracking and support tickets",
-                            "أسئلة المنتجات، متابعة الطلبات وتذاكر الدعم",
-                          ),
-                        ]
-                      : []),
-                  ].map((text) => (
-                    <li className="flex items-start gap-2" key={text}>
-                      <Check className="mt-0.5 size-4 shrink-0" />
-                      {text}
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  asChild
-                  variant={plan.premium ? "default" : "outline"}
-                  className="mt-auto w-full rounded-xl active:scale-[.98]"
-                >
-                  <Link href="/auth">
-                    {t("Set up your store", "جهّز متجرك")}
+
+        {/* Billing switch */}
+        <ScrollReveal delay={60}>
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+            <Segmented
+              label={t("Billing frequency", "مدة الاشتراك")}
+              value={interval}
+              onChange={(value) => {
+                setIntervalChoice(value);
+                publicEvent("reload_pricing_interval_selected", { billing_interval: value, language: locale });
+              }}
+              options={[
+                { value: "monthly", label: t("Monthly", "شهري") },
+                { value: "annual", label: t("Yearly", "سنوي") },
+              ]}
+            />
+            <span className="text-sm font-medium text-eligible">{t("Save 20% yearly", "وفّر 20٪ سنويًا")}</span>
+          </div>
+        </ScrollReveal>
+
+        {/* Plans */}
+        <div className="mt-10 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2 md:gap-5">
+          {plans.map((plan, i) => {
+            const premium = plan.key === "premium";
+            const monthly = plan.price / 100;
+            const perMonth = yearly ? plan.annualPrice / 100 / 12 : monthly;
+            const features = rows.filter((r) => r.values[i] === true && (!premium || r.values[0] === false)).map((r) => r.label);
+            return (
+              <ScrollReveal key={plan.key} delay={100 + i * 80} className="h-full">
+                <article className={cn("price-card relative flex h-full min-w-0 flex-col rounded-2xl border bg-card p-6 sm:p-8", premium && "price-card-pick")}>
+                  {premium && (
+                    <span className="absolute -top-3 start-6 rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background sm:start-8">
+                      {t("Recommended", "الموصى به")}
+                    </span>
+                  )}
+                  <h3 className="text-base font-semibold">{plan.name}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {premium
+                      ? t("Returns and customer support on WhatsApp.", "الإرجاع وخدمة العملاء عبر واتساب.")
+                      : t("Returns on WhatsApp, checked against your policy.", "الإرجاع عبر واتساب وفق سياستك.")}
+                  </p>
+
+                  <div className="mt-6" aria-live="polite" aria-atomic="true">
+                    <div className="flex items-baseline gap-1.5">
+                      {!isArabic && <span className="text-lg font-semibold text-muted-foreground">SAR</span>}
+                      <span className="font-display text-5xl font-semibold tracking-[-0.04em] [font-variant-numeric:proportional-nums]" dir="ltr">
+                        <RollingNumber value={perMonth} decimals={yearly ? 2 : 0} />
+                      </span>
+                      {isArabic && <span className="text-lg font-semibold text-muted-foreground">ريال</span>}
+                      <span className="ms-1 text-sm text-muted-foreground">{t("/month", "/ شهريًا")}</span>
+                    </div>
+                    <div className="mt-2 h-5 text-sm text-muted-foreground">
+                      <AnimatePresence mode="wait" initial={false}>
+                        <motion.p
+                          key={interval}
+                          initial={reduce ? false : { opacity: 0, y: 3 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={reduce ? undefined : { opacity: 0, y: -3 }}
+                          transition={{ duration: 0.2, ease: EASE }}
+                        >
+                          {yearly
+                            ? t(`SAR ${fmt(plan.annualPrice / 100, 2)} billed yearly`, `${fmt(plan.annualPrice / 100, 2)} ريال تُدفع سنويًا`)
+                            : t("Billed monthly", "يُدفع شهريًا")}
+                        </motion.p>
+                      </AnimatePresence>
+                    </div>
+                  </div>
+
+                  <Link
+                    href="/auth"
+                    onClick={() => publicEvent("reload_signup_click", { plan: plan.key, billing_interval: interval, language: locale })}
+                    className={cn(
+                      "group mt-6 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg text-sm font-medium transition-[background-color,border-color,transform] duration-200 active:scale-[.98]",
+                      premium ? "bg-foreground text-background hover:bg-foreground/85" : "border bg-background hover:bg-muted",
+                    )}
+                  >
+                    {t(`Get ${plan.name}`, `اشترك في ${plan.name}`)}
+                    <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5" />
                   </Link>
-                </Button>
-              </div>
-            </ScrollReveal>
-          ))}
+
+                  <div className="mt-7 border-t pt-6">
+                    <p className="text-sm font-semibold">
+                      {t(`${fmt(plan.messages)} messages a month`, `${fmt(plan.messages)} رسالة شهريًا`)}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {t("Only delivered outgoing messages count", "تُحتسب الرسائل الصادرة المسلّمة فقط")}
+                    </p>
+                    <ul className="mt-5 space-y-2.5 text-sm">
+                      {premium && (
+                        <li className="pb-1 text-muted-foreground">{t("Everything in Standard, plus:", "كل ما في ستاندرد، بالإضافة إلى:")}</li>
+                      )}
+                      {features.map((text) => (
+                        <li key={text} className="flex items-start gap-2.5">
+                          <Check className="mt-0.5 size-4 shrink-0 text-foreground" strokeWidth={2.25} />
+                          {text}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
+              </ScrollReveal>
+            );
+          })}
         </div>
-        <p className="mx-auto mt-6 max-w-2xl text-center text-xs leading-6 text-muted-foreground">
-          {t(
-            "Allowances count delivered outgoing messages, not customers or conversations. Marketing and shipping fees are excluded. Purchased extra messages, when available, carry over.",
-            "الرصيد يُحسب بالرسائل الصادرة المسلّمة، وليس بعدد العملاء أو المحادثات. التسويق والشحن غير مشمولين. الرسائل الإضافية المشتراة، عند إتاحتها، تنتقل للشهر التالي.",
-          )}
-        </p>
+
+        {/* Free start */}
+        <ScrollReveal delay={120}>
+          <div className="mt-4 flex flex-col gap-4 rounded-2xl border border-dashed p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 md:mt-5">
+            <div>
+              <p className="text-base font-semibold">{t("Start free", "ابدأ مجانًا")}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t(
+                  "Connect your store, write your policy and prepare answers. No card needed until you go live.",
+                  "اربط متجرك، واكتب سياستك، وجهّز إجاباتك. لا تحتاج إلى بطاقة حتى التفعيل.",
+                )}
+              </p>
+            </div>
+            <Link
+              href="/auth"
+              onClick={() => publicEvent("reload_signup_click", { plan: "free_setup", language: locale })}
+              className="group inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border bg-background px-5 text-sm font-medium transition-colors hover:bg-muted"
+            >
+              {t("Set up your store", "جهّز متجرك")}
+              <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5" />
+            </Link>
+          </div>
+        </ScrollReveal>
+
+        {/* Compare */}
+        <ScrollReveal delay={80}>
+          <div className="mt-20">
+            <h3 className="text-center font-display text-2xl font-semibold tracking-tight">
+              {t("Compare plans", "قارن الاشتراكات")}
+            </h3>
+            <table className="mt-8 w-full table-fixed text-sm">
+              <caption className="sr-only">{t("Plan features", "مزايا الاشتراكات")}</caption>
+              <thead>
+                <tr className="border-b">
+                  <th scope="col" className="w-[46%] py-3 text-start font-medium text-muted-foreground sm:w-1/2">
+                    {t("Features", "المزايا")}
+                  </th>
+                  {plans.map((plan) => (
+                    <th key={plan.key} scope="col" className="py-3 text-center font-semibold">
+                      {plan.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.label} className="border-b transition-colors hover:bg-muted/40">
+                    <th scope="row" className="py-3.5 pe-3 text-start font-normal text-foreground/85">
+                      {row.label}
+                    </th>
+                    {row.values.map((v, j) => (
+                      <td key={j} className="py-3.5 text-center">
+                        {v === true ? (
+                          <Check className="mx-auto size-4 text-foreground" strokeWidth={2.25} aria-label={t("Included", "مشمول")} />
+                        ) : v === false ? (
+                          <Minus className="mx-auto size-4 text-muted-foreground/50" aria-label={t("Not included", "غير مشمول")} />
+                        ) : (
+                          <span className="font-medium tabular-nums">{v}</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="mt-5 text-center text-xs leading-6 text-muted-foreground">
+              {t(
+                "Messages refresh every month, also on yearly plans. Customer messages, marketing campaigns and shipping are not counted.",
+                "يتجدد الرصيد كل شهر حتى في الاشتراك السنوي. لا تُحتسب رسائل العملاء ولا الحملات التسويقية ولا الشحن.",
+              )}
+            </p>
+          </div>
+        </ScrollReveal>
       </div>
     </section>
   );

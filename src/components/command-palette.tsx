@@ -150,7 +150,7 @@ export function CommandPalette() {
             </CommandItem>
             <CommandItem
               value={`${t("theme dark light mode", "المظهر داكن فاتح")}`}
-              onSelect={() => run(toggleTheme)}
+              onSelect={() => run(() => toggleTheme())}
               className="palette-item"
             >
               {resolvedTheme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}

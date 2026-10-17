@@ -18,7 +18,8 @@ type ThemeProviderState = {
   /** "system" resolved to what is actually on screen — a toggle needs this. */
   resolvedTheme: ResolvedTheme
   setTheme: (theme: Theme) => void
-  toggleTheme: () => void
+  /** Flips the theme; pass the click point to grow the new theme from there. */
+  toggleTheme: (origin?: { x: number; y: number }) => void
 }
 
 const COLOR_SCHEME_QUERY = "(prefers-color-scheme: dark)"
@@ -95,6 +96,52 @@ function transitionTheme(resolvedTheme: ResolvedTheme, disableSnap: boolean) {
   run()
 }
 
+type ViewTransitionDoc = Document & {
+  startViewTransition?: (update: () => void) => {
+    ready: Promise<void>
+    finished: Promise<void>
+  }
+}
+
+/*
+ * Circular reveal: the browser snapshots the page, the theme flips in one
+ * step, and only the snapshot animates (a single GPU layer). This is why it
+ * stays smooth, unlike fading the colour of every element on the page.
+ * Errors from an overlapping navigation transition ("Transition was
+ * skipped") are caught, so the theme still flips instantly in that case.
+ */
+function revealTheme(next: ResolvedTheme, origin?: { x: number; y: number }) {
+  const doc = document as ViewTransitionDoc
+  const root = document.documentElement
+  if (!doc.startViewTransition || prefersReducedMotion()) {
+    applyThemeClasses(next)
+    return
+  }
+  const x = origin?.x ?? window.innerWidth / 2
+  const y = origin?.y ?? 0
+  const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y))
+  root.dataset.themeTransition = "view"
+  try {
+    const transition = doc.startViewTransition(() => applyThemeClasses(next))
+    transition.ready
+      .then(() => {
+        root.animate(
+          { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+          { duration: 620, easing: "cubic-bezier(0.2, 0, 0, 1)", pseudoElement: "::view-transition-new(root)" },
+        )
+      })
+      .catch(() => {})
+    transition.finished
+      .catch(() => {})
+      .finally(() => {
+        delete root.dataset.themeTransition
+      })
+  } catch {
+    delete root.dataset.themeTransition
+    applyThemeClasses(next)
+  }
+}
+
 function isEditableTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
     return false
@@ -132,6 +179,7 @@ export function ThemeProvider({
 
   React.useEffect(() => {
     document.documentElement.dataset.themeReady = "true"
+    setResolvedTheme(document.documentElement.classList.contains("dark") ? "dark" : "light")
   }, [])
 
   const setTheme = React.useCallback(
@@ -206,19 +254,10 @@ export function ThemeProvider({
         return
       }
 
-      setThemeState((currentTheme) => {
-        const nextTheme =
-          currentTheme === "dark"
-            ? "light"
-            : currentTheme === "light"
-              ? "dark"
-              : getSystemTheme() === "dark"
-                ? "light"
-                : "dark"
-
-        localStorage.setItem(storageKey, nextTheme)
-        return nextTheme
-      })
+      const nextTheme: ResolvedTheme = document.documentElement.classList.contains("dark") ? "light" : "dark"
+      revealTheme(nextTheme)
+      localStorage.setItem(storageKey, nextTheme)
+      setThemeState(nextTheme)
     }
 
     window.addEventListener("keydown", handleKeyDown)
@@ -260,7 +299,13 @@ export function ThemeProvider({
       setTheme,
       // Toggling from "system" commits to the opposite of what is shown, so a
       // single click always visibly flips the theme.
-      toggleTheme: () => setTheme(resolvedTheme === "dark" ? "light" : "dark"),
+      toggleTheme: (origin?: { x: number; y: number }) => {
+        // Read what is actually on screen: the state can lag on first load
+        // when the theme follows the system, which made the first click a no-op.
+        const next: ResolvedTheme = document.documentElement.classList.contains("dark") ? "light" : "dark"
+        revealTheme(next, origin)
+        setTheme(next)
+      },
     }),
     [theme, resolvedTheme, setTheme]
   )
