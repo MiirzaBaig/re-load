@@ -2,7 +2,7 @@
 
 ## Direction
 
-Desert Indigo: a warm paper canvas, deep indigo actions, saffron highlights, readable evidence, and a single decision-trace motif connecting policy clause, approved rule, order fact, and outcome. The palette intentionally avoids the green/teal association of commerce platforms such as Salla.
+Monochrome-first Brand System 3.0: warm off-white/ink surfaces, one restrained selection accent, separate semantic status colours and readable evidence. Revised 2026-10-13 against the workspace and public-site code.
 
 ## Tokens
 
@@ -20,6 +20,12 @@ Public marketing content uses a maximum width near 1200px. Merchant content uses
 
 Buttons use short transitions. Cards use subtle border or shadow changes. Disclosures use Radix keyboard behavior. Reduced motion disables translated movement and prolonged animation. There are no decorative looping animations or forced scroll effects.
 
-## Accessibility and future RTL
+## Accessibility and RTL
 
-Controls use visible focus styles, semantic labels, keyboard-friendly Radix primitives, and separate outcome/status labels. The current implementation is English/LTR. Future Arabic work should use logical spacing and direction-aware icon handling rather than duplicating layouts.
+Controls use visible focus styles, semantic labels, keyboard-friendly Radix primitives, and separate outcome/status labels. Arabic and English with RTL are implemented. Use logical spacing and direction-aware icons; verify both directions at desktop and 390px with no sideways scrolling.
+
+## Shared implementation rules
+
+Reuse `src/components/desk/primitives.tsx` (TWEEN, QUICK, EASE, Segmented, Metric, Panel, EmptyState), ProgressRing and integration steppers. PageHeader unifies merchant headings/help; SetupChecklist reflects real setup state. Use rounded-2xl cards and rounded-xl controls, shaped skeletons and brief 200–350ms transitions; reduced-motion users must not get translated/looping effects. Use AlertDialog for destructive confirmations.
+
+The current public footer is a normal footer with a faded wordmark, not the former curtain reveal. Workspace Inbox supports larger/full conversation views and collapsible context panels. Knowledge import explains how to find Zid/Salla public-page links and offers pasted text or guided setup. Native WhatsApp messages cannot run custom CSS animations.

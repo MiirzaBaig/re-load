@@ -1,6 +1,6 @@
 # Merchant support and journey visibility
 
-Implemented on 12 October 2026. The support view is a staff workspace, not merchant impersonation.
+Implemented on 12 October 2026; documentation reviewed 13 October. The support view is a staff workspace, not merchant impersonation.
 
 ## Where to open it
 
@@ -8,8 +8,8 @@ Sign in to `/admin`, open Merchants, select a store, then choose **Open support 
 
 ## Access
 
-- Every request validates Supabase Auth and the existing platform staff list.
-- Database functions independently validate staff status and the configured MFA policy.
+- Every request validates Supabase Auth and the existing platform staff list. Personal access is invited through Admin → Team and claimed after verified-email sign-in; normal merchant signup grants no staff role.
+- Database functions independently validate staff status and the configured MFA policy. MFA enforcement is currently temporarily disabled, not a mandatory login step.
 - All staff roles can inspect the bounded support snapshot. Only Reload owners can prepare new answer drafts.
 - Staff cannot publish answers, approve identity reviews, overwrite approved knowledge, publish policies or authorize a commerce connection through this view.
 - The merchant remains responsible for approving and publishing drafts in Store knowledge.
@@ -54,3 +54,7 @@ This is not full browser-session replay or exhaustive error monitoring. Old unre
 - A real merchant/customer return, email-OTP recovery, shipment/refund outcome and live image-analysis acceptance test have not been performed as part of this release.
 
 Both migrations are deployed; customer-service and whatsapp-inbox are deployed separately from the Next website.
+
+## Latest website release
+
+Claude's 23bfbe7 workspace polish adds shared page headers, real setup checklist, policy review refinements, expanded Inbox and platform-specific knowledge-link guidance. These changes do not expand staff authority or transfer approval from the merchant. Subsequent footer commits affect the public website only. A new release's visual/build acceptance must be recorded separately from the historical checks above.

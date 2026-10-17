@@ -1,5 +1,7 @@
 # Email notifications and WhatsApp order verification
 
+Current status: implemented order-email OTP; reviewed 2026-10-13. Provider setup below is a reproducible runbook, not an outstanding requirement. General notification emails and bounce/delivery webhooks remain future work.
+
 Recommended sender: `Reload <no-reply@notify.reload.sa>`, with `support@reload.sa` as Reply-To if that inbox exists.
 
 ## Provider setup
@@ -13,7 +15,7 @@ Recommended sender: `Reload <no-reply@notify.reload.sa>`, with `support@reload.s
 - This is order identity verification, separate from merchant Supabase login.
 - On phone mismatch, offer a code to the registered order email (masked); never accept an arbitrary replacement email as proof.
 - Generate a cryptographically random six-digit code. Store only a keyed hash in a private database table, bound to merchant, order and WhatsApp conversation.
-- Suggested controls: ten-minute expiry, five attempts, resend cooldown, per-conversation/store/recipient limits, a resend invalidates the previous code, verification consumes the challenge atomically.
+- Implemented controls: ten-minute expiry, five attempts, resend cooldown, per-conversation/store/recipient limits, a resend invalidates the previous code, verification consumes the challenge atomically.
 - Send through Resend from the backend. A delivery failure must not claim a code was sent.
 - Customer types the code in WhatsApp. Successful verification grants short-lived order access for that conversation; subsequent actions re-read live order facts.
 - If email is unavailable or inaccessible, offer existing merchant identity review. SMS requires a separate provider and is not implicitly included.

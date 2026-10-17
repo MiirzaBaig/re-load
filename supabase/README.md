@@ -1,51 +1,40 @@
-# Supabase setup
+# Reload Supabase operations
 
-The repository now contains the authentication client and the first tenant-safe MVP schema. The live Supabase project still needs to be created and connected.
+Reviewed 2026-10-13. Hosted project `clwczcvxosudfevjznmk` already exists and has live merchant/Auth data. Do not recreate it or reset the production database.
 
-## Create and connect the project
+## Components
 
-1. Create a Supabase organization and project for Reload. Use the shared company email for ownership, then invite each teammate with their own account. Do not share the Gmail password.
-2. In the Supabase dashboard, open **Connect** and copy the Project URL and Publishable key.
-3. Copy `.env.example` to `.env.local` and add those two values. The publishable key is designed for browser use; never put a `service_role` or secret key in a `NEXT_PUBLIC_` variable.
-4. Apply `supabase/migrations/202609180001_initial_mvp.sql` in the SQL Editor. Run it before creating the first user so the signup trigger can create their store and owner membership.
-5. Under **Authentication → URL Configuration**, set the production Site URL and add both redirect URLs:
-   - `http://localhost:3000/auth/callback`
-   - `https://YOUR-VERCEL-DOMAIN/auth/callback`
-6. Keep Email + Password enabled. For production, keep email confirmation enabled and configure a branded SMTP sender before inviting merchants.
+Postgres/RLS owns stores, memberships, reviewed policies, immutable eligibility decisions, cases, knowledge, tickets, conversations, leads, reports and staff access. Private schemas hold encrypted credentials, verification challenges, queue state and bounded journey diagnostics. Edge Functions implement provider operations.
 
-## Enable Google sign-in
+## Website configuration
 
-1. In Google Auth Platform, add `https://clwczcvxosudfevjznmk.supabase.co/auth/v1/callback` as an authorized redirect URI.
-2. In Supabase, open **Authentication → Sign In / Providers → Google**, enable it, and enter the Google Client ID and a newly rotated Client Secret.
-3. In Supabase **Authentication → URL Configuration**, add the local and production application redirect URLs.
-4. Set `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` locally and in Vercel after the provider is enabled.
+Use NEXT_PUBLIC_SUPABASE_URL plus NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or supported anon-key fallback) in the website environment. Google login appears only when NEXT_PUBLIC_GOOGLE_AUTH_ENABLED is true and hosted Google settings are valid. Secrets and Google client secret never belong in public variables.
 
-The Google Client Secret belongs only in the Supabase provider settings. Never put it in `.env.local`, frontend source, or a `NEXT_PUBLIC_` variable.
+Supabase Auth redirects must allow the actual production origin https://www.reload.sa/auth/callback and the local development origin. Auth SMTP uses Resend; see ../docs/auth-email-delivery.md. Default 30/hour Auth email configuration was recorded on 11 October, not re-read in this audit.
 
-Restart `npm run dev` after adding `.env.local`. Create the first account from `/auth`; its store name becomes the first store workspace.
+## Migrations and deploys
 
-## Current boundary
+```sh
+npx --yes supabase migration list --linked
+npx --yes supabase functions list --project-ref clwczcvxosudfevjznmk
+npx --yes supabase secrets list --project-ref clwczcvxosudfevjznmk
+```
 
-Supabase now owns real merchant identity, sessions, store membership, store settings, and row-level tenant isolation. The existing policy, decision, case, and customer screens still use demo fixtures/local storage until their service layer is moved to trusted server functions. Published policy versions, decisions, cases, and audit events are intentionally read-only to browser clients; trusted server code must create that evidence.
+Compare local and remote migrations before applying new SQL; never apply only the original September pair to this existing project. Do not use db reset in production. Draft migrations under drafts/ are intentionally excluded. Website commits do not deploy Edge Functions or migrations automatically.
 
-## Salla connection
+Review a specific changed function and deploy only that function after appropriate checks. Rollback-only SQL tests can still interact with scheduled/network queues; prefer a development project when tests assume an idle inbox.
 
-Apply migrations `202609180002_channels_and_integrations.sql` and `202609180003_salla_server_functions.sql` in order. Then configure these Edge Function secrets in **Project Settings → Edge Functions → Secrets**:
+## Integrations
 
-- `SALLA_CLIENT_ID`
-- `SALLA_CLIENT_SECRET`
-- `SALLA_WEBHOOK_SECRET`
-- `SALLA_REDIRECT_URI=https://clwczcvxosudfevjznmk.supabase.co/functions/v1/salla-oauth-callback`
-- `APP_URL=https://mujeb-cpu-mujeb.vercel.app`
-- `INTEGRATION_ENCRYPTION_KEY` with 32 random bytes encoded as base64
+- Salla: public app 1155852112, Custom OAuth callback `/functions/v1/salla-oauth-callback`, signature webhook `/functions/v1/salla-webhook`, reviewed scopes and refresh worker. New authorization stays gated until SALLA_PUBLIC_APP_READY is deliberately enabled after acceptance.
+- Zid: the per-merchant AI Connector link is encrypted; read-only tool allowlist and live order/product reads. Do not place a merchant's connector URL in global environment files or documentation.
+- Meta: production number and store-code routing; signed webhook `/functions/v1/whatsapp-webhook`, correct live WABA app subscription, durable inbox/recovery and case notifications. Template approvals and billing are separate provider requirements.
+- Resend: order-bound email OTP through API; login through Auth SMTP. No SMS provider.
 
-Deploy `salla-oauth-start`, `salla-oauth-callback`, `salla-connection`, and `salla-webhook`. In Salla Partners choose **Custom Mode** while testing, request only `orders.read`, and enter:
+## Secrets
 
-- Callback URL: `https://clwczcvxosudfevjznmk.supabase.co/functions/v1/salla-oauth-callback`
-- Webhook URL: `https://clwczcvxosudfevjznmk.supabase.co/functions/v1/salla-webhook`
+See ../docs/environment-configuration.md and the sanitized root .env.example. The private local .env is not a complete hosted-secret export and must not be bulk-uploaded: empty fields would replace working values. `secrets list` supplies names/digests only. Supabase system credentials are injected into hosted functions; do not overwrite them. Rotating encryption/hash/signing keys requires a migration/recovery plan.
 
-The webhook uses Salla's Signature strategy. Its secret must match `SALLA_WEBHOOK_SECRET`. Move to Easy Mode only when the app is ready for Salla App Store publishing.
+## Snapshot
 
-## Magic-link email
-
-In **Authentication → Email Templates → Magic Link**, use subject `Your secure sign-in link to Reload` and paste the contents of `supabase/templates/magic-link.html`. The template intentionally uses `{{ .ConfirmationURL }}` so Supabase sends a magic link rather than an OTP code. Disable click tracking in the SMTP provider because rewritten authentication links can fail. The app sends users back to `/app`, so every local and production origin used by the app must be present in the Supabase redirect allow list.
+The audit found 21 ACTIVE hosted functions and 31 migration versions matched between local and remote inventories. Deployment status alone does not establish source parity, template approval or full merchant acceptance. See CONTEXT.md and the dedicated feature guides for implementation boundaries.

@@ -1,7 +1,7 @@
 # Setting up a WhatsApp number (Cloud API)
 
 How to register a WhatsApp number with Meta's Cloud API, including the
-workaround for the dashboard's "Registration failed" bug. This is how
+API-based workaround for the observed dashboard "Registration failed" error. This is how
 Reload's number was connected on 6 Oct 2026.
 
 > Never paste access tokens or PINs into chats, tickets or screenshots.
@@ -14,7 +14,7 @@ Reload's number was connected on 6 Oct 2026.
 | Number | +966 55 236 2631 |
 | Display name | Reload |
 | Phone Number ID | `1418354908018050` |
-| WhatsApp Business account (WABA) ID | `2003054410376909` |
+| WhatsApp Business account (WABA) ID | `2165590787358223` |
 | Meta app | RELOAD (`4582556568654842`) |
 | Status | Connected, Cloud API |
 
@@ -42,7 +42,7 @@ WhatsApp Manager → Phone numbers → **Add phone number**.
 - Verify the SMS code.
 
 If the dashboard then says **"Registration failed. Please try again"**, continue
-below. It's a known dashboard bug at the final step.
+below. This error was observed during Reload setup; diagnose the API response rather than assuming every failure is a dashboard bug.
 
 ### 2. Open Graph API Explorer
 
@@ -52,7 +52,7 @@ below. It's a known dashboard bug at the final step.
 2. Add both WhatsApp permissions.
 3. **Generate Access Token**.
 
-Explorer tokens last about an hour, so they're fine for setup only.
+Explorer tokens are short-lived; inspect their actual expiry and use them for setup only, never as the backend production credential.
 
 Use **JSON mode** for every POST body, not the key/value grid.
 
@@ -115,7 +115,7 @@ Repeat step 3. `status` should be **`CONNECTED`**.
 ## Before going live
 
 1. **Permanent token:** Business Settings → System Users. Create one with both
-   WhatsApp permissions; the token doesn't expire.
+   WhatsApp permissions. Choose a non-expiring system-user token if available; it can still be revoked or invalidated.
 2. **Backend settings** (Supabase function secrets):
    - `WHATSAPP_PHONE_NUMBER_ID`
    - `WHATSAPP_WABA_ID`
@@ -133,3 +133,7 @@ Keeping one number in the WhatsApp Business app *and* on the Cloud API is
 called **Coexistence**. It only works through Embedded Signup run by a Meta
 Tech Provider or Solution Partner, not through "Add phone number". For
 Reload's own number we use a dedicated number on the API only.
+
+## Reconciliation on 2026-10-13
+
+The owner later confirmed live-number WABA 2165590787358223 and successfully subscribed it to the app; earlier setup notes listed 2003054410376909. Verify the current phone-to-WABA association in Meta before changing hosted secrets. Hosted secrets-list checks cannot reveal their actual stored values. Live replies were confirmed by the owner in chat; template approvals, payment method, limits and business-verification state were not rechecked in this documentation audit. Product photos are optional. Never interpret a case status as a bank refund confirmation.

@@ -114,7 +114,7 @@ can be bought.
 
 No address, customer details or payment data.
 
-## Wiring into `customer-assistant.ts`
+## Wiring into `customer-assistant.ts` (already implemented)
 
 Where the Salla branch ends with `else productUnavailable=true;`:
 
@@ -194,3 +194,7 @@ Unit tests: `supabase/functions/tests/zid-product.test.ts` (9).
   3,000 products (index would be marked incomplete and keep older rows).
 - **Zid rate limits** under real WhatsApp traffic.
 - **Zid's written approval** for multi-merchant commercial use: none on record.
+
+## Current handoff status — 2026-10-13
+
+Zid product tools are already called from the WhatsApp assistant, and verified tracking is wired through customer-tracking.ts. Order-email OTP uses the registered-order contact internally. Staff support and customer Inbox share persisted conversations/cases/tickets; they do not obtain unrestricted connector access. No global Zid secret is needed: each merchant supplies their own connector link, encrypted privately. The development-store tests above do not establish live variants, large-catalogue behavior, throughput or written commercial-use approval. See CONTEXT.md for rollout boundaries.

@@ -1,5 +1,7 @@
 # Merchant and team sign-in email delivery
 
+Reviewed 2026-10-13 against code and available inventory. Hosted SMTP values below are the 11 October recorded configuration, not freshly exported settings.
+
 Supabase Auth sends login links and codes using Resend SMTP. This is separate from WhatsApp order verification, which calls the Resend HTTP API from the Edge worker.
 
 ## Live configuration (11 October 2026)
@@ -25,3 +27,7 @@ SMTP changes were applied through a temporary, narrowly scoped CLI configuration
 References:
 - https://supabase.com/docs/guides/auth/auth-smtp
 - https://resend.com/docs/send-with-supabase-smtp
+
+## Personal staff access
+
+An existing owner adds the teammate's exact email and role in Admin → Team. The teammate opens /admin/login and confirms their personal email; /admin claims the pending invitation. Saving an invitation does not itself send an invitation email. The shared admin password route remains as a legacy fallback. Current staff MFA enforcement is temporarily disabled (`ADMIN_REQUIRE_MFA=false` plus the database policy); do not describe MFA as required today.

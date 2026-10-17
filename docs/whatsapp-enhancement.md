@@ -1,12 +1,12 @@
 # Shared Reload WhatsApp journey
 
-Implemented 10 October 2026. Email/SMS code delivery is intentionally deferred; no code option is shown or code-sent claim made.
+Initial implementation 10 October; reconciled 2026-10-13. Resend order-email OTP is implemented; no SMS provider is enabled.
 
 ## Merchant
 
-1. Connect Salla or Zid and publish a reviewed return policy.
+1. Connect Zid (or Salla after its readiness gate/review/acceptance) and publish a reviewed return policy.
 2. An owner/admin activates WhatsApp in Integrations. Multiple workspaces can use the same registered Reload number.
-3. Copy the store-specific WhatsApp link or show its QR. The prefilled message is `return <stores.return_code>`; the customer must send it. This code identifies a store, never proves ownership of an order.
+3. Copy the store-specific WhatsApp link or show its QR. The prefilled message is `return <stores.whatsapp_code>`; the customer must send it. This code identifies a store, never proves ownership of an order.
 4. Return cases, photos, policy decisions and customer reports appear in the existing workspace.
 5. In Return cases, owners/admins see pending customer identity checks. They independently confirm the requester owns the order, enter the contact recorded on that order, describe how they checked, and approve/decline. The backend verifies the original contact against the connected platform before granting access. This is manual merchant attestation, not automatic identity verification or return approval.
 6. Approval facts remain private and are bound to that conversation for 24 hours. Continuing after approval re-fetches the live order using the original contact recorded privately; it does not reuse stale order data. The customer gets a Continue button inside the open WhatsApp service window. Otherwise the UI tells the merchant to ask them to return to the chat. Outside-window identity notifications await an approved utility template.
@@ -16,9 +16,9 @@ Implemented 10 October 2026. Email/SMS code delivery is intentionally deferred; 
 1. Send the prefilled message from a merchant's link/QR.
 2. Choose Arabic or English; Reload identifies the selected store.
 3. Send an order number. The existing order adapter checks the sender against the order contact. A failed identity match reveals no order facts. Platform outages get a retry message instead.
-4. If the number changed, request merchant verification. There is no email/SMS provider yet, so those options are unavailable. The merchant reviews it in the web workspace. Return to WhatsApp and tap Continue.
-5. Choose an item (paginated for large orders), quantity, reason and condition. Send a product photo. The existing AI photo assessment remains advisory; it cannot prove identity, reject eligibility, or issue a refund. Catalogue-image comparison is not added by this change.
-6. Review the summary; confirm, edit or cancel. The deterministic engine evaluates the published policy. Eligible/review outcomes create a case and attach the photo.
+4. If the number changed, verify with a code sent to the registered order email. If that is unavailable/inaccessible, request merchant verification in the dashboard. A replacement email supplied in chat is not accepted. SMS is unavailable; see email-verification-plan.md.
+5. Choose an item (paginated for large orders), quantity, reason and condition. Optionally send a product photo or skip. The existing AI photo assessment remains advisory; it cannot prove identity, reject eligibility, or issue a refund. Catalogue-image comparison is not added by this change.
+6. Review the summary; confirm, edit or cancel. The deterministic engine evaluates the published policy. Eligible/review outcomes create a case and attach any uploaded photo.
 7. Track the latest ten return cases for the selected store. A different store link explicitly switches store context; an order number never chooses a store. Status messages identify the store and case.
 8. Submit a bug report/feedback with a review-and-send step. An interrupted return is retained for continuation.
 
