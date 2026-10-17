@@ -7,9 +7,22 @@ import {
 } from "@/lib/supabase/env";
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  const requestHeaders = new Headers(request.headers);
+  // Never trust a caller-supplied locale header. The public path is authoritative.
+  requestHeaders.delete("x-reload-public-locale");
+  const path = request.nextUrl.pathname;
+  const locale =
+    path === "/" || /^\/ar(?:\/|$)/.test(path)
+      ? "ar"
+      : /^\/en(?:\/|$)/.test(path) || ["/privacy", "/terms"].includes(path)
+        ? "en"
+        : null;
+  if (locale) requestHeaders.set("x-reload-public-locale", locale);
+  const next = () =>
+    NextResponse.next({ request: { headers: requestHeaders } });
+  let supabaseResponse = next();
 
-  if (!isSupabaseConfigured) {
+  if (locale || !isSupabaseConfigured) {
     return supabaseResponse;
   }
 
@@ -22,7 +35,8 @@ export async function updateSession(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) => {
           request.cookies.set(name, value);
         });
-        supabaseResponse = NextResponse.next({ request });
+        requestHeaders.set("cookie", request.headers.get("cookie") || "");
+        supabaseResponse = next();
         cookiesToSet.forEach(({ name, value, options }) => {
           supabaseResponse.cookies.set(name, value, options);
         });

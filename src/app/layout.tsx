@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { cookies, headers } from "next/headers";
 import Script from "next/script";
 import { Providers } from "./providers";
@@ -8,21 +8,46 @@ import { LOCALE_COOKIE, resolveRequestLocale } from "@/lib/locale-server";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Reload · Returns, handled.",
+  metadataBase: new URL("https://www.reload.sa"),
+  title: "Reload | ريلود",
   description:
-    "Turn approved return rules into clear answers for customers—and a decision trail your team can inspect.",
+    "الإرجاع وخدمة العملاء عبر واتساب للمتاجر الإلكترونية. Returns and customer support on WhatsApp.",
+  robots: { index: false, follow: false },
   openGraph: {
-    title: "Reload · Returns, handled.",
-    description:
-      "Turn approved return rules into clear answers for customers—and a decision trail your team can inspect.",
+    title: "Reload | ريلود",
+    description: "الإرجاع وخدمة العملاء عبر واتساب",
+    siteName: "Reload | ريلود",
+    type: "website",
+    images: [
+      {
+        url: "/brand/reload-share-ar.png",
+        width: 1200,
+        height: 630,
+        alt: "ريلود — الإرجاع وخدمة العملاء عبر واتساب",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Reload · Returns, handled.",
+    images: ["/brand/reload-share-ar.png"],
   },
   icons: {
-    icon: "/brand/reload-favicon.svg",
+    icon: [
+      { url: "/brand/reload-favicon.svg", type: "image/svg+xml" },
+      { url: "/brand/reload-icon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/brand/reload-icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/brand/reload-icon-180.png", sizes: "180x180" }],
   },
+  manifest: "/manifest.webmanifest",
+  applicationName: "Reload | ريلود",
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f8f7f4" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f0f12" },
+  ],
 };
 
 export default async function RootLayout({
@@ -32,10 +57,14 @@ export default async function RootLayout({
 }>) {
   const cookieStore = await cookies();
   const headersList = await headers();
-  const initialLocale = resolveRequestLocale(
-    cookieStore.get(LOCALE_COOKIE)?.value,
-    headersList.get("accept-language") ?? undefined,
-  );
+  const pathLocale = headersList.get("x-reload-public-locale");
+  const initialLocale =
+    pathLocale === "ar" || pathLocale === "en"
+      ? pathLocale
+      : resolveRequestLocale(
+          cookieStore.get(LOCALE_COOKIE)?.value,
+          headersList.get("accept-language") ?? undefined,
+        );
 
   return (
     <html
@@ -58,7 +87,7 @@ export default async function RootLayout({
             The overlay stays hidden unless this marks it "play". */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var d=document.documentElement;var play=location.pathname==="/"&&!location.hash&&!location.search&&!sessionStorage.getItem("reload-intro-seen")&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches;d.setAttribute("data-intro",play?"play":"skip");}catch(e){}})();`,
+            __html: `(function(){try{var d=document.documentElement;var play=["/","/ar","/en"].includes(location.pathname)&&!location.hash&&!location.search&&!sessionStorage.getItem("reload-intro-seen")&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches;d.setAttribute("data-intro",play?"play":"skip");}catch(e){}})();`,
           }}
         />
         {/* Same idea for the team desk's post-sign-in welcome (only on /admin). */}
@@ -75,7 +104,7 @@ export default async function RootLayout({
           />
         </noscript>
         <Script id="locale-bootstrap" strategy="beforeInteractive">
-          {`(function(){try{var k="${LOCALE_COOKIE}";var m=document.cookie.match(new RegExp("(?:^|; )"+k+"=([^;]*)"));var fromCookie=m&&(m[1]==="ar"||m[1]==="en")?m[1]:null;var s=localStorage.getItem(k);var l=fromCookie||(s==="ar"||s==="en"?s:(navigator.language.toLowerCase().startsWith("ar")?"ar":"en"));document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr";document.documentElement.dataset.locale=l;localStorage.setItem(k,l);document.cookie=k+"="+l+";path=/;max-age=31536000;SameSite=Lax";}catch(e){}})();`}
+          {`(function(){try{var k="${LOCALE_COOKIE}";var m=document.cookie.match(new RegExp("(?:^|; )"+k+"=([^;]*)"));var fromCookie=m&&(m[1]==="ar"||m[1]==="en")?m[1]:null;var s=localStorage.getItem(k);var p=location.pathname;var first=p.split("/")[1];var fixed=p==="/"||first==="ar"?"ar":first==="en"||p==="/privacy"||p==="/terms"?"en":null;var l=fixed||fromCookie||(s==="ar"||s==="en"?s:(navigator.language.toLowerCase().startsWith("ar")?"ar":"en"));document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr";document.documentElement.dataset.locale=l;localStorage.setItem(k,l);document.cookie=k+"="+l+";path=/;max-age=31536000;SameSite=Lax";}catch(e){}})();`}
         </Script>
         <Script id="theme-bootstrap" strategy="beforeInteractive">
           {`(function(){try{var stored=localStorage.getItem("theme");var dark=stored==="dark"||((!stored||stored==="system")&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",dark);document.documentElement.classList.toggle("light",!dark);}catch(e){}})();`}

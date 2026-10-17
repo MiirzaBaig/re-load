@@ -64,3 +64,7 @@ Staff support polls every 15 seconds; Inbox polls every ten seconds. Timelines c
 ## Evidence standard
 
 The 2026-10-13 audit checked clean source history, 21 ACTIVE hosted functions and migration inventory. A function marked ACTIVE does not prove it matches HEAD or that a real merchant/customer journey completed. UI/build/regression results belong to the specific release tested; do not carry forward obsolete test counts or claim unperformed production tests.
+
+## SEO/GEO local review — 2026-10-17
+
+Arabic-first `/ar` and English `/en` public pages, localized pricing/FAQ/how-it-works, canonical/hreflang metadata, robots/sitemap, factual schema and bilingual OG preview artwork are implemented locally. Root `/` stays Arabic with canonical `/ar`; existing query/hash/QR and payment/auth routes are preserved. See SEO.md and GEO.md; updates must keep both trackers current. Salla wording is deliberately unchanged by owner request pending Make.com research. Released to main on 2026-10-18 together with guides, free merchant tools, store-type policy templates, llms.txt, AI-crawler rules and IndexNow.

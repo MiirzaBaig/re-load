@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { PublicAnalytics } from "@/components/public-analytics";
 import { ReloadLogo } from "@/components/reload-logo";
 import { IntroSplash } from "@/components/intro-splash";
 
@@ -18,6 +19,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { useLanguage } from "@/components/language-provider";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { useSectionSpy } from "@/hooks/use-section-spy";
+import { publicLocale, publicPath } from "@/lib/public-site";
 import { getWhatsAppPublicUrl } from "@/lib/whatsapp";
 
 /** Navbar WhatsApp link (desktop). Off: the floating bubble and hero CTA cover it. */
@@ -47,34 +49,69 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   }, [pathname]);
   const searchParams = useMemo(() => new URLSearchParams(query), [query]);
   const auth = useAuth();
-  const { t } = useLanguage();
-  const isHome = pathname === "/";
+  const { t, locale } = useLanguage();
+  const home = publicPath(publicLocale(pathname) || locale);
+  const isHome = ["/", "/ar", "/en"].includes(pathname);
   const whatsappStartUrl = getWhatsAppPublicUrl();
   const requestedReturnUrl = searchParams.get("returnUrl");
-  const authReturnUrl = requestedReturnUrl?.startsWith("/") && !requestedReturnUrl.startsWith("//")
-    ? requestedReturnUrl
-    : "/app";
+  const authReturnUrl =
+    requestedReturnUrl?.startsWith("/") && !requestedReturnUrl.startsWith("//")
+      ? requestedReturnUrl
+      : "/app";
   const activeSection = useSectionSpy(
-    isHome ? ["product", "how-it-works", "returns-financing", "contact"] : [],
+    isHome
+      ? [
+          "product",
+          "how-it-works",
+          "returns-financing",
+          "pricing",
+          "faq",
+          "contact",
+        ]
+      : [],
   );
   const navLinks = [
-    { id: "product", label: t("Product", "المنتج"), href: "/#product" },
+    { id: "product", label: t("Product", "المنتج"), href: `${home}#product` },
     {
       id: "how-it-works",
       label: t("How it works", "كيف يعمل"),
-      href: "/#how-it-works",
+      href: `${home}#how-it-works`,
     },
     {
       id: "returns-financing",
       label: t("Returns financing", "تمويل المرتجعات"),
-      href: "/#returns-financing",
+      href: `${home}#returns-financing`,
+    },
+    {
+      id: "pricing",
+      label: t("Pricing", "الأسعار"),
+      href: publicPath(locale, "pricing"),
+    },
+    {
+      id: "faq",
+      label: t("FAQ", "الأسئلة الشائعة"),
+      href: publicPath(locale, "faq"),
     },
     // The contact form lives on the home page; from any other page this link
     // navigates home and the hash handler scrolls straight to it.
-    { id: "contact", label: t("Contact", "تواصل معنا"), href: "/#contact" },
+    {
+      id: "contact",
+      label: t("Contact", "تواصل معنا"),
+      href: `${home}#contact`,
+    },
   ];
   const isNavActive = (sectionId: string) =>
-    isHome && activeSection === sectionId;
+    (isHome && activeSection === sectionId) ||
+    (pathname ===
+      publicPath(
+        locale,
+        sectionId === "pricing"
+          ? "pricing"
+          : sectionId === "faq"
+            ? "faq"
+            : "how-it-works",
+      ) &&
+      ["pricing", "faq"].includes(sectionId));
 
   useEffect(() => {
     if (searchParams.get("auth") === "1") setAuthOpen(true);
@@ -177,6 +214,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-svh flex-col">
+      <PublicAnalytics />
       <IntroSplash />
       <header
         ref={headerRef}
@@ -184,7 +222,10 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       >
         <div className="public-header-surface">
           <div className="public-header-inner">
-            <Link href="/" className="rounded-lg p-1 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+            <Link
+              href={home}
+              className="rounded-lg p-1 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
               <ReloadLogo
                 className={cn(
                   "transition-transform duration-[520ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
@@ -193,24 +234,25 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               />
             </Link>
 
-            <nav aria-label="Primary navigation" className="public-nav hidden items-center gap-1 p-1 md:flex">
+            <nav
+              aria-label={t("Primary navigation", "التنقل الرئيسي")}
+              className="public-nav hidden items-center gap-1 p-1 lg:flex"
+            >
               {navLinks.map((link) => (
-                <button
+                <Link
                   key={link.href}
-                  onClick={() => router.push(link.href)}
-                  aria-current={
-                    isNavActive(link.id) ? "page" : undefined
-                  }
+                  href={link.href}
+                  aria-current={isNavActive(link.id) ? "page" : undefined}
                   data-active={isNavActive(link.id) || undefined}
                   className="public-nav-link rounded-full px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground aria-[current=page]:text-foreground"
                 >
                   {link.label}
-                </button>
+                </Link>
               ))}
             </nav>
 
             <div className="flex items-center gap-1.5">
-              <div className="hidden items-center gap-1 md:flex">
+              <div className="hidden items-center gap-1 lg:flex">
                 {/* Hidden: it repeated the floating WhatsApp bubble and the
                     hero's "Start on WhatsApp". Flip SHOW_NAV_WHATSAPP to restore. */}
                 {SHOW_NAV_WHATSAPP && (
@@ -219,7 +261,10 @@ export function PublicLayout({ children }: { children: ReactNode }) {
                     target="_blank"
                     rel="noreferrer"
                     className="nav-ghost hidden rounded-full px-3 py-2 lg:inline-flex"
-                    aria-label={t("Start a WhatsApp conversation", "ابدأ محادثة عبر واتساب")}
+                    aria-label={t(
+                      "Start a WhatsApp conversation",
+                      "ابدأ محادثة عبر واتساب",
+                    )}
                   >
                     <WhatsAppChannel showStatus={false} />
                   </a>
@@ -242,13 +287,21 @@ export function PublicLayout({ children }: { children: ReactNode }) {
                     </button>
                     {SHOW_GET_STARTED && (
                       <>
-                    {/* Public WhatsApp opens a general Reload introduction.
+                        {/* Public WhatsApp opens a general Reload introduction.
                         Store setup stays in the workspace. */}
-                    <Button asChild size="sm" className="nav-cta rounded-full px-4">
-                      <a href={whatsappStartUrl} target="_blank" rel="noreferrer">
-                        {t("Get started", "ابدأ الآن")}
-                      </a>
-                    </Button>
+                        <Button
+                          asChild
+                          size="sm"
+                          className="nav-cta rounded-full px-4"
+                        >
+                          <a
+                            href={whatsappStartUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {t("Get started", "ابدأ الآن")}
+                          </a>
+                        </Button>
                       </>
                     )}
                   </>
@@ -261,7 +314,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
                 onClick={() => setMenuOpen((open) => !open)}
                 aria-expanded={menuOpen}
                 aria-controls="mobile-menu"
-                className="nav-ghost menu-toggle grid size-8 place-items-center rounded-full md:hidden"
+                className="nav-ghost menu-toggle grid size-8 place-items-center rounded-full lg:hidden"
                 data-open={menuOpen}
               >
                 {/* Both icons stay mounted and cross-fade, so the swap eases
@@ -283,18 +336,16 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           out, large tap targets fill the screen, no cramped side drawer. */}
       <div
         id="mobile-menu"
-        className="mobile-menu md:hidden"
+        className="mobile-menu lg:hidden"
         data-open={menuOpen}
         aria-hidden={!menuOpen}
       >
         <nav className="flex flex-col px-6">
           {navLinks.map((link, i) => (
-            <button
+            <Link
               key={link.href}
-              onClick={() => {
-                setMenuOpen(false);
-                router.push(link.href);
-              }}
+              href={link.href}
+              onClick={() => setMenuOpen(false)}
               aria-current={isNavActive(link.id) ? "page" : undefined}
               style={{ ["--i" as string]: String(i) }}
               className={cn(
@@ -303,7 +354,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               )}
             >
               {link.label}
-            </button>
+            </Link>
           ))}
           <a
             href={whatsappStartUrl}
@@ -332,20 +383,20 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           ) : (
             <>
               {SHOW_GET_STARTED && (
-              <Button
-                asChild
-                style={{ ["--i" as string]: String(navLinks.length + 1) }}
-                className="mobile-menu-item nav-cta h-11 w-full rounded-full"
-              >
-                <a
-                  href={whatsappStartUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => setMenuOpen(false)}
+                <Button
+                  asChild
+                  style={{ ["--i" as string]: String(navLinks.length + 1) }}
+                  className="mobile-menu-item nav-cta h-11 w-full rounded-full"
                 >
-                  {t("Get started", "ابدأ الآن")}
-                </a>
-              </Button>
+                  <a
+                    href={whatsappStartUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {t("Get started", "ابدأ الآن")}
+                  </a>
+                </Button>
               )}
               <button
                 style={{ ["--i" as string]: String(navLinks.length + 2) }}
@@ -377,7 +428,10 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           target="_blank"
           rel="noreferrer"
           className="whatsapp-float group"
-          aria-label={t("Start a WhatsApp conversation", "ابدأ محادثة عبر واتساب")}
+          aria-label={t(
+            "Start a WhatsApp conversation",
+            "ابدأ محادثة عبر واتساب",
+          )}
         >
           {/* Icon first so it anchors in the corner; the label slides out
               beside it on hover, on focus, and in the one-time peek. */}
@@ -393,7 +447,11 @@ export function PublicLayout({ children }: { children: ReactNode }) {
         </a>
       )}
       <ScrollToTop />
-      <AuthDialog open={authOpen} onOpenChange={handleAuthOpenChange} redirectTo={authReturnUrl} />
+      <AuthDialog
+        open={authOpen}
+        onOpenChange={handleAuthOpenChange}
+        redirectTo={authReturnUrl}
+      />
     </div>
   );
 }

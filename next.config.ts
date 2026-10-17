@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
       // browsers don't cache it: point it somewhere new and the printed codes
       // follow.
       { source: "/qr", destination: "/interest", permanent: false },
+      // Short public links resolve to the Arabic default, like "/".
+      { source: "/pricing", destination: "/ar/pricing", permanent: true },
+      { source: "/faq", destination: "/ar/faq", permanent: true },
+      { source: "/how-it-works", destination: "/ar/how-it-works", permanent: true },
     ];
   },
 };

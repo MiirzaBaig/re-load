@@ -113,6 +113,8 @@ function RevealedLine({
   );
 }
 
+// The slogan is the big visual line; the page H1 (with search words) sits in
+// the hero badge on the landing page.
 export function HeroTagline({
   line1,
   line2,
@@ -148,10 +150,10 @@ export function HeroTagline({
   if (reduceMotion) {
     return (
       <div className="flex flex-col items-start gap-7">
-        <h1 className="mx-auto max-w-[18ch] font-display text-[40px] font-semibold leading-[1.02] tracking-[-0.04em] text-foreground text-balance sm:text-[56px] lg:text-[64px]">
+        <p className="mx-auto max-w-[18ch] font-display text-[40px] font-semibold leading-[1.02] tracking-[-0.04em] text-foreground text-balance sm:text-[56px] lg:text-[64px]">
           <span className="block">{line1}</span>
           <span className="hero-gradient-text block">{line2}</span>
-        </h1>
+        </p>
         <p className="mx-auto max-w-[40ch] text-base leading-relaxed text-muted-foreground md:text-[17px] text-pretty">
           {body}
         </p>
@@ -161,7 +163,7 @@ export function HeroTagline({
 
   return (
     <div className="flex flex-col items-start gap-7">
-      <h1 className="mx-auto max-w-[18ch] font-display text-[40px] font-semibold leading-[1.02] tracking-[-0.04em] text-foreground text-balance sm:text-[56px] lg:text-[64px]">
+      <p className="mx-auto max-w-[18ch] font-display text-[40px] font-semibold leading-[1.02] tracking-[-0.04em] text-foreground text-balance sm:text-[56px] lg:text-[64px]">
         <RevealedLine text={line1} delay={0.05} wordByWord={wordByWord} />
         <RevealedLine
           text={line2}
@@ -169,7 +171,7 @@ export function HeroTagline({
           delay={line2Delay}
           wordByWord={wordByWord}
         />
-      </h1>
+      </p>
 
       <motion.p
         className="mx-auto max-w-[40ch] text-base leading-relaxed text-muted-foreground md:text-[17px] text-pretty"

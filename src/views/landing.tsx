@@ -1,7 +1,9 @@
 "use client";
 
 import { useSsrReducedMotion as useReducedMotion } from "@/hooks/use-ssr-reduced-motion";
+import { PublicFaq } from "@/components/public-faq";
 import { PublicPricing } from "@/components/public-pricing";
+import { SeoProse } from "@/components/seo-prose";
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -215,8 +217,8 @@ export function LandingPage() {
   // Merchant-approved rules give customers a clear answer in seconds and create
   // reliable data for future financing assessment."
   const heroBody = t(
-    "Customers ask on WhatsApp. Reload checks your store policy, replies in seconds, and moves the refund forward.",
-    "عميلك يسأل في واتساب، وريلود يراجع سياسة متجرك ويرد خلال ثوانٍ ويكمّل الاسترداد.",
+    "Returns and customer support on WhatsApp. Reload uses your approved store information and policies, verifies order requests, and brings conversations and cases into one workspace.",
+    "الإرجاع وخدمة العملاء عبر واتساب. يعتمد ريلود على معلومات متجرك وسياساتك المعتمدة، ويتحقق من طلبات العملاء، ويجمع المحادثات والحالات في مساحة واحدة.",
   );
   const heroSteps = HERO_STEPS.map((step, index) => ({ ...step, label: [t("Policy clause", "نص السياسة"), t("Approved rule", "قاعدة معتمدة"), t("Order fact", "بيانات الطلب")][index], value: [t("Items may be returned within 14 days of delivery", "يمكن إرجاع المنتجات خلال 14 يومًا من التسليم"), t("Return window: 14 days from delivery date", "مدة الإرجاع: 14 يومًا من تاريخ التسليم"), t("Delivered 6 days ago", "تم التسليم قبل 6 أيام")][index] }));
   // "Required for the live pilot" was an internal note, not a customer claim.
@@ -242,10 +244,10 @@ export function LandingPage() {
             variants={{ hidden: {}, visible: { transition: { delayChildren: reduceMotion ? 0 : 0.08, staggerChildren: reduceMotion ? 0 : 0.11 } } }}
             className="hero-card-content"
           >
-            <motion.span variants={heroItem} className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-white/70">
-              <span className="size-1.5 rounded-full bg-primary" />
-              {t("Returns and financing for Saudi stores", "المرتجعات والتمويل للمتاجر السعودية")}
-            </motion.span>
+            <motion.h1 variants={heroItem} className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-white/70 text-balance">
+              <span className="size-1.5 shrink-0 rounded-full bg-primary" />
+              {t("Returns management and WhatsApp customer support for Saudi stores", "إدارة المرتجعات وخدمة العملاء عبر واتساب للمتاجر السعودية")}
+            </motion.h1>
 
             <HeroTagline
               key={heroRun}
@@ -767,6 +769,8 @@ export function LandingPage() {
       )}
 
       <PublicPricing/>
+      <PublicFaq/>
+      <SeoProse variant="home" />
 
       {/* Final CTA */}
       <section>

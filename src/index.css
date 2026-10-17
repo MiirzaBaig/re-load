@@ -5176,6 +5176,13 @@ html[data-admin-welcome="play"] .admin-grow { transform: scaleX(0); }
   .footer-bottom { margin-top: 4rem; flex-direction: row; justify-content: space-between; text-align: start; }
 }
 .footer-made { display: inline-flex; align-items: center; gap: 0.45rem; cursor: default; }
+.footer-bottom-end { display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.9rem 1.25rem; }
+.footer-lang {
+  color: var(--footer-muted);
+  text-underline-offset: 4px;
+  transition: color 200ms var(--ease-brand);
+}
+.footer-lang:hover { color: var(--footer-fg); text-decoration: underline; }
 
 /* The heart: outline draws itself once on reveal, then fills Saudi green. */
 .footer-heart { width: 15px; height: 15px; overflow: visible; transform-origin: 50% 55%; }
@@ -5394,3 +5401,8 @@ html[data-admin-welcome="play"] .admin-grow { transform: scaleX(0); }
 @media (prefers-reduced-motion: reduce) {
   .billing-stagger > *, .billing-enter, .billing-spotlight h3, .billing-refresh span { animation: none; }
 }
+
+/* Public FAQ: native disclosure keeps every answer in the server HTML. */
+.public-faq[open] .public-faq-answer { animation: public-answer-in 240ms var(--ease-brand) both; }
+@keyframes public-answer-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .public-faq[open] .public-faq-answer { animation: none; } }
