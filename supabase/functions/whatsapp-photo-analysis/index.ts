@@ -1,3 +1,4 @@
+import { paidStoreAllowed } from "../_shared/billing.ts";
 import { json } from "../_shared/http.ts";
 import { assessReturnPhoto } from "../_shared/return-photo.ts";
 import { adminClient } from "../_shared/supabase.ts";
@@ -12,10 +13,11 @@ Deno.serve(async (request) => {
     if (!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(evidenceId)) return json({ error: "invalid_request" }, 400);
     const admin = adminClient();
     const { data: evidence, error } = await admin.from("return_evidence")
-      .select("id,storage_path,assessment")
+      .select("id,store_id,storage_path,assessment")
       .eq("id", evidenceId).maybeSingle();
     if (error) throw error;
     if (!evidence) return json({ error: "not_found" }, 404);
+    if(!await paidStoreAllowed(evidence.store_id))return json({received:true,waiting:true});
     if (evidence.assessment?.state !== "pending") return json({ received: true, duplicate: true });
 
     // Claim the pending row so concurrent queue deliveries cannot call the
@@ -39,6 +41,7 @@ Deno.serve(async (request) => {
         bytes,
         String(evidence.assessment?.itemName ?? "item"),
         String(evidence.assessment?.statedCondition ?? "not stated"),
+        evidence.store_id,
       );
     } catch (photoError) {
       console.error("return_photo_analysis_unavailable", photoError instanceof Error ? photoError.message : "unknown");

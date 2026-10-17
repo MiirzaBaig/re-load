@@ -23,6 +23,8 @@ Deno.serve(async (request) => {
           const previous = next === "READ" ? ["SENT", "DELIVERED"] : next === "DELIVERED" ? ["SENT"] : next === "FAILED" ? ["SENT"] : ["SENT"];
           const { error } = await admin.from("whatsapp_messages").update({ status: next, failure_code: status.errors?.[0]?.code ? String(status.errors[0].code) : null }).eq("external_message_id", String(status.id ?? "")).in("status", previous);
           if (error) throw error;
+          const metered = await admin.rpc("billing_settle_message", { p_external: String(status.id ?? ""), p_status: next });
+          if (metered.error) throw metered.error;
         }
       }
       if (phoneNumberId === env("WHATSAPP_PHONE_NUMBER_ID")) for (const message of value.messages ?? []) {

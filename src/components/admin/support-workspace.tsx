@@ -1,4 +1,5 @@
 "use client";
+import { StaffBillingCard } from "@/components/admin/billing-card";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
@@ -207,19 +208,29 @@ export function SupportWorkspaceView({
         key: `step-${s.id}`,
         label:
           s.kind === "issue"
-            ? s.step === "order_lookup_unavailable"
+            ? s.step === "billing_waiting"
               ? t(
-                  "Order lookup could not finish",
-                  "تعذّر إكمال التحقق من الطلب",
+                  "Assistant waiting for billing",
+                  "المساعد بانتظار تفعيل الاشتراك",
                 )
-              : t("Photo could not be read", "تعذّرت قراءة الصورة")
+              : s.step === "order_lookup_unavailable"
+                ? t(
+                    "Order lookup could not finish",
+                    "تعذّر إكمال التحقق من الطلب",
+                  )
+                : t("Photo could not be read", "تعذّرت قراءة الصورة")
             : journeyLabel(s.step, t),
         detail:
           s.kind === "issue"
-            ? t(
-                "The customer received guidance to retry. No order details were disclosed.",
-                "وصلت للعميل إرشادات للمحاولة مجددًا. لم تُعرض تفاصيل الطلب.",
-              )
+            ? s.step === "billing_waiting"
+              ? t(
+                  "The customer message is saved in Inbox. Review the store’s subscription and allowance.",
+                  "رسالة العميل محفوظة في المحادثات. راجع الاشتراك ورصيد الرسائل.",
+                )
+              : t(
+                  "The customer received guidance to retry. No order details were disclosed.",
+                  "وصلت للعميل إرشادات للمحاولة مجددًا. لم تُعرض تفاصيل الطلب.",
+                )
             : t(
                 "The conversation moved to this step.",
                 "انتقلت المحادثة إلى هذه الخطوة.",
@@ -227,7 +238,9 @@ export function SupportWorkspaceView({
         at: s.created_at,
         tone:
           s.kind === "issue"
-            ? "failed"
+            ? s.step === "billing_waiting"
+              ? "waiting"
+              : "failed"
             : s.step === "COMPLETE"
               ? "done"
               : "waiting",
@@ -431,6 +444,7 @@ export function SupportWorkspaceView({
           </div>
         </div>
         <main className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6">
+          <StaffBillingCard storeId={initial.store.id} canManage={canPrepare} />
           <header className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">

@@ -1,11 +1,12 @@
 "use client";
 
+import { useSsrReducedMotion as useReducedMotion } from "@/hooks/use-ssr-reduced-motion";
+
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
   motion,
-  useReducedMotion,
   useScroll,
   useTransform,
   type MotionValue,

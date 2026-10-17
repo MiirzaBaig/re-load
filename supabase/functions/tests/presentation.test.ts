@@ -30,7 +30,7 @@ Deno.test(
   async () => {
     const admin = {
       rpc: async (name: string) =>
-        name === "get_whatsapp_flow_state"
+        name === "billing_snapshot" ? {data:{enforcementEnabled:false}} : name === "get_whatsapp_flow_state"
           ? { data: [{ step: "AWAITING_LANGUAGE", context: {} }] }
           : { error: null },
     } as any;

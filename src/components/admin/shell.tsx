@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { MotionConfig, motion } from "framer-motion";
 import {
-  Activity, ClipboardList, Ellipsis, FileText, LayoutDashboard, LogOut, MessageSquareWarning,
+  CreditCard, Activity, ClipboardList, Ellipsis, FileText, LayoutDashboard, LogOut, MessageSquareWarning,
   PanelLeftClose, PanelLeftOpen, Search, Store, UserRound, Users, UsersRound, Keyboard, ExternalLink,
 } from "lucide-react";
 import { AdminEventLink } from "@/components/admin-event-link";
@@ -33,6 +33,7 @@ import { MerchantDrawer, MerchantsView } from "@/components/admin/views/merchant
 import { ActivityView, FeedbackView, HealthView, ReturnsView } from "@/components/admin/views/operations";
 import { TodayView } from "@/components/admin/views/today";
 import { Avatar, TeamView, memberName } from "@/components/admin/views/team";
+import { PaymentsView } from "@/components/admin/views/payments";
 import { AdminWelcome } from "@/components/admin/welcome";
 
 const SIDEBAR_KEY = "reload-admin-sidebar";
@@ -103,6 +104,7 @@ export function AdminShell({ initial, ...data }: AdminData & { initial: DeskStat
     { id: "merchants", label: t("Merchants", "التجار"), icon: Store, key: "m" },
     { id: "returns", label: t("Returns", "المرتجعات"), icon: ClipboardList, key: "r" },
     { id: "health", label: t("Channel health", "حالة القنوات"), icon: Activity, key: "h", count: issues || undefined, tone: "review" },
+    { id: "payments", label: t("Payments", "المدفوعات"), icon: CreditCard, key: "p" },
     { id: "feedback", label: t("Feedback", "الملاحظات"), icon: MessageSquareWarning, key: "f" },
     { id: "activity", label: t("Activity", "النشاط"), icon: FileText, key: "a" },
     { id: "team", label: t("Team", "الفريق"), icon: UsersRound, key: "u" },
@@ -188,6 +190,7 @@ export function AdminShell({ initial, ...data }: AdminData & { initial: DeskStat
     merchants: t("Each store's real setup milestones.", "مراحل الإعداد الفعلية لكل متجر."),
     returns: t("How return decisions are landing.", "كيف تُحسم قرارات الإرجاع."),
     health: t("Connection and delivery errors from real events.", "مشكلات الاتصال والتسليم من الأحداث الفعلية."),
+    payments: t("Verified payments, renewals and checkouts that need attention.","الدفعات المؤكدة والتجديدات وعمليات الدفع التي تحتاج متابعة."),
     feedback: t("Reports from merchants and WhatsApp conversations.", "بلاغات التجار ومحادثات واتساب."),
     activity: t("What happened, across merchants and the team.", "ما حدث لدى التجار والفريق."),
     team: t("Who can open the desk, and what they can do.", "من يمكنه فتح المساحة، وماذا يمكنه أن يفعل."),
@@ -273,6 +276,7 @@ export function AdminShell({ initial, ...data }: AdminData & { initial: DeskStat
             {state.view === "merchants" && <MerchantsView merchants={merchants} labels={labels} selectedId={state.merchant} onOpen={(id) => go({ merchant: id })} />}
             {state.view === "returns" && <ReturnsView data={data} labels={labels} storeName={storeName} />}
             {state.view === "health" && <HealthView data={data} labels={labels} storeName={storeName} />}
+            {state.view === "payments" && <PaymentsView />}
             {state.view === "feedback" && <FeedbackView data={data} labels={labels} storeName={storeName} />}
             {state.view === "activity" && <ActivityView data={data} labels={labels} storeName={storeName} currentUserId={data.currentUserId} />}
             {state.view === "team" && <TeamView team={data.team} currentUserId={data.currentUserId} isOwner={data.role === "owner"} labels={labels} />}
@@ -292,7 +296,7 @@ export function AdminShell({ initial, ...data }: AdminData & { initial: DeskStat
             <span className="max-w-full truncate px-1">{item.id === "health" ? t("Health", "الحالة") : item.label}</span>
           </button></li>;
         })}
-        <li><button type="button" onClick={() => setMoreOpen(true)} className={cn("flex h-16 w-full flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors", ["returns", "feedback", "activity", "team"].includes(state.view) ? "text-foreground" : "text-muted-foreground")}><Ellipsis className="size-5" />{t("More", "المزيد")}</button></li>
+        <li><button type="button" onClick={() => setMoreOpen(true)} className={cn("flex h-16 w-full flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors", ["returns", "payments", "feedback", "activity", "team"].includes(state.view) ? "text-foreground" : "text-muted-foreground")}><Ellipsis className="size-5" />{t("More", "المزيد")}</button></li>
       </ul>
     </nav>
     <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
@@ -300,7 +304,7 @@ export function AdminShell({ initial, ...data }: AdminData & { initial: DeskStat
         <SheetTitle className="px-3 pt-2 text-sm">{t("More", "المزيد")}</SheetTitle>
         <SheetDescription className="sr-only">{t("Other views", "عروض أخرى")}</SheetDescription>
         <ul className="grid gap-1">
-          {nav.filter((item) => ["returns", "feedback", "activity", "team"].includes(item.id)).map((item) => <li key={item.id}><button type="button" onClick={() => { setMoreOpen(false); openView(item.id); }} className={cn("flex h-12 w-full items-center gap-3 rounded-xl px-3 text-sm transition-colors", item.id === state.view ? "bg-foreground text-background" : "hover:bg-muted")}><item.icon className="size-4" />{item.label}</button></li>)}
+          {nav.filter((item) => ["returns", "payments", "feedback", "activity", "team"].includes(item.id)).map((item) => <li key={item.id}><button type="button" onClick={() => { setMoreOpen(false); openView(item.id); }} className={cn("flex h-12 w-full items-center gap-3 rounded-xl px-3 text-sm transition-colors", item.id === state.view ? "bg-foreground text-background" : "hover:bg-muted")}><item.icon className="size-4" />{item.label}</button></li>)}
           <li><Link href="/app" className="flex h-12 items-center gap-3 rounded-xl px-3 text-sm text-muted-foreground hover:bg-muted"><ExternalLink className="size-4" />{t("Merchant workspace", "مساحة التاجر")}</Link></li>
         </ul>
       </SheetContent>

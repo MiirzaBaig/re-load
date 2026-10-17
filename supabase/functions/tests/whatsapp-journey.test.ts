@@ -21,6 +21,7 @@ function harness(step: string, context: Record<string, unknown> = {}, reviewStat
   const admin = {
     rpc: async (name: string, args: Record<string, unknown>) => {
       calls.push({ name, args });
+      if(name === "billing_snapshot") return {data:{enforcementEnabled:false},error:null};
       if (name === "get_whatsapp_flow_state") return { data: [state], error: null };
       if (name === "set_whatsapp_flow_state") state = { step: String(args.p_step), context: args.p_context as Record<string, unknown> };
       if (name === "request_identity_review") return { data: "review-id", error: null };

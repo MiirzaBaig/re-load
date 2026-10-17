@@ -1,8 +1,9 @@
 "use client";
 
+import { useSsrReducedMotion as useReducedMotion } from "@/hooks/use-ssr-reduced-motion";
+
 import {
   motion,
-  useReducedMotion,
   useScroll,
   useTransform,
 } from "framer-motion";

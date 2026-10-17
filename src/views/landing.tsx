@@ -1,8 +1,11 @@
 "use client";
 
+import { useSsrReducedMotion as useReducedMotion } from "@/hooks/use-ssr-reduced-motion";
+import { PublicPricing } from "@/components/public-pricing";
+
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { HeroTagline } from "@/components/hero-tagline";
 import { INTRO_DONE_EVENT } from "@/components/intro-splash";
 import { Button } from "@/components/ui/button";
@@ -762,6 +765,8 @@ export function LandingPage() {
       </section>
         </>
       )}
+
+      <PublicPricing/>
 
       {/* Final CTA */}
       <section>

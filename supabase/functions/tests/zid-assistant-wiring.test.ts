@@ -15,6 +15,8 @@ async function run(mode: "found" | "empty" | "outage") {
   const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
   globalThis.fetch = async (input, init) => {
     const url = String(input);
+    if(url.includes("/billing_snapshot"))return json({enforcementEnabled:false});
+    if(url.includes("/billing_cost_events"))return json(null,201);
     requests.push(url);
     if (url.includes("ollama.com")) {
       modelCalls++;

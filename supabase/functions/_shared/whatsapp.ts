@@ -1,3 +1,4 @@
+import { sendWithBilling } from "./billing.ts";
 import { env } from "./http.ts";
 
 const encoder = new TextEncoder();
@@ -14,6 +15,10 @@ function digits(value: string) {
 }
 
 async function metaRequest(body: Record<string, unknown>) {
+  return sendWithBilling(() => unmeteredMetaRequest(body));
+}
+
+async function unmeteredMetaRequest(body: Record<string, unknown>) {
   const response = await fetch(
     `https://graph.facebook.com/${GRAPH_VERSION}/${env("WHATSAPP_PHONE_NUMBER_ID")}/messages`,
     {

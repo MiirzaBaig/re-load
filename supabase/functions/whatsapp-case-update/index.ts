@@ -1,3 +1,4 @@
+import { withBilling } from "../_shared/billing.ts";
 import { sha256 } from "../_shared/crypto.ts";
 import { json } from "../_shared/http.ts";
 import { adminClient } from "../_shared/supabase.ts";
@@ -98,9 +99,9 @@ Deno.serve(async (request) => {
     const reference = `RL-${caseId.slice(0, 8).toUpperCase()}`;
     const message = `${store?.name ?? "Reload"} · ${reference}\n\n${copy[status][language]}`;
     const outsideWindow = !conversation.service_window_expires_at || new Date(conversation.service_window_expires_at) <= new Date();
-    const result = outsideWindow
-      ? await sendWhatsAppTemplate(recipient, templateName[status], language, [reference])
-      : await sendWhatsAppText(recipient, message);
+    const result = await withBilling({ storeId: conversation.store_id, messageKey: externalEventId, category: outsideWindow ? "utility" : "service" }, () => outsideWindow
+      ? sendWhatsAppTemplate(recipient, templateName[status], language, [reference])
+      : sendWhatsAppText(recipient, message));
     const messageId = sentMessageId(result);
 
     await admin.from("whatsapp_messages").insert({

@@ -1,7 +1,7 @@
 /* Shared by the server page (first paint) and the client desk. No "use client":
    the server calls parseDeskState directly. */
 
-export const VIEWS = ["today", "leads", "merchants", "returns", "health", "feedback", "activity", "team"] as const;
+export const VIEWS = ["today", "leads", "merchants", "returns", "health", "payments", "feedback", "activity", "team"] as const;
 export type View = (typeof VIEWS)[number];
 export type LeadsLayout = "board" | "table";
 

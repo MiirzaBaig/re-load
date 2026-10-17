@@ -38,7 +38,7 @@ export function StatusPill({ status, label, className }: { status: string; label
 
 /** A number that counts up once when it first appears, then eases between
  *  later values. */
-export function CountUp({ value, className }: { value: number; className?: string }) {
+export function CountUp({ value, className, decimals = 0 }: { value: number; className?: string; decimals?: number }) {
   const reduce = useReducedMotion();
   const [shown, setShown] = useState(reduce ? value : 0);
   const from = useRef(reduce ? value : 0);
@@ -48,11 +48,12 @@ export function CountUp({ value, className }: { value: number; className?: strin
     const run = () => {
       const start = performance.now();
       const origin = from.current;
-      const duration = origin === 0 ? 700 : 320;
+      const duration = 320;
       const tick = (now: number) => {
         const p = Math.min(1, (now - start) / duration);
         const eased = 1 - Math.pow(1 - p, 3);
-        setShown(Math.round(origin + (value - origin) * eased));
+        const precision = 10 ** decimals;
+        setShown(Math.round((origin + (value - origin) * eased) * precision) / precision);
         if (p < 1) frame = requestAnimationFrame(tick);
         else from.current = value;
       };
@@ -65,8 +66,8 @@ export function CountUp({ value, className }: { value: number; className?: strin
     }
     run();
     return () => cancelAnimationFrame(frame);
-  }, [value, reduce]);
-  return <span className={cn("tabular-nums", className)}>{shown}</span>;
+  }, [value, reduce, decimals]);
+  return <span className={cn("tabular-nums", className)}>{shown.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}</span>;
 }
 
 /** A tiny trend line. Draws itself once. */
@@ -85,9 +86,10 @@ export function Sparkline({ data, className }: { data: number[]; className?: str
   </svg>;
 }
 
-export function Metric({ label, value, suffix, note, delta, series, icon: Icon, onClick, tone }: {
+export function Metric({ label, value, decimals, suffix, note, delta, series, icon: Icon, onClick, tone }: {
   label: string;
   value: number;
+  decimals?: number;
   /** Shown after the number, e.g. "%". */
   suffix?: string;
   note: string;
@@ -104,7 +106,7 @@ export function Metric({ label, value, suffix, note, delta, series, icon: Icon, 
     </div>
     <div className="mt-3 flex items-end justify-between gap-4 sm:mt-4">
       <div>
-        <span className="block font-display text-[28px] font-semibold leading-none tracking-[-.05em] sm:text-[34px]"><CountUp value={value} />{suffix && <span className="ms-0.5 text-[22px] text-muted-foreground">{suffix}</span>}</span>
+        <span className="block font-display text-[28px] font-semibold leading-none tracking-[-.05em] sm:text-[34px]"><CountUp value={value} decimals={decimals} />{suffix && <span className="ms-0.5 text-[22px] text-muted-foreground">{suffix}</span>}</span>
         <span className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-4 text-muted-foreground sm:text-xs">
           {delta && <span className={cn("rounded-md px-1.5 py-0.5 font-medium", tone === "review" ? "bg-review-muted text-review" : "bg-brand-accent-soft text-brand-accent")}>{delta}</span>}
           {note}

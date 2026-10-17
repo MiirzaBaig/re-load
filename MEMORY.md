@@ -1,145 +1,39 @@
-# Reload project memory
+# Reload engineering memory
 
-Updated: 10 October 2026
+Current as of 2026-10-13. Read CONTEXT.md for product scope and FUTURE.md for priorities. Previous chronology is preserved in Git history rather than conflicting current instructions.
 
-## WhatsApp enhancement — 10 October 2026
+## Durable decisions
 
-Production uses Reload +966 55 236 2631 (phone ID 1418354908018050, WABA 2165590787358223). Each connected store shares that receiving number and gets a `return <return_code>` link/QR in Integrations. The receiving number alone does not identify a store. Explicit links select store context; private routing remembers the sender's current store. Owners/admins can activate the channel after store connection and policy publication.
+- Main pane handles engineering. The `pricing_and_seo` agent handles combined strategy/research; it does not modify code or publish campaigns without a task.
+- Merchant approval remains required for knowledge and policies. Staff owners prepare new drafts; sales/viewers inspect support workspaces. Staff do not impersonate merchants.
+- Customer phone match -> registered-order email OTP -> merchant identity review. Merchant approval is conversation/order-bound and not return approval.
+- One centralized production number supports many stores through immutable `RL-` plus ten hex-character routing codes. A prefilled WhatsApp message must be sent; order numbers never select a store.
+- Product photos are optional, stored privately as evidence when provided, and AI analysis is advisory. Screenshot OCR extracts an order reference for confirmation; it cannot bypass identity verification.
+- DeepSeek text / Gemma image defaults are backend-only. Approved knowledge and fresh platform facts ground replies. Unknown facts become retry/ticket/review; never invented promises.
+- All provider keys stay outside tracked files and browser bundles. Only intended public Supabase configuration uses `NEXT_PUBLIC_`.
+- Salla refresh tokens are replaced atomically with serialized refresh. Signed webhooks and tenant-scoped safe snapshots do not replace authoritative reads.
+- Durable inbox records receipt/state/reply; uncertain sends require review. No automatic exactly-once delivery guarantee.
+- UI remains natural Arabic/English, RTL/mobile and light/dark, restrained purposeful motion with reduced-motion support; reuse existing desk primitives.
 
-Phone mismatch offers a merchant identity-check request in Return cases. The merchant independently confirms identity, verifies the original order contact, and records the verification method; access is private, conversation-bound and expires after 24 hours. Email/SMS OTP delivery is deferred until a provider is configured. Never show “code sent” or expose order facts before verification.
+## Latest releases
 
-The private WhatsApp inbox persists messages, serializes a sender, retries confirmed failures, saves replies with flow changes atomically, and reuses decision/report/send receipts. A `pg_net` worker plus minute cron provides recovery. Ambiguous sends require operator investigation; do not promise exactly-once delivery. See docs/whatsapp-enhancement.md for tests, operator recovery and pilot steps. Photo assessment stays advisory; catalogue comparison, automated shipping and actual refund payment are not implemented by this enhancement.
+- `5a08d14`: presentation-safe greetings/names, guided knowledge, staff support workspaces and masked journey diagnostics. Historical validation: TypeScript/build, 63 backend tests, rollback SQL and authenticated UI checks; see docs/merchant-support-workspace.md.
+- `23bfbe7`: Claude workspace polish, shared page headings, real setup checklist, policy screens, Inbox and Zid/Salla knowledge-link guide.
+- `e63df80` / `cd942d5`: normal marketing footer and faded wordmark / redeploy trigger.
+- Email OTP, branded emails and Auth SMTP were implemented before these releases. Provider accepted team test sends; do not substitute that for real changed-phone order acceptance.
 
-## Product
+## Current blockers and unknowns
 
-Reload is an Arabic-first return decision layer for Saudi ecommerce merchants. A merchant provides a written return policy, AI proposes structured rules with their source clauses, and the merchant reviews and publishes them. Customer eligibility is then decided by deterministic code using the published rules and verified order facts. AI never decides eligibility.
+Salla public review/readiness and real OAuth lifecycle; Stream Pay live rollout and provider renewal acceptance (sandbox checkout and upgrade now tested); marketing template/billing/consent/campaign implementation; real merchant/customer acceptance; Zid variants/large stores and commercial-use permission. Pricing figures are scenarios until invoices and per-store usage are measured.
 
-The three outcomes are `ELIGIBLE`, `NOT_ELIGIBLE`, and `MANUAL_REVIEW`. Every decision must preserve the policy version, order facts, applied rules, reason codes, and evaluation time. Published versions and past decisions are immutable.
+## Working boundaries
 
-## MVP outcome
+Use `git status` before changing anything. Preserve Claude/user edits. Origin is https://github.com/reload-sa/reload; mirror is https://github.com/MiirzaBaig/re-load. Do not infer deployment completion from a push. Check live endpoints or hosted inventories and report limitations.
 
-One merchant can connect one Salla store, turn a real policy into approved rules, let a verified customer request a return on the web or WhatsApp, receive a deterministic answer, and inspect the resulting case and evidence. Eligible and manual-review WhatsApp requests create cases automatically. The merchant confirms the final refund. Shipping waits for Yazeed's carrier partnership and API; exchanges, multiple commerce platforms, and autonomous AI decisions remain later work.
+Supabase secrets list returns names/digests, not original values. Local `.env` is a private inventory; missing values must not be reconstructed from old chats or replaced with new random encryption/signing keys. Retain existing `.env.local`; do not bulk-upload the inventory to hosted secrets.
 
-## Ownership
+## Billing implementation — 2026-10-17
 
-- Mirza: product and engineering.
-- Yazeed: merchant relationships, real policies and scenarios, pilot coordination, sales, partnerships, and fundraising.
-- First pilot: connect the merchant privately, test controlled orders with staff, then expose the flow to customers.
+Read docs/billing.md before payment work. Sandbox Standard payment and prorated Premium upgrade succeeded through provider test cards and 3DS; live access remains unchanged. Do not enable live billing or the database enforcement flag until acceptance and finite pilot exceptions are arranged. No extra-bundle price is finalized. Regular website prices only; launch offers are private.
 
-## Technology
-
-- Next.js 16, React 19, TypeScript, Tailwind/shadcn, Bun.
-- Supabase Auth, Postgres, RLS, and Edge Functions.
-- Vercel production app.
-- Salla OAuth with read-only order scope.
-- Ollama Cloud / DeepSeek V4.1 Flash for policy extraction.
-- Meta WhatsApp Cloud API is the active test customer channel. Development uses Meta's test number and verified recipients; production will replace only credentials, phone identity, and templates.
-
-## Completed
-
-- Responsive bilingual English/Arabic UI with persisted RTL/LTR switching and light/dark themes.
-- Supabase email magic-link and Google authentication.
-- Merchant workspace, policies, cases, settings, landing page, and customer return screens.
-- Deterministic domain engine, policy snapshots, decision evidence model, case state model, and demo fixtures.
-- Supabase MVP schema with tenant-scoped RLS, immutable policy/decision tables, integration tables, and WhatsApp conversation tables.
-- Salla OAuth install/callback, encrypted credentials, connection check, disconnect, and signed webhook intake.
-- Salla integration UI with truthful connection state and official logo.
-- New Policy UI translated to Arabic and redesigned with readable rule labels, source disclosure, and explicit merchant actions.
-- Settings simplified so only real controls remain; store-name updates enforce role permissions and validation.
-- Live Salla order lookup, signed order facts, server-side deterministic evaluation, saved decision evidence, and idempotent case creation are deployed.
-- Live Ollama policy extraction, Supabase draft review, and immutable publishing are deployed.
-- WhatsApp Cloud API shared sender, signed webhook endpoint, delivery tracking, duplicate-event handling, bilingual menu, merchant Salla link, customer order/item/reason/condition capture, deterministic evaluation, automatic case creation, and in-window case-status notifications are implemented for testing.
-- WhatsApp merchant onboarding now uses a hashed, expiring handoff token that survives authentication and Salla OAuth, returns connection confirmation to the originating conversation, and continues into policy setup.
-- Policy setup supports automatic storefront discovery, secure public URL import, pasted/written text, and an editable starter draft. Every path creates an unpublished AI proposal that still requires merchant review.
-- Financing requests persist under RLS and asynchronously queue internal WhatsApp alerts; notification failure cannot roll back the lead.
-
-## Current implementation boundary
-
-- The store-specific web return link uses live Salla order lookup and the server decision engine. The plain `/return` route still intentionally exposes an isolated synthetic demo.
-- Policy and case operational screens retain limited demo fallbacks when Supabase is not configured; production-authenticated paths use persisted data.
-- The Salla webhook currently records events and handles uninstall/revocation; it does not synchronize full orders.
-- WhatsApp webhook code is deployed, but real inbound Meta delivery remains blocked until `WHATSAPP_APP_SECRET` is added and the callback is registered/subscribed in Meta.
-- Merchant onboarding begins in WhatsApp and hands off to authenticated web pages for Salla OAuth and policy review. A full native chat-only policy editor is not planned for the MVP.
-- Proactive production notifications outside Meta's 24-hour service window require approved templates. Test free-form messages work only while the recipient's service window is open.
-- Never describe fixture or simulated behavior as a successful live integration.
-
-## Security and product rules
-
-- Keep all provider tokens and model keys in Supabase secrets. Never expose them with `NEXT_PUBLIC_` or commit them.
-- Store credentials encrypted at rest and scope all merchant reads/writes by store membership.
-- Public order verification must resist order enumeration and return the same generic error for wrong order/customer combinations.
-- Rate-limit public verification, return only sanitized facts, and re-validate signed facts on the server before saving a decision.
-- Salla access tokens expire; refresh tokens are single-use. Refresh must be serialized and the newly returned refresh token must replace the previous one atomically.
-- AI output is always an unpublished proposal. Merchant approval is required before a rule can be used.
-- Missing required facts produce `MANUAL_REVIEW`; the engine never guesses.
-
-## Immediate sequence
-
-1. Run the WhatsApp merchant handoff through sign-in, Salla authorization, policy discovery/review, and publication confirmation.
-2. Run a controlled WhatsApp return against a real Salla order whose customer phone matches the test recipient.
-3. Verify eligible, not-eligible, manual-review, replay, invalid-order, and delivery-status paths.
-4. Confirm merchant status changes send customer updates, including final refund confirmation.
-5. Add OTP delegation only after the primary owner-phone verification flow passes.
-6. Invite the pilot merchant only after the full controlled flow passes.
-
-## Required server secrets
-
-Supabase Edge Function secrets: `OLLAMA_API_KEY`, Salla credentials, `INTEGRATION_ENCRYPTION_KEY`, `RETURN_TOKEN_SECRET`, `APP_URL`, WhatsApp credentials (`WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_WABA_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ALERT_RECIPIENT`), and Supabase server credentials. Vercel needs only the public Supabase URL/key and app URL; provider secrets stay in Supabase.
-
-## Validation expectations
-
-Run TypeScript checks, production build, focused browser checks in English/Arabic and mobile/desktop, and controlled API tests. Before the real merchant pilot, prove: Salla authorization, refresh, valid order verification, invalid verifier rejection, three decision outcomes, immutable policy version evidence, persisted cases, and safe failure behavior.
-
-## 2026-09-26 — WhatsApp-first policy onboarding and product reports
-- Merchant onboarding returns to WhatsApp after Salla OAuth. New and already-connected stores receive a verified success message with Continue / Do this later.
-- Policy discovery, exact URL import, pasted policy text, and starter-policy creation run inside WhatsApp.
-- AI-proposed rules are reviewed one at a time in WhatsApp; merchant approval/editing is required before service-side publication. Drafts and published versions use the same Supabase tables as the web workspace.
-- WhatsApp supports Report a problem and Send feedback with preview/edit/cancel confirmation. Reports are stored in `product_reports` with safe workflow context.
-- Workspace route `/app/reports` lists and resolves reports. Resolving a WhatsApp report sends a WhatsApp confirmation.
-- Migration: `202609260001_whatsapp_policy_and_reports.sql`. Functions: `whatsapp-webhook`, `salla-oauth-callback`, `whatsapp-onboarding`, `product-report-update`.
-
-## 2026-09-27 — MVP channel boundary and truthful product copy
-- Customer returns and status tracking remain in WhatsApp. Merchant store connection, policy management, cases, and settings belong in the authenticated web workspace.
-- Merchant setup and unimplemented human handoff are hidden from the WhatsApp customer menu. Existing merchant-onboarding code remains dormant for possible later use; direct legacy commands route merchants to the workspace.
-- WhatsApp eligible outcomes mean policy eligibility and case creation, not a completed refund. Refund execution remains a merchant-controlled operational step.
-- Public examples stop at a clear, documented decision. They do not claim live photo analysis, automatic refunds, guaranteed processing times, or guaranteed financing.
-- General entry points say “Connect store”; Salla is named only inside the platform-specific integration experience.
-- Financing is positioned as a future assessment supported by clearer return data, subject to a financing partner and eligibility.
-
-## 2026-09-28 — Yazeed's correction: restore the marketing journey
-- Supersedes the September 27 instruction to remove photos/refunds from the public example. Restore the photo → policy review → approval → “Refund completed” animation and refund headline. This remains an explicitly illustrative journey, not live payout confirmation.
-- Keep returns automation + financing as the positioning. General setup uses a store icon and platform-neutral language; Salla is currently available and other connectors are planned.
-- Extended the existing financing interest form with platform, optional monthly sales/orders, return rate, refund amounts/volume, processing time, preferred repayment period, and required contact consent. Calculator estimates remain separate from merchant-provided figures.
-- Migration `202609280001_financing_interest.sql` adds fields and validation; public inserts require consent, and no public read policy was added. Existing leads remain intact.
-- This task changes marketing and financing interest collection only. Customer WhatsApp and merchant workspace operational flows remain as implemented.
-
-## 2026-10-11 — New Salla public app
-- Public app ID: 1155852112; client ID: a8695793-40d8-481a-86be-2b5246591958. User authorized replacing the old Salla credentials in Supabase project clwczcvxosudfevjznmk. Never store client/webhook secrets in this document.
-- Public listing is still a draft. Correct displayed name Relaodd to Reload. Request Basic Information, Orders and Products read-only access. Existing backend uses Custom OAuth; public-app webhook synchronization and product tools remain to implement/test. Existing private-app connections need reauthorization for the new app.
-
-## 2026-10-11 — WhatsApp customer service foundation
-- User authorized execution of the WhatsApp assistant, approved store knowledge, merchant inbox/tickets, optional photos, shared case data and Salla public-app backend. Claude owns Zid; do not edit/connect his product tools until he provides the tested contract. Email/SMS delivery is deferred.
-- New pages: /app/knowledge (draft/approve/publish answers) and /app/inbox (store-scoped conversations, tickets, takeover/resume, queued staff replies). Mobile layouts, Arabic/English copy, restrained motion and reduced-motion support use existing primitives.
-- New migration 202610110001_customer_service.sql applied to linked Supabase project. Includes protected knowledge/tickets, role/window-guarded staff queue, safe Salla resource snapshots, dedup/out-of-order protection and proactive refresh scheduling. Rollback SQL regression checks passed. No raw order/customer payloads in resource snapshots.
-- WhatsApp identifies a store, lets customers choose language/service, routes general questions using DeepSeek and approved knowledge, and uses fresh Salla product reads only with products.read. Never exposes costs/admin links. Unknown answers offer review-and-send tickets. Confirmed ticket submission pauses automation for merchant replies; resume is explicit. Incoming messages remain recorded during takeover.
-- Order tracking preserves verification. Optional screenshots use Gemma OCR plus customer confirmation; no identity bypass. Return photos can be skipped without false photo claims; uploaded evidence stays visible in existing case details and AI assessment is advisory.
-- New Salla authorizations are blocked by SALLA_PUBLIC_APP_READY (default false) and disabled UI. Public app review/demo install still required. Tokens refresh two days before expiry; scheduler handles due stores. Existing private connections require new public-app authorization.
-- Backend model defaults: deepseek-v4.1-flash text; gemma4:31b images, with env overrides. No secrets added to tracked files.
-- Verification: TypeScript checks and backend checks passed; Deno suite passed 35 tests including Claude's existing/new Zid product tests. Production build passes with --webpack. Default Turbopack build is blocked by a local CSS-worker port permission (Google Fonts also required network access). Real merchant/customer delivery, live AI/product accuracy and visual acceptance remain to test.
-- Details and rollout dependencies: docs/customer-service.md. No GitHub push requested for this task. Refund payments, shipping, financing and bulk marketing remain outside this change.
-
-### Zid WhatsApp handoff wired — 11 Oct 2026
-- Connected Claude’s zidProductsFor to the customer assistant; verified order tracking now uses zidOrderTracking, including courier and safe tracking links. Shared store-code routing unchanged.
-- Tracking rechecks the original order contact; manual approval uses conversation-bound verified contact. Failed reads produce a retry answer, never stale shipment claims.
-- 44 Deno tests passed; frontend typecheck clean. Email/SMS OTP still deferred. Sizes/colours require real variant-product acceptance; no new Git commit or push in this task.
-
-### Knowledge import and editable tickets — 11 Oct 2026
-- Import one public page or pasted text into source-backed unpublished knowledge drafts; expanded categories, source review, search/filter UI. New migration 202610110002 applied.
-- Support preview offers Send/Edit/Cancel and typed replacement/additions; interactive previews are capped while preserving full drafts.
-- Integrations has explicit dummy QR/link preview; no demo data is used in real routing.
-- 50 backend tests, typecheck and webpack build; live-model authenticated browser importing and mobile checks passed; test fixtures deleted. Email delivery remains deferred; see docs/email-verification-plan.md.
-
-### Short WhatsApp codes and layered QR preview — 11 Oct 2026
-- Existing and new stores receive immutable random RL-xxxxxxxxxx codes; UUID chat links and web return links remain compatible. Invalid explicit routes clear previous store routing. Resolution remains service-only and order verification unchanged.
-- Sample uses reserved DEMO-NOVA, with a layered raised card; QR stays flat and reduced-motion respected.
-- Migration 202610110003 applied; rollback-only live SQL isolation tests, 52 backend tests, typecheck/build and authenticated desktop/mobile real-link preview checks passed. Temporary fixtures removed.
+Annual billing update: Standard SAR1,430.40/year and Premium SAR2,870.40/year (VAT included), monthly allowance resets, first-month private offers remain monthly-only. See docs/billing.md for sandbox evidence and remaining acceptance. Mirza approved committing and pushing the billing release on 2026-10-17; live charging still requires separate rollout approval.

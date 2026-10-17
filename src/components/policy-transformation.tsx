@@ -1,7 +1,9 @@
 "use client";
 
+import { useSsrReducedMotion as useReducedMotion } from "@/hooks/use-ssr-reduced-motion";
+
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Check, Sparkles } from "lucide-react";
 import { SAMPLE_POLICY_RULES } from "@/lib/fixtures";
 import { cn } from "@/lib/utils";

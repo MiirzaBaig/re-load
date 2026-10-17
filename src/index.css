@@ -5345,3 +5345,52 @@ html[data-admin-welcome="play"] .admin-grow { transform: scaleX(0); }
 @media (prefers-reduced-motion: reduce) {
   .footer-giant span { opacity: 1; transform: none; transition: none; }
 }
+
+/* ── Plan & billing ─────────────────────────────────────────────── */
+.billing-stagger > * {
+  animation: billing-rise 0.5s var(--ease-brand) both;
+}
+.billing-stagger > *:nth-child(2) { animation-delay: 50ms; }
+.billing-stagger > *:nth-child(3) { animation-delay: 100ms; }
+.billing-stagger > *:nth-child(4) { animation-delay: 150ms; }
+.billing-stagger > *:nth-child(5) { animation-delay: 200ms; }
+.billing-stagger > *:nth-child(n + 6) { animation-delay: 250ms; }
+@keyframes billing-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.billing-pending {
+  background-color: color-mix(in oklab, var(--foreground) 35%, transparent);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    color-mix(in oklab, var(--background) 45%, transparent) 3px 6px
+  );
+}
+.billing-enter {
+  animation: billing-rise 0.45s var(--ease-brand) both;
+}
+/* "Compare plans" lands here: a soft ring that fades out on its own. */
+.billing-spotlight h3 { animation: billing-spotlight-text 2.2s var(--ease-brand) both; }
+@keyframes billing-spotlight-text {
+  0%, 15%, 100% { color: inherit; }
+  35% { color: var(--brand-accent); }
+}
+/* Thin line that slides while billing refreshes in the background. */
+.billing-refresh span {
+  display: block;
+  height: 100%;
+  width: 35%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--foreground), transparent);
+  opacity: 0.35;
+  animation: billing-sweep 1.1s var(--ease-brand) infinite;
+}
+@keyframes billing-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(290%); }
+}
+[dir="rtl"] .billing-refresh span { animation-direction: reverse; }
+@media (prefers-reduced-motion: reduce) {
+  .billing-stagger > *, .billing-enter, .billing-spotlight h3, .billing-refresh span { animation: none; }
+}

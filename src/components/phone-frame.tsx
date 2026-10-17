@@ -1,7 +1,9 @@
 "use client";
 
+import { useSsrReducedMotion as useReducedMotion } from "@/hooks/use-ssr-reduced-motion";
+
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import {
   ChevronLeft,
   Video,

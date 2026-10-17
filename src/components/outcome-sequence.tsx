@@ -1,7 +1,9 @@
 "use client";
 
+import { useSsrReducedMotion as useReducedMotion } from "@/hooks/use-ssr-reduced-motion";
+
 import { Children, useEffect, useRef, useState, type ReactNode } from "react";
-import { useReducedMotion } from "framer-motion";
+
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WhatsAppChannel } from "./phone-frame";

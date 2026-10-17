@@ -39,6 +39,7 @@ import {
   Globe,
   MessageSquareWarning,
   Ellipsis,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { services } from "@/lib/services";
@@ -101,6 +102,7 @@ export function MerchantLayout({ children }: { children: ReactNode }) {
   ];
   primaryNav.push({ label: t("Inbox", "المحادثات"), href: "/app/inbox", icon: MessageSquare });
   const secondaryNav = [
+    { label: t("Plan & billing", "الاشتراك والفوترة"), href: "/app/billing", icon: CreditCard },
     { label: t("Store knowledge", "معلومات المتجر"), href: "/app/knowledge", icon: BookOpen },
     {
       label: t("Integrations", "التكاملات"),
@@ -377,6 +379,7 @@ function WorkspaceBreadcrumb({ pathname }: { pathname: string }) {
     knowledge: t("Store knowledge", "معلومات المتجر"),
     integrations: t("Integrations", "التكاملات"),
     settings: t("Settings", "الإعدادات"),
+    billing: t("Plan & billing", "الاشتراك والفوترة"),
   };
 
   const hrefForIndex = (index: number) => {

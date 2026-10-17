@@ -1,3 +1,4 @@
+import { withBilling, reserveBilling, supportAllowed, billingStoreId } from "./billing.ts";
 import { customerFirstName, merchantDisplayName } from "./presentation.ts";
 import { decrypt } from "./crypto.ts";
 import { requestOrderOtp, verifyOrderOtp } from "./email-otp.ts";
@@ -32,7 +33,7 @@ async function persistAndDeliver(admin: Admin, messageId: string, plan: ReplyPla
     if (started.error || !started.data) throw started.error ?? new Error("inbox_lease_missing");
   }
   let result: WhatsAppSendResult;
-  try { result = accepted ?? await deliver(plan); }
+  try { result = accepted ?? await (storeId ? withBilling({ storeId, messageKey: messageId }, () => deliver(plan)) : deliver(plan)); }
   catch (error) {
     if (error instanceof Error && ["TimeoutError", "AbortError", "TypeError"].includes(error.name)) throw new Error("send_receipt_unknown");
     throw error;
@@ -160,7 +161,9 @@ async function menu(to: string, language: "ar" | "en", profileName?: string, res
     { id: "track_tickets", title: "Track a support ticket", description: "Check a request saved with the store" },
   ];
   if(resume) rows.unshift({id:"resume_return",title:language === "ar"?"إكمال طلب الإرجاع":"Continue your return",description:language === "ar"?"نرجع للخطوة اللي وقفت عندها":"Pick up where you left off"});
-  return { body, result: await sendWhatsAppList(to, body, language === "ar" ? "اختر الخدمة" : "Choose an option", rows), type: "INTERACTIVE" as const };
+  const scopedStore=billingStoreId();
+  const visibleRows=scopedStore && !await supportAllowed(scopedStore)?rows.filter(row=>['start_return','check_status','resume_return','feedback_options'].includes(row.id)):rows;
+  return { body, result: await sendWhatsAppList(to, body, language === "ar" ? "اختر الخدمة" : "Choose an option", visibleRows), type: "INTERACTIVE" as const };
 }
 
 async function reasons(to: string, language: "ar" | "en") {
@@ -297,6 +300,13 @@ async function processFlowInner(admin: Admin, store: Store, conversation: Conver
   let language: "ar" | "en" = conversation.language === "en" ? "en" : "ar";
   const normalized = input.trim().toLowerCase();
   const flow = await getFlow(admin, conversation.id);
+  const fullSupport = await supportAllowed(store.id, admin);
+  const supportChoice = ["ask_question","shop_products","track_order","open_ticket","human_support","track_tickets"].includes(normalized);
+  if (!fullSupport && (supportChoice || flow.context.serviceMode || flow.context.ticketDraft)) {
+    await setFlow(admin, conversation.id, "MENU", { returnResume: flow.context.returnResume });
+    const body = language === "ar" ? "نساعدك هنا في الإرجاع ومتابعة طلبات الإرجاع. للاستفسارات الأخرى، تواصل مع المتجر من صفحة التواصل في موقعه." : "We can help with returns and return updates here. For other questions, please use the contact details on the store’s website.";
+    return { body, result: await sendWhatsAppButtons(to, body, [{ id: "start_return", title: language === "ar" ? "طلب إرجاع" : "Start a return" }, { id: "check_status", title: language === "ar" ? "متابعة إرجاع" : "Track a return" }]), type: "INTERACTIVE" as const };
+  }
   if (normalized === "resume_return" && flow.context.returnResume) {
     await setFlow(admin, conversation.id, flow.context.returnResume.step, flow.context.returnResume.context as Context);
     return processFlowInner(admin, store, conversation, to, input, profileName, message);
@@ -778,6 +788,11 @@ After the store reviews it, come back and tap Continue. Your order details stay 
       const body=ticketPreview(store.name,draft,language);
       return {body,result:await sendWhatsAppButtons(to,body,ticketButtons(language)),type:"INTERACTIVE" as const};
     }
+    if(!fullSupport) {
+      if(/return|إرجاع|ارجاع|استرجاع/i.test(input))return processFlowInner(admin,store,conversation,to,"start_return",profileName,message);
+      const body=language === "ar" ? "نساعدك هنا في الإرجاع ومتابعته. للاستفسارات الأخرى، تواصل مع المتجر من موقعه." : "We can help with returns and return updates here. For other questions, please contact the store through its website.";
+      return {body,result:await sendWhatsAppButtons(to,body,[{id:"start_return",title:language === "ar"?"طلب إرجاع":"Start a return"},{id:"check_status",title:language === "ar"?"متابعة إرجاع":"Track a return"}]),type:"INTERACTIVE" as const};
+    }
     const answer=await answerStoreQuestion(store.id,store.name,input,language,flow.context.generalHistory??[]);
     if(answer.intent === "RETURN") return processFlowInner(admin,store,conversation,to,"start_return",profileName,message);
     if(answer.intent === "TRACK") return processFlowInner(admin,store,conversation,to,"track_order",profileName,message);
@@ -883,7 +898,23 @@ export async function handleMessage(phoneNumberId: string, message: MetaMessage,
       if(done.error)throw done.error;
       return; // A human owns the conversation; do not compete with their replies.
     }
-    const response = await processFlow(admin, store, conversation, waId, input, profileName ?? contact.display_name ?? undefined, message);
+    let reservation: string;
+    try { reservation = await reserveBilling(store.id, messageId); }
+    catch (error) {
+      if (error instanceof Error && ["subscription_required","upgrade_required","message_limit_reached"].includes(error.message)) {
+        await recordJourneyIssue(admin, conversation.id, "billing_waiting", error.message);
+        const done = await admin.from("integration_events").update({ status: "PROCESSED", last_error: error.message, processed_at: new Date().toISOString() }).eq("provider", "whatsapp").eq("external_event_id", messageId);
+        if (done.error) throw done.error;
+        return; // Keep the incoming message in the merchant inbox; no paid AI or send.
+      }
+      throw error;
+    }
+    let response: Awaited<ReturnType<typeof processFlow>>;
+    try { response = await withBilling({ storeId: store.id, messageKey: messageId, reservation }, () => processFlow(admin, store, conversation, waId, input, profileName ?? contact.display_name ?? undefined, message)); }
+    catch(error) {
+      // Preserve the reservation: a committed reply may be recovered by the inbox worker.
+      throw error;
+    }
     // The reply and flow transition were committed first. A retry can now
     // recover the acknowledgement even if human takeover interrupts this worker.
     if (input.trim().toLowerCase() === "send_ticket") {

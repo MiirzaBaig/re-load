@@ -1,5 +1,8 @@
 project_id = "clwczcvxosudfevjznmk"
 
+[functions.streampay-webhook]
+verify_jwt = false
+
 [functions.salla-oauth-start]
 verify_jwt = true
 
@@ -61,4 +64,13 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.salla-maintenance]
+verify_jwt = false
+
+[functions.streampay-sandbox-webhook]
+verify_jwt = false
+
+[functions.billing-reconcile]
+verify_jwt = false
+
+[functions.billing-verify]
 verify_jwt = false

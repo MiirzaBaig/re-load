@@ -1,3 +1,4 @@
+import { paidStoreAllowed } from "../_shared/billing.ts";
 import { normalizeOrderContact as normalizeVerifier } from "../_shared/order-contact.ts";
 import { decrypt, sha256 } from "../_shared/crypto.ts";
 import { ZidMcp, zidOrderFacts } from "../_shared/zid-mcp.ts";
@@ -51,6 +52,7 @@ Deno.serve(async (request) => {
 
     const { data: store } = await admin.from("stores").select("id").eq("return_code", returnCode).maybeSingle();
     if (!store) return json({ error: "order_not_verified" }, 404);
+    if(!await paidStoreAllowed(store.id))return json({error:"assistant_unavailable"},403);
 
     // Despite this function's name it serves every store platform: callers
     // (web return page, WhatsApp) don't need to know where a store sells. A

@@ -1,3 +1,4 @@
+import { paidStoreAllowed } from "../_shared/billing.ts";
 import { corsHeaders, env, json } from "../_shared/http.ts";
 import { verifyReturnFacts } from "../_shared/return-token.ts";
 import { adminClient } from "../_shared/supabase.ts";
@@ -47,6 +48,7 @@ Deno.serve(async (request) => {
       if (typeof whatsappMessageId !== "string" || request.headers.get("authorization") !== `Bearer ${serverKey}`) return json({ error: "internal_request_required" }, 403);
     }
     const facts = await verifyReturnFacts<Facts>(verificationToken);
+    if(!await paidStoreAllowed(facts.storeId))return json({error:"assistant_unavailable"},403);
     const item = facts.items.find((entry) => entry.id === itemId);
     if (!item) return json({ error: "item_not_found" }, 400);
 

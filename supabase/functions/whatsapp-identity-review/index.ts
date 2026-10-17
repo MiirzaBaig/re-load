@@ -1,3 +1,4 @@
+import { withBilling } from "../_shared/billing.ts";
 import { corsHeaders, env, json } from "../_shared/http.ts";
 import { adminClient, userClient } from "../_shared/supabase.ts";
 import { sendWhatsAppButtons, sentMessageId } from "../_shared/whatsapp.ts";
@@ -44,7 +45,7 @@ Deno.serve(async (request) => {
         ? ar ? "تم التحقق من هويتك لدى المتجر ✅\nنقدر الآن نكمل طلب الإرجاع. اضغط «متابعة»." : "The store has verified your identity ✅\nWe can continue your return now. Tap Continue."
         : ar ? "المتجر ما قدر يؤكد هويتك لهذا الطلب. تواصل معه للتحقق من بيانات الطلب." : "The store couldn’t confirm your identity for this order. Please contact them to check your order details.";
       try {
-        const sent = await sendWhatsAppButtons(review.requester_phone, body, [{ id: "identity_status", title: ar ? "متابعة" : "Continue" }]);
+        const sent = await withBilling({ storeId: review.store_id, messageKey: `identity:${review.id}:${action}` }, () => sendWhatsAppButtons(review.requester_phone, body, [{ id: "identity_status", title: ar ? "متابعة" : "Continue" }]));
         const { error: messageError } = await admin.from("whatsapp_messages").insert({ store_id: review.store_id, conversation_id: review.conversation_id, external_message_id: sentMessageId(sent), direction: "OUTBOUND", message_type: "INTERACTIVE", body, status: "SENT" });
         if (messageError) throw messageError;
         notification = "sent";
