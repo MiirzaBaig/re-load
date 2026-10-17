@@ -5403,6 +5403,31 @@ html[data-admin-welcome="play"] .admin-grow { transform: scaleX(0); }
 }
 
 /* Public FAQ: native disclosure keeps every answer in the server HTML. */
-.public-faq[open] .public-faq-answer { animation: public-answer-in 240ms var(--ease-brand) both; }
-@keyframes public-answer-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .public-faq[open] .public-faq-answer { animation: none; } }
+/* FAQ: plus turns into a cross, the circle fills, the open question
+   brightens; the answer's height is animated in public-faq.tsx. */
+.faq-icon {
+  position: relative;
+  color: var(--muted-foreground);
+  transition: background-color 300ms var(--ease-brand), border-color 300ms var(--ease-brand), color 300ms var(--ease-brand), transform 400ms var(--ease-brand);
+}
+.faq-icon-bar {
+  position: absolute;
+  width: 10px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 300ms var(--ease-brand);
+}
+.faq-icon-bar-v { transform: rotate(90deg); }
+.public-faq[open]:not([data-closing]) .faq-icon {
+  background: var(--foreground);
+  border-color: var(--foreground);
+  color: var(--background);
+  transform: rotate(135deg);
+}
+.public-faq summary:hover .faq-icon { border-color: color-mix(in oklab, var(--foreground) 35%, transparent); }
+.public-faq > summary > span:first-child { transition: color 300ms var(--ease-brand); }
+.public-faq:not([open]) > summary > span:first-child { color: color-mix(in oklab, var(--foreground) 88%, transparent); }
+@media (prefers-reduced-motion: reduce) {
+  .faq-icon, .faq-icon-bar { transition: none; }
+}

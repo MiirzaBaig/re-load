@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useLanguage } from "@/components/language-provider";
+import { ScrollReveal } from "@/components/scroll-reveal";
 import { publicPath } from "@/lib/public-site";
 import { BILLING_PLANS } from "../../supabase/functions/_shared/billing-contract";
 
@@ -116,11 +117,13 @@ export function SeoProse({ variant }: { variant: Variant }) {
   const { h, p } = content[variant];
   return (
     <section className="mx-auto max-w-3xl px-5 py-14 md:py-20">
-      <h2 className="font-display text-2xl font-semibold tracking-tight text-balance md:text-[28px]">{h}</h2>
+      <ScrollReveal>
+        <h2 className="font-display text-2xl font-semibold tracking-tight text-balance md:text-[28px]">{h}</h2>
+      </ScrollReveal>
       {p.map((para, i) => (
-        <p key={i} className="mt-4 text-base leading-8 text-muted-foreground text-pretty">
-          {para}
-        </p>
+        <ScrollReveal key={i} delay={120 + i * 90} y={10}>
+          <p className="mt-4 text-base leading-8 text-muted-foreground text-pretty">{para}</p>
+        </ScrollReveal>
       ))}
     </section>
   );
