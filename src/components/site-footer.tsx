@@ -34,7 +34,7 @@ export function SiteFooter() {
     {
       title: t("Product", "المنتج"),
       links: [
-        { label: t("Overview", "نظرة عامة"), href: `${home}#product` },
+        { label: t("Overview", "نظرة عامة"), href: `${home}#demo` }, // was #product (outcome phones, hidden 2026-10-20)
         {
           label: t("How it works", "كيف يعمل"),
           href: publicPath(locale, "how-it-works"),
@@ -52,7 +52,7 @@ export function SiteFooter() {
     {
       title: t("Company", "الشركة"),
       links: [
-        { label: t("About", "عن ريلود"), href: `${home}#product` },
+        { label: t("About", "عن ريلود"), href: `${home}#integrations` }, // was #product (outcome phones, hidden 2026-10-20)
         { label: t("Contact", "تواصل معنا"), href: `${home}#contact` },
         { label: t("Merchant sign in", "دخول التجار"), href: "/app" },
       ],

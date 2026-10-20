@@ -239,6 +239,8 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               href={home}
               className="rounded-lg p-1 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             >
+              {/* Solid (raised) logo tried and reverted by the owner (2026-10-20);
+                  add `solid` back to ReloadLogo to bring it back. */}
               <ReloadLogo
                 className={cn(
                   "transition-transform duration-[520ms] ease-[cubic-bezier(0.22,1,0.36,1)]",

@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { useInView } from "framer-motion";
 import { Headset, RotateCcw, ShoppingCart } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
-import { ReloadMark } from "@/components/reload-logo";
+import { MARK_PATHS, MARK_VIEWBOX } from "@/components/reload-logo";
+// import { ReloadMark } from "@/components/reload-logo"; // flat mark, replaced by HubMark (2026-10-20)
 import { WhatsAppLogo } from "@/components/phone-frame";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,23 @@ export function ConnectionHub() {
     const id = window.setTimeout(() => setBuilt(true), reduce ? 0 : 2300);
     return () => window.clearTimeout(id);
   }, [seen]);
+
+  // Desktop only: the icon leans a few degrees towards the pointer, like a
+  // real object turned in the hand. CSS eases it back.
+  const tilt = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== "mouse" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const box = event.currentTarget.getBoundingClientRect();
+    const x = (event.clientX - box.left) / box.width;
+    const y = (event.clientY - box.top) / box.height;
+    const el = event.currentTarget.style;
+    el.setProperty("--rx", `${((0.5 - y) * 14).toFixed(2)}deg`);
+    el.setProperty("--ry", `${((x - 0.5) * 14).toFixed(2)}deg`);
+    // The shine used to follow the pointer too (--mx/--my); removed by the owner
+    // (2026-10-20) as it read as a glow. The tilt alone remains.
+  };
+  const untilt = (event: PointerEvent<HTMLDivElement>) => {
+    for (const name of ["--rx", "--ry"]) event.currentTarget.style.removeProperty(name);
+  };
 
   const platforms = [
     { slug: "salla", name: t("Salla", "سلة") },
@@ -98,9 +116,12 @@ export function ConnectionHub() {
 
               <div className="rh-centre">
                 <span className="rh-line rh-line-in-start" aria-hidden="true"><i /></span>
-                <div className="rh-mark">
+                <div className="rh-mark" onPointerMove={tilt} onPointerLeave={untilt}>
                   <span className="rh-pulse" aria-hidden="true" />
-                  <ReloadMark className="relative size-16 sm:size-[76px]" />
+                  {/* Previous flat mark, kept for revert:
+                  <ReloadMark className="relative size-16 sm:size-[76px]" /> */}
+                  <HubMark className="relative size-16 sm:size-[76px]" />
+                  <span className="rh-mark-sheen" aria-hidden="true" />
                 </div>
                 <span className="rh-line rh-line-in-end" aria-hidden="true"><i /></span>
               </div>
@@ -170,5 +191,29 @@ export function ConnectionHub() {
         </ScrollReveal>
       </div>
     </section>
+  );
+}
+
+/* The Reload symbol as a raised, solid piece: a darker copy sits just below
+   the face as its thickness, and the face has a soft top-lit finish. Colours
+   come from CSS (.rh-glyph-*) so light and dark themes each get their own. */
+function HubMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox={MARK_VIEWBOX} aria-hidden="true" className={cn("rh-glyph shrink-0 overflow-visible", className)}>
+      <defs>
+        <linearGradient id="rh-glyph-face" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" className="rh-glyph-top" />
+          <stop offset="100%" className="rh-glyph-bottom" />
+        </linearGradient>
+      </defs>
+      <g className="rh-glyph-depth" transform="translate(0 14)">
+        <path d={MARK_PATHS[0]} />
+        <path d={MARK_PATHS[1]} />
+      </g>
+      <g fill="url(#rh-glyph-face)">
+        <path d={MARK_PATHS[0]} />
+        <path d={MARK_PATHS[1]} />
+      </g>
+    </svg>
   );
 }

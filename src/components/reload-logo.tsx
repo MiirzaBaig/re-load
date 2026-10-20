@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/language-provider";
 
@@ -56,15 +57,17 @@ export const AR_MARK_PATHS = [
   "M 945.410156 486.578125 L 948.726562 483.015625 L 951.679688 478.589844 L 953.03125 475.761719 L 954.136719 472.5625 L 955.242188 467.402344 L 955.613281 463.34375 L 955.613281 455.476562 L 955.242188 451.910156 L 954.136719 446.625 L 952.785156 442.8125 L 951.554688 440.230469 L 948.851562 435.929688 L 947.253906 433.960938 L 943.808594 430.519531 L 939.875 427.324219 L 933.359375 423.265625 L 927.214844 420.804688 L 921.066406 419.332031 L 914.304688 418.714844 L 899.921875 418.714844 L 893.898438 417.855469 L 889.839844 416.625 L 885.78125 415.027344 L 884.921875 414.414062 L 883.324219 413.800781 L 879.265625 411.21875 L 875.332031 407.652344 L 871.519531 403.347656 L 868.941406 399.539062 L 867.339844 396.464844 L 866.972656 395.234375 L 866.113281 393.636719 L 865.742188 391.914062 L 864.757812 389.210938 L 863.898438 382.816406 L 863.777344 380.234375 L 864.269531 345.566406 L 863.039062 339.542969 L 862.300781 338.3125 L 861.6875 336.59375 L 859.472656 333.640625 L 857.507812 331.796875 L 854.554688 329.953125 L 851.480469 328.722656 L 847.671875 327.988281 L 805.996094 327.988281 L 801.691406 328.722656 L 798.742188 329.707031 L 795.789062 331.183594 L 793.332031 333.027344 L 790.503906 336.347656 L 788.535156 339.789062 L 787.429688 342.617188 L 786.691406 345.320312 L 785.832031 350.363281 L 785.464844 355.648438 L 785.339844 387.121094 L 786.078125 398.800781 L 787.429688 407.773438 L 788.78125 413.675781 L 791.242188 421.914062 L 794.929688 431.378906 L 797.632812 436.789062 L 800.585938 442.199219 L 805.378906 449.699219 L 810.050781 455.84375 L 816.566406 463.34375 L 823.207031 469.738281 L 829.230469 474.777344 L 834.886719 478.835938 L 843 483.753906 L 848.65625 486.703125 L 856.769531 490.390625 L 868.078125 494.078125 L 875.332031 495.800781 L 882.464844 496.90625 L 891.804688 497.519531 L 915.65625 497.519531 L 921.804688 497.03125 L 928.566406 495.554688 L 932.5 494.324219 L 935.695312 492.972656 L 940.367188 490.390625 Z M 945.410156 486.578125 ",
 ] as const;
 
-function ReloadArabicLockup({ className }: { className?: string }) {
+function ReloadArabicLockup({ className, solid = false }: { className?: string; solid?: boolean }) {
+  const face = useId();
   return (
     <svg
       viewBox={AR_LOCKUP_VIEWBOX}
-      fill="currentColor"
+      fill={solid ? `url(#${face})` : "currentColor"}
       role="img"
       aria-label="ريلود"
-      className={className}
+      className={cn(solid && "logo-solid", className)}
     >
+      {solid && <SolidFace id={face} />}
       {AR_WORD_PATHS.map((p) => (
         <path key={p.d.slice(0, 24)} fillRule={p.rule} d={p.d} />
       ))}
@@ -75,7 +78,35 @@ function ReloadArabicLockup({ className }: { className?: string }) {
   );
 }
 
-export function ReloadLogo({ className }: { className?: string }) {
+/** Top-lit gradient for the solid logo; colours come from .logo-solid-* in CSS. */
+function SolidFace({ id }: { id: string }) {
+  return (
+    <defs>
+      <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" className="logo-solid-top" />
+        <stop offset="100%" className="logo-solid-bottom" />
+      </linearGradient>
+    </defs>
+  );
+}
+
+/** The symbol as a small solid piece: top-lit face, a thin edge below and a soft shadow. */
+function SolidMark({ className }: { className?: string }) {
+  const face = useId();
+  return (
+    <svg viewBox={MARK_VIEWBOX} fill={`url(#${face})`} aria-hidden="true" className={cn("logo-solid shrink-0", className)}>
+      <SolidFace id={face} />
+      <path fillRule="nonzero" d={MARK_PATHS[0]} />
+      <path fillRule="nonzero" d={MARK_PATHS[1]} />
+    </svg>
+  );
+}
+
+/**
+ * solid: the raised, top-lit version (public navbar, owner 2026-10-20).
+ * Everywhere else keeps the flat logo.
+ */
+export function ReloadLogo({ className, solid = false }: { className?: string; solid?: boolean }) {
   const { isArabic } = useLanguage();
   return (
     <span className={cn("inline-flex items-center text-foreground", className)} data-intro-target="">
@@ -83,7 +114,7 @@ export function ReloadLogo({ className }: { className?: string }) {
           this spot (see intro-splash.tsx). */}
       {isArabic ? (
         <span data-intro-lockup="" className="inline-flex">
-          <ReloadArabicLockup className="h-7 w-auto" />
+          <ReloadArabicLockup className="h-7 w-auto" solid={solid} />
         </span>
       ) : (
         // Proportions from the brand guideline (English signature): the symbol
@@ -94,12 +125,12 @@ export function ReloadLogo({ className }: { className?: string }) {
         // nudge centres the letters' ink, not their line box, on the symbol.
         <span className="inline-flex items-center gap-1.5 sm:gap-[7px]" aria-label="Reload">
           <span data-intro-mark="" className="inline-flex">
-            <ReloadMark className="size-6 sm:size-7" />
+            {solid ? <SolidMark className="size-6 sm:size-7" /> : <ReloadMark className="size-6 sm:size-7" />}
           </span>
           <span
             aria-hidden="true"
             data-intro-word=""
-            className="relative -top-[0.025em] text-[30px] font-semibold leading-none tracking-[-0.02em] sm:text-[34px]"
+            className={cn("relative -top-[0.025em] text-[30px] font-semibold leading-none tracking-[-0.02em] sm:text-[34px]", solid && "logo-solid logo-solid-word")}
           >
             Reload
           </span>

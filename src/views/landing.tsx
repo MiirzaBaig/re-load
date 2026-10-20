@@ -92,6 +92,7 @@ const SHOW_HERO_TRUST_ROW = false; // "Human-approved rules · Evidence with eve
 const SHOW_HERO_SETUP_GRID = false; // The four boxed setup steps (01–04)
 // Content pass, 2026-09-30: fewer sections, one idea each.
 const SHOW_PRINCIPLES_STRIP = false; // "Deterministic engine · Frozen evidence …" marquee
+const SHOW_OUTCOME_PHONES = false; // "Yes, no, or a closer look." three outcome phones (owner, 2026-10-20: hidden, may return later)
 const SHOW_OUTCOME_INTRO = false; // "Policy becomes a clear path to financing." intro above the phones
 const SHOW_TWO_PATHS = false; // "One platform. Two clear paths."
 
@@ -486,6 +487,7 @@ export function LandingPage() {
       {/* From policy to decisions — the three outcome phones, introduced by
           the heading that used to open the policy demo. Anchors the navbar's
           "Product" link now that "Why Reload" is hidden. */}
+      {SHOW_OUTCOME_PHONES && (
       <div id="product" className="scroll-mt-20">
         {SHOW_OUTCOME_INTRO && (
         <div className="mx-auto w-full max-w-[1200px] px-5 pt-20 md:pt-28">
@@ -525,6 +527,7 @@ export function LandingPage() {
           ))}
         </OutcomeSequence>
       </div>
+      )}
 
       {/* Calculator replaced here by the integrations hub (owner, 2026-10-20). It stays on
           /tools/returns-cost-calculator with its full request form. Kept for revert:
