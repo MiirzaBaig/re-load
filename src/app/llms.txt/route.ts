@@ -1,3 +1,4 @@
+import { SOLUTIONS } from "@/lib/public-solutions";
 import { PUBLIC_FAQS, PUBLIC_STEPS } from "@/lib/public-content";
 import { PUBLIC_COPY, SITE_URL, publicPath } from "@/lib/public-site";
 import { GUIDES, TOOL_COPY } from "@/lib/public-guides";
@@ -59,6 +60,8 @@ function section(locale: "ar" | "en") {
   return [
     ...lines,
     ...guides,
+    locale === "ar" ? "### الحلول وحالة التوفّر" : "### Solutions and availability",
+    ...SOLUTIONS.map(s => `- [${s.title[i]}](${SITE_URL}/${locale}/solutions/${s.slug}): ${s.description[i]} ${s.boundary[i]}`),
     "",
     locale === "ar" ? "### كيف يعمل" : "### How it works",
     "",

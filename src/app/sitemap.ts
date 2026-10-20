@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL, PUBLIC_PAGES, publicPath } from "@/lib/public-site";
 import { GUIDES } from "@/lib/public-guides";
 import { POLICY_CATEGORIES } from "@/lib/policy-presets";
+import { SOLUTIONS } from "@/lib/public-solutions";
 import { TOOLS } from "@/lib/public-tools";
 export default function sitemap(): MetadataRoute.Sitemap {
   // Do not fabricate a fresh lastModified timestamp on every request/build.
@@ -21,6 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Guides and the free policy tool, in both languages.
     ...[
       { path: "guides" },
+      ...SOLUTIONS.map(s => ({ path: `solutions/${s.slug}` })),
       { path: "return-policy-template" },
       ...POLICY_CATEGORIES.map((c) => ({ path: `return-policy-template/${c.slug}` })),
       { path: "tools" },

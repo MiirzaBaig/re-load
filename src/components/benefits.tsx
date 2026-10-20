@@ -38,7 +38,7 @@ export function Benefits() {
       items: [
         {
           icon: RefreshCcw,
-          title: t("Faster refunds", "استرداد أسرع"),
+          title: t("Clearer answers", "إجابات أوضح"),
           body: t("A clear answer in the chat they already use.", "رد واضح في المحادثة اللي يستخدمها."),
         },
         {

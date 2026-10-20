@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils";
  */
 
 /** Final step index. Steps: 1 request · 2 ask · 3 order no. · 4 photo ·
- *  5 reviewing · 6 approved · 7 refund initiated. */
+ *  5 reviewing · 6 approved · 7 merchant follow-up. */
 const LAST = 7;
 
 /** Delay before each step lands, in ms. Incoming replies show a typing
@@ -54,7 +54,7 @@ const STAGES = [
   { from: 1, to: 4, en: "Return request", ar: "طلب الإرجاع" },
   { from: 5, to: 5, en: "AI review", ar: "مراجعة ذكية" },
   { from: 6, to: 6, en: "Decision", ar: "القرار" },
-  { from: 7, to: 7, en: "Refund", ar: "الاسترداد" },
+  { from: 7, to: 7, en: "Follow-up", ar: "المتابعة" },
 ];
 
 export function ReturnWalkthrough() {
@@ -134,7 +134,7 @@ export function ReturnWalkthrough() {
             <Tone>{t("a customer asks?", "العميل يطلب إرجاع؟")}</Tone>
           </h2>
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground text-pretty">
-            {t("Reload collects the order, the photo and the reason, checks your policy, and replies.", "ريلود يجمع الطلب والصورة والسبب، ويراجع سياستك، ويرد على العميل.")}
+            {t("Reload verifies the order, collects the reason and optional photo, checks your policy, and replies.", "ريلود يتحقّق من الطلب، ويجمع السبب والصورة الاختيارية، ويراجع سياستك، ويرد على العميل.")}
           </p>
         </div>
 
@@ -219,7 +219,7 @@ function deriveWorkspace(step: number, t: T) {
             ? { label: t("Reviewing", "قيد المراجعة"), tone: "busy" }
             : step === 6
               ? { label: t("Approved", "مقبول"), tone: "ok" }
-              : { label: t("Refund initiated", "بدأ الاسترداد"), tone: "ok" };
+              : { label: t("Awaiting merchant follow-up", "بانتظار متابعة المتجر"), tone: "ok" };
 
   const checks = [
     { label: t("Order number", "رقم الطلب"), done: step >= 3, value: t("Verified", "تم التحقق") },
@@ -263,7 +263,7 @@ function Chat({
     tone?: "approved";
   }[] = [
     { at: 1, out: true, time: "10:01", text: t("I’d like to return these, the size doesn’t fit", "أبغى أرجّع هذا، المقاس ما ضبط") },
-    { at: 2, out: false, time: "10:01", text: t("Sure, send your order number and a photo of the product.", "أكيد، أرسل رقم الطلب وصورة للمنتج.") },
+    { at: 2, out: false, time: "10:01", text: t("Sure, send your order number. You can also add a product photo if it helps.", "أكيد، أرسل رقم الطلب. وتقدر تضيف صورة للمنتج إذا تساعدنا.") },
     { at: 3, out: true, time: "10:02", text: t("Order #10248", "طلب رقم 10248#") },
     { at: 4, out: true, time: "10:02", photo: true },
     { at: 5, out: false, time: "10:03", text: t("Reviewing your request against the store’s policy…", "نراجع طلبك مقابل سياسة المتجر…") },
@@ -273,8 +273,8 @@ function Chat({
       out: false,
       time: "10:04",
       text: t(
-        "Your SAR 749 refund has been initiated to your original payment method.",
-        "بدأنا استرداد 749 ر.س إلى وسيلة الدفع الأصلية.",
+        "The store will confirm the return arrangements. Any refund follows the store’s process after receipt and review.",
+        "بيؤكّد لك المتجر ترتيبات الإرجاع. استرداد المبلغ يكون حسب إجراءات المتجر بعد الاستلام والمراجعة.",
       ),
     },
   ];
@@ -509,9 +509,9 @@ function Workspace({ step, t }: { step: number; t: T }) {
               <Check className="ws-next-check size-3.5" strokeWidth={3} aria-hidden="true" />
               <span>
                 {step >= 7
-                  ? t("Refund initiated", "بدأ الاسترداد")
+                  ? t("Awaiting merchant follow-up", "بانتظار متابعة المتجر")
                   : step >= 6
-                    ? t("Initiate refund", "بدء الاسترداد")
+                    ? t("Confirm return arrangements", "تأكيد ترتيبات الإرجاع")
                     : t("Pending", "بالانتظار")}
               </span>
             </span>

@@ -15,7 +15,12 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
 }
 
-export function ReturnsCostCalculator() {
+/**
+ * withRequestForm: the long financing request form under the calculator.
+ * Off on the homepage (owner, 2026-10-20), which has its own short contact
+ * form; on for the calculator tool page, where the estimate is the point.
+ */
+export function ReturnsCostCalculator({ withRequestForm = true }: { withRequestForm?: boolean } = {}) {
   const { t, n } = useLanguage();
   const formatMoney = (amount: number) =>
     n(amount, {
@@ -92,7 +97,7 @@ export function ReturnsCostCalculator() {
               {/* Glides to the open form below rather than opening a popup,
                   so the form is part of the page, not hidden behind a click. */}
               <a
-                href="#contact"
+                href={withRequestForm ? "#financing-contact" : "#contact"}
                 onClick={smoothAnchorClick}
                 className="financing-cta group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold"
               >
@@ -107,7 +112,7 @@ export function ReturnsCostCalculator() {
         </div>
       </div>
     </section>
-    <FinancingSection
+    {withRequestForm && <FinancingSection
       snapshot={{
         monthlyReturns,
         orderValue,
@@ -117,7 +122,7 @@ export function ReturnsCostCalculator() {
         tiedUp: results.tiedUp,
         operatingCost: results.operatingCost,
       }}
-    />
+    />}
     </>
   );
 }

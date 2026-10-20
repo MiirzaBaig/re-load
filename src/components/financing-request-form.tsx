@@ -145,8 +145,9 @@ export function FinancingSection({
     setFiguresOpen(false);
   };
 
+  // The id was "contact" until the short homepage form took that anchor (2026-10-20).
   return (
-    <section id="contact" aria-labelledby="contact-title" className="fin-section scroll-mt-24">
+    <section id="financing-contact" aria-labelledby="contact-title" className="fin-section scroll-mt-24">
       <div className="mx-auto grid max-w-[1200px] gap-10 px-5 py-20 md:py-28 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
         {/* Left: the why, pinned while the form scrolls on desktop. */}
         <div className="fin-aside">

@@ -24,8 +24,9 @@ import { getWhatsAppPublicUrl } from "@/lib/whatsapp";
 
 /** Navbar WhatsApp link (desktop). Off: the floating bubble and hero CTA cover it. */
 const SHOW_NAV_WHATSAPP = false;
-/** "Get started" (desktop navbar + mobile menu). Off: Sign in is the only navbar action. */
-const SHOW_GET_STARTED = false;
+/** "Try Reload" (desktop navbar + mobile menu): the one main action, to the homepage contact form. */
+// Was false (Sign in was the only navbar action) until the navbar trim, owner 2026-10-20.
+const SHOW_GET_STARTED = true;
 
 // Every public page fades in, on a fresh load and on each page change. The
 // home page is the exception on a fresh load: it has its own intro. The
@@ -78,26 +79,25 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   const activeSection = useSectionSpy(
     isHome
       ? [
-          "product",
-          "how-it-works",
-          "returns-financing",
+          // Previous: "product", "how-it-works", "returns-financing", "pricing", "faq", "contact"
+          "demo",
           "pricing",
           "faq",
-          "contact",
         ]
       : [],
   );
+  // Navbar trim (owner, 2026-10-20): three links plus Sign in and one
+  // "Try Reload" button. Product, Returns financing and Contact still live in
+  // the footer. Previous links, kept for revert:
+  // { id: "product", label: t("Product", "المنتج"), href: `${home}#product` },
+  // { id: "how-it-works", label: t("How it works", "كيف يعمل"), href: `${home}#how-it-works` },
+  // { id: "returns-financing", label: t("Returns financing", "تمويل المرتجعات"), href: `${home}#returns-financing` },
+  // { id: "contact", label: t("Contact", "تواصل معنا"), href: `${home}#contact` },
   const navLinks = [
-    { id: "product", label: t("Product", "المنتج"), href: `${home}#product` },
     {
-      id: "how-it-works",
+      id: "demo",
       label: t("How it works", "كيف يعمل"),
-      href: `${home}#how-it-works`,
-    },
-    {
-      id: "returns-financing",
-      label: t("Returns financing", "تمويل المرتجعات"),
-      href: `${home}#returns-financing`,
+      href: `${home}#demo`,
     },
     {
       id: "pricing",
@@ -109,14 +109,10 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       label: t("FAQ", "الأسئلة الشائعة"),
       href: publicPath(locale, "faq"),
     },
-    // The contact form lives on the home page; from any other page this link
-    // navigates home and the hash handler scrolls straight to it.
-    {
-      id: "contact",
-      label: t("Contact", "تواصل معنا"),
-      href: `${home}#contact`,
-    },
   ];
+  // The contact form lives on the home page; from any other page this
+  // navigates home and the hash handler scrolls straight to it.
+  const tryReloadHref = `${home}#contact`;
   const isNavActive = (sectionId: string) =>
     (isHome && activeSection === sectionId) ||
     (pathname ===
@@ -311,13 +307,10 @@ export function PublicLayout({ children }: { children: ReactNode }) {
                           size="sm"
                           className="nav-cta rounded-full px-4"
                         >
-                          <a
-                            href={whatsappStartUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {t("Get started", "ابدأ الآن")}
-                          </a>
+                          {/* Was: WhatsApp link, "Get started" / "ابدأ الآن" */}
+                          <Link href={tryReloadHref}>
+                            {t("Try Reload", "جرّب ريلود")}
+                          </Link>
                         </Button>
                       </>
                     )}
@@ -405,14 +398,10 @@ export function PublicLayout({ children }: { children: ReactNode }) {
                   style={{ ["--i" as string]: String(navLinks.length + 1) }}
                   className="mobile-menu-item nav-cta h-11 w-full rounded-full"
                 >
-                  <a
-                    href={whatsappStartUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    {t("Get started", "ابدأ الآن")}
-                  </a>
+                  {/* Was: WhatsApp link, "Get started" / "ابدأ الآن" */}
+                  <Link href={tryReloadHref} onClick={() => setMenuOpen(false)}>
+                    {t("Try Reload", "جرّب ريلود")}
+                  </Link>
                 </Button>
               )}
               <button
@@ -458,7 +447,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           {/* Icon first so it anchors in the corner; the label slides out
               beside it on hover, on focus, and in the one-time peek. */}
           <span className="whatsapp-float-icon" aria-hidden="true">
-            <WhatsAppLogo className="size-[19px] !text-current" />
+            <WhatsAppLogo className="size-[22px] !text-current" />
             <span className="whatsapp-float-online" />
           </span>
           <span className="whatsapp-float-label" aria-hidden="true">

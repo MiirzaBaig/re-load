@@ -8,13 +8,60 @@ export const PUBLIC_FAQS = [
     ],
   },
   {
+    q: ["How is Reload different from WhatsApp Business auto-replies?", "وش الفرق بين ريلود والرد الآلي في واتساب بزنس؟"],
+    a: [
+      "Auto-replies send the same fixed message to everyone. Reload understands the question, answers from your store’s products, orders and approved policies, verifies the customer before sharing order details, decides clear return requests by your policy and passes anything unclear to your team.",
+      "الرد الآلي يرسل نفس الرسالة الثابتة للكل. أما ريلود فيفهم السؤال، ويرد من منتجات متجرك وطلباته وسياساتك المعتمدة، ويتحقق من العميل قبل مشاركة تفاصيل الطلب، ويحسم طلبات الإرجاع الواضحة حسب سياستك، واللي مو واضح يحوّله لفريقك.",
+    ],
+  },
+  {
+    q: ["Does Reload accept or reject returns by itself?", "هل ريلود يقبل أو يرفض الإرجاع بنفسه؟"],
+    a: [
+      "Only by the policy you approved. Clear cases get a result straight away: accepted or not eligible, with the reason. Missing information, damage or anything unusual comes to you for review, and your team handles the next action.",
+      "فقط حسب السياسة اللي اعتمدتها. الحالات الواضحة تاخذ نتيجتها مباشرة: مقبول أو غير مؤهل مع السبب. والمعلومات الناقصة أو العيوب أو أي حالة استثنائية توصلك للمراجعة، وفريقك يتولّى الخطوة التالية.",
+    ],
+  },
+  {
+    q: ["Can I reply to my customers myself?", "هل أقدر أرد على عملائي بنفسي؟"],
+    a: [
+      "Yes. Open any conversation in your dashboard and take over; Reload steps back while you reply. WhatsApp’s messaging rules apply, so free-form replies work within the customer service window.",
+      "إيه. افتح أي محادثة من لوحة التاجر واستلمها، وريلود يوقف وأنت ترد. وتنطبق قواعد واتساب للرسائل، فالرد الحر يكون خلال نافذة خدمة العملاء.",
+    ],
+  },
+  {
+    q: ["How does a customer ask for a return?", "كيف يطلب العميل الإرجاع؟"],
+    a: [
+      "They open your store’s WhatsApp link and say they want to return something. Reload verifies the order, asks which item and why, and the customer can add a photo if it helps. The result arrives in the same chat.",
+      "يفتح رابط واتساب متجرك ويقول إنه يبي يرجّع منتج. ريلود يتحقق من الطلب، ويسأله عن المنتج والسبب، ويقدر العميل يضيف صورة إذا تفيد. والنتيجة توصله في نفس المحادثة.",
+    ],
+  },
+  {
+    q: ["Are return labels included in every plan?", "هل إصدار بوليصات الإرجاع موجود في كل الباقات؟"],
+    a: [
+      "Return shipping through OTO is being prepared for Premium and is not available yet. Merchants will review the courier and charge before booking. Standard covers support and return decisions; courier charges remain separate.",
+      "شحن الإرجاع عبر أوتو قيد التجهيز لبريميوم وغير متاح بعد. سيراجع التاجر الشركة والتكلفة قبل الحجز. ستاندرد يشمل الدعم وقرارات الإرجاع، ورسوم الشحن منفصلة.",
+    ],
+  },
+  /* Previous answer (Codex, 2026-10-20), kept for review:
+  {
     q: [
       "How do Standard and Premium differ?",
       "ما الفرق بين ستاندرد وبريميوم؟",
     ],
     a: [
-      "Standard covers return requests and policy checks, with 500 delivered outgoing messages each month. Premium adds customer support, approved store answers, supported product questions, verified order tracking and support tickets, with 2,000 messages each month.",
-      "يشمل ستاندرد طلبات الإرجاع والتحقق من السياسة، مع 500 رسالة صادرة مسلّمة شهريًا. يضيف بريميوم خدمة العملاء وإجابات المتجر المعتمدة واستفسارات المنتجات المدعومة وتتبع الطلبات بعد التحقق وتذاكر الدعم، مع 2,000 رسالة شهريًا.",
+      "Both plans cover returns and customer support, including approved answers, supported product questions and links, verified tracking and tickets. Standard includes 500 delivered outgoing messages monthly; Premium includes 2,000. Premium cart/checkout creation and OTO shipping are in development, not available yet. Courier charges will be separate.",
+      "تشمل الباقتان الإرجاع وخدمة العملاء والإجابات المعتمدة وأسئلة المنتجات وروابطها المدعومة والتتبّع بعد التحقّق وتذاكر الدعم. يشمل ستاندرد 500 رسالة صادرة مسلّمة شهريًا، وبريميوم 2,000. إنشاء السلة والدفع وشحن أوتو لبريميوم قيد التطوير وغير متاح بعد. رسوم الشحن ستكون منفصلة.",
+    ],
+  },
+  */
+  {
+    q: [
+      "How do Standard and Premium differ?",
+      "ما الفرق بين ستاندرد وبريميوم؟",
+    ],
+    a: [
+      "Both plans include customer support, returns management, product suggestions with links, your dashboard and replying yourself. Standard includes 500 delivered outgoing messages a month; Premium includes 2,000. Merchant-approved OTO shipping and cart/payment links are being prepared for Premium, not live yet. Courier charges are separate.",
+      "تشمل الباقتان خدمة العملاء وإدارة المرتجعات واقتراح المنتجات وروابطها ولوحة التاجر والرد بنفسك. يشمل ستاندرد 500 رسالة صادرة مسلّمة شهريًا، وبريميوم 2,000. شحن أوتو بموافقة التاجر وإنشاء السلة وروابط الدفع قيد التجهيز لبريميوم وغير متاحة بعد. رسوم شركة الشحن منفصلة.",
     ],
   },
   {
@@ -81,6 +128,7 @@ export const PUBLIC_FAQS = [
       "لا. يعتمد التاجر إجابات المتجر وسياسات الإرجاع قبل استخدامها. تتبع أهلية الإرجاع هذه القواعد المنشورة. تُحال الحالات غير الواضحة للمراجعة، وتحليل الصور دليل مساعد اختياري. لا ينشر ريلود إجابات جديدة تلقائيًا من المحادثات.",
     ],
   },
+  /* Previous answer, kept for review:
   {
     q: [
       "Does Reload issue refunds or book shipping automatically?",
@@ -90,6 +138,25 @@ export const PUBLIC_FAQS = [
       "Reload helps organize and assess return requests. Refund payouts and shipping bookings are not included as automatic actions today. The merchant remains responsible for operational approvals and completion.",
       "يساعد ريلود على تنظيم طلبات الإرجاع وتقييمها. لا يشمل التنفيذ الحالي تحويل مبالغ الاسترداد أو حجز الشحن تلقائيًا. يبقى التاجر مسؤولًا عن الموافقات التشغيلية وإتمامها.",
     ],
+  },
+  */
+  {
+    q: [
+      "Does Reload issue refunds or book shipping?",
+      "هل ينفّذ ريلود الاسترداد أو يحجز الشحن؟",
+    ],
+    a: [
+      "Refunds stay with you: an accepted return is a decision, not a payout. On Premium, Reload issues the return label for accepted returns through OTO and keeps the shipment linked to the return case. Courier charges are paid by your store or your customer, according to your policy.",
+      "الاسترداد يبقى بيدك: قبول الإرجاع قرار وليس تحويل مبلغ. وفي بريميوم يصدر ريلود بوليصة الإرجاع للطلبات المقبولة عبر أوتو، وتبقى الشحنة مرتبطة بحالة المرتجع. ورسوم شركة الشحن يدفعها متجرك أو عميلك حسب سياستك.",
+    ],
+  },
+  {
+    q: ["Can I use my store’s own WhatsApp number?", "هل أستخدم رقم واتساب متجري؟"],
+    a: ["Customers currently contact a shared Reload WhatsApp number through your store’s unique link. Connecting your own number is not available yet.", "يتواصل العملاء حاليًا مع رقم واتساب موحّد لريلود عبر رابط متجرك الخاص. ربط رقم واتساب خاص بمتجرك غير متاح بعد."],
+  },
+  {
+    q: ["Which store information does Reload use?", "ما معلومات المتجر التي تستخدمها ريلود؟"],
+    a: ["Reload uses the product and order information available through your authorized connection and the answers and policies you approve. Available permissions depend on the platform. Order ownership is verified before private order information is shared.", "تستخدم ريلود معلومات المنتجات والطلبات المتاحة عبر الربط المصرّح به، والإجابات والسياسات التي تعتمدها. تختلف الصلاحيات حسب المنصة. نتحقّق من صاحب الطلب قبل مشاركة معلوماته الخاصة."],
   },
   {
     q: ["Can I upgrade or cancel?", "هل أستطيع الترقية أو الإلغاء؟"],

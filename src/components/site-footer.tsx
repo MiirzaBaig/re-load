@@ -41,7 +41,8 @@ export function SiteFooter() {
         },
         {
           label: t("Returns financing", "تمويل المرتجعات"),
-          href: `${home}#returns-financing`,
+          // Was `${home}#returns-financing`; the calculator left the homepage (2026-10-20).
+          href: `/${locale}/tools/returns-cost-calculator`,
         },
         { label: t("Pricing", "الأسعار"), href: publicPath(locale, "pricing") },
         { label: t("FAQ", "الأسئلة الشائعة"), href: publicPath(locale, "faq") },

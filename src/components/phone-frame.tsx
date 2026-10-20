@@ -19,6 +19,7 @@ import { OutcomeBadge } from "@/components/outcome-badge";
 import { StoreMark } from "@/components/store-identity";
 import type { EligibilityDecision } from "@/lib/domain";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/components/language-provider";
 
 export const WHATSAPP_STATUS: "live" | "coming-soon" = "live";
 export const BRAND = {
@@ -200,7 +201,7 @@ export function TypingIndicator() {
   return (
     <div
       aria-label="Nova Store is typing"
-      className="flex w-fit gap-1 rounded-xl rounded-tl-none bg-white px-4 py-3 shadow-sm"
+      className="phone-typing flex w-fit gap-1 rounded-xl rounded-ss-none bg-white px-4 py-3 shadow-sm"
     >
       {[0, 1, 2].map((i) => (
         <motion.span
@@ -223,6 +224,7 @@ export function WhatsAppThread({
   status?: "live" | "coming-soon";
   animated?: boolean;
 }) {
+  const { t: tr } = useLanguage();
   const reduceMotion = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { amount: 0.25, once: true });
@@ -290,7 +292,7 @@ export function WhatsAppThread({
         <StoreMark size="lg" className="ring-1 ring-white/25" />
         <div className="flex-1">
           <div className="text-sm font-semibold">Nova Store</div>
-          <div className="text-[10px] text-white/75">business account</div>
+          <div className="text-[10px] text-white/75">{tr("business account", "حساب تجاري")}</div>
         </div>
         <Video className="size-4" aria-hidden="true" />
         <Phone className="ml-2 size-3.5" aria-hidden="true" />
@@ -299,13 +301,13 @@ export function WhatsAppThread({
         className="phone-chat relative flex min-h-[415px] flex-col gap-3 px-3 py-4 text-[13px] leading-relaxed"
       >
         <span className="mx-auto rounded-md bg-white/75 px-3 py-0.5 text-[10px] text-[#65756d]">
-          Today ·{" "}
+          {tr("Today", "اليوم")} ·{" "}
           {status === "coming-soon"
-            ? "Channel preview"
-            : "Example conversation"}
+            ? tr("Channel preview", "معاينة القناة")
+            : tr("Example conversation", "محادثة توضيحية")}
         </span>
         <div className="text-center text-[10px] text-[#65756d]">
-          Demo order · customer already verified
+          {tr("Demo order · customer already verified", "طلب تجريبي · تم التحقق من العميل")}
         </div>
         {(complete ? messages : messages.slice(0, stage >= 2 ? 1 : 0)).map(
           (message) => (
@@ -332,8 +334,7 @@ export function WhatsAppThread({
                 <div className="mt-3 border-t border-[#dce3de] pt-2 text-[11px] leading-relaxed">
                   <p className="font-semibold">{message.rule}</p>
                   <p className="mt-1 text-[#65756d]">
-                    Policy {message.decision.policyVersionLabel} · approved by
-                    merchant
+                    {tr("Policy", "السياسة")} {message.decision.policyVersionLabel} · {tr("approved by merchant", "اعتمدها التاجر")}
                   </p>
                   <p className="phone-reason-code mt-1 break-all font-mono text-[9px] text-[#65756d]">
                     {message.decision.appliedRules.find((r) => !r.passed)
@@ -364,7 +365,7 @@ export function WhatsAppThread({
           <span className="min-w-0 truncate">
             {!staticThread && stage === 1
               ? messages[0]?.text.slice(0, typedChars)
-              : "Message"}
+              : tr("Message", "اكتب رسالة…")}
             {!staticThread && stage === 1 && (
               <span className="ml-px inline-block h-3 w-px animate-pulse bg-current align-middle" />
             )}
@@ -432,6 +433,7 @@ export function WhatsAppConversation({
   showRefundCard?: boolean;
   caption: string;
 }) {
+  const { t: tr } = useLanguage();
   const reduceMotion = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { amount: 0.3, once: true });
@@ -488,7 +490,7 @@ export function WhatsAppConversation({
         <StoreMark size="lg" className="ring-1 ring-white/25" />
         <div className="flex-1">
           <div className="text-sm font-semibold">Nova Store</div>
-          <div className="text-[10px] text-white/75">business account</div>
+          <div className="text-[10px] text-white/75">{tr("business account", "حساب تجاري")}</div>
         </div>
         <Video className="size-4" aria-hidden="true" />
         <Phone className="ml-2 size-3.5" aria-hidden="true" />
@@ -569,7 +571,7 @@ export function WhatsAppConversation({
       >
         <Plus className="size-5" />
         <div className="flex h-8 min-w-0 flex-1 items-center justify-between rounded-full border border-[#dde4df] bg-white px-3 text-[11px]">
-          <span className="min-w-0 truncate">Message</span>
+          <span className="min-w-0 truncate">{tr("Message", "اكتب رسالة…")}</span>
           <Smile className="size-4" />
         </div>
         <Mic className="size-4" />

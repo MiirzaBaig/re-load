@@ -13,14 +13,14 @@ export function publicPath(locale: Locale, page: PublicPage = "") {
 export const PUBLIC_COPY = {
   "": {
     ar: {
-      title: "ريلود | إدارة المرتجعات وخدمة العملاء عبر واتساب للمتاجر",
+      title: "ريلود | خدمة العملاء والمنتجات والمرتجعات عبر واتساب",
       description:
-        "أدر طلبات الإرجاع وخدمة عملاء متجرك عبر واتساب مع ريلود. سياسات يعتمدها التاجر، ومتابعة واضحة للحالات، واشتراكات شهرية أو سنوية بالريال السعودي.",
+        "خدمة عملاء وأسئلة منتجات وطلبات إرجاع عبر واتساب. معلومات وسياسات تعتمدها أنت، وتحقّق من الطلبات، ومتابعة في مساحة واحدة. تعرّف على الخطط والمزايا القادمة.",
     },
     en: {
-      title: "Reload | WhatsApp returns and customer support for Saudi stores",
+      title: "Reload | WhatsApp customer support, products and returns",
       description:
-        "Manage returns and customer support on WhatsApp with Reload. Merchant-approved policies, order verification and a shared workspace. Explore monthly and annual plans in SAR.",
+        "Customer support, product questions and returns on WhatsApp. Merchant-approved information, verified order requests and one workspace. Explore plans and upcoming features.",
     },
   },
   pricing: {

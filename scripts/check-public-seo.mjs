@@ -5,6 +5,10 @@ const canonical = "https://www.reload.sa";
 for (const locale of ["ar", "en"])
   for (const suffix of [
     "",
+    "/solutions/customer-support",
+    "/solutions/returns",
+    "/solutions/sales",
+    "/solutions/shipping",
     "/pricing",
     "/faq",
     "/how-it-works",
@@ -102,7 +106,7 @@ assert.ok(rules.includes("Disallow: /api/"));
 const sitemap = await fetch(origin + "/sitemap.xml");
 assert.equal(sitemap.status, 200);
 const xml = await sitemap.text();
-assert.equal([...xml.matchAll(/<loc>/g)].length, 40);
+assert.equal([...xml.matchAll(/<loc>/g)].length, 48);
 assert.ok(
   !xml.includes("/app") && !xml.includes("/admin") && !/\/return[/<]/.test(xml),
 );

@@ -1,6 +1,9 @@
 "use client";
 
 import { useSsrReducedMotion as useReducedMotion } from "@/hooks/use-ssr-reduced-motion";
+import { HomepageSetup } from "@/components/homepage-content-sections";
+import { ConnectionHub } from "@/components/connection-hub";
+import { ConversationDemo, AskReloadStrip, WhyReload, TrustReload, QuickContact } from "@/components/homepage-v2";
 import { PublicFaq } from "@/components/public-faq";
 import { PublicPricing } from "@/components/public-pricing";
 import { SeoProse } from "@/components/seo-prose";
@@ -18,11 +21,11 @@ import {
 import { OutcomeBadge } from "@/components/outcome-badge";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { OutcomeSequence } from "@/components/outcome-sequence";
-import { ReturnsCostCalculator } from "@/components/returns-cost-calculator";
+// import { ReturnsCostCalculator } from "@/components/returns-cost-calculator"; // calculator now only on its tool page
 import { PolicyTransformation } from "@/components/policy-transformation";
 import { SpeedComparison } from "@/components/speed-comparison";
-import { ReturnWalkthrough } from "@/components/return-walkthrough";
-import { Benefits } from "@/components/benefits";
+// Kept for revert: import { ReturnWalkthrough } from "@/components/return-walkthrough";
+// Kept for revert: import { Benefits } from "@/components/benefits";
 import {
   PhoneFrame,
   WhatsAppThread,
@@ -211,19 +214,26 @@ export function LandingPage() {
   }, [reduceMotion]);
   // The brand line from the guidelines. Previous hero, kept for review:
   // "Faster return decisions. / A clearer path to financing."
-  const heroLine1 = t("Returns,", "المرتجعات");
-  const heroLine2 = t("handled.", "علينا.");
+  // Previous slogan (owner, 2026-10-20: replaced by the v201 headline), kept for revert:
+  // const heroLine1 = t("Your customers,", "عملاؤك،");
+  // const heroLine2 = t("looked after.", "علينا.");
+  // The headline is now the page H1; line2 is the highlighted ending.
+  const heroLine1 = t("The smart platform for customer support and returns", "المنصة الذكية لخدمة العملاء والمرتجعات");
+  const heroLine2 = t("on WhatsApp", "على واتساب");
   // Previous copy, kept for review: "AI helps structure your return policy.
   // Merchant-approved rules give customers a clear answer in seconds and create
   // reliable data for future financing assessment."
+  // Previous body, kept for revert:
+  // "Customer support, product questions and returns on WhatsApp. Answers from your approved store information, decisions guided by your policy, and the cases that need you brought to your team."
+  // "خدمة العملاء وأسئلة المنتجات والمرتجعات على واتساب. إجابات من معلومات متجرك المعتمدة، وقرارات وفق سياستك، واللي يحتاج قرارك يوصلك أنت."
   const heroBody = t(
-    "Returns and customer support on WhatsApp. Reload uses your approved store information and policies, verifies order requests, and brings conversations and cases into one workspace.",
-    "الإرجاع وخدمة العملاء عبر واتساب. يعتمد ريلود على معلومات متجرك وسياساتك المعتمدة، ويتحقق من طلبات العملاء، ويجمع المحادثات والحالات في مساحة واحدة.",
+    "Reload answers your customers from your store's information, settles return requests by your policy, and sends you only what needs your call.",
+    "ريلود يرد على عملائك من معلومات متجرك، ويحسم طلبات الإرجاع حسب سياستك، واللي يحتاج قرارك يوصلك أنت.",
   );
   const heroSteps = HERO_STEPS.map((step, index) => ({ ...step, label: [t("Policy clause", "نص السياسة"), t("Approved rule", "قاعدة معتمدة"), t("Order fact", "بيانات الطلب")][index], value: [t("Items may be returned within 14 days of delivery", "يمكن إرجاع المنتجات خلال 14 يومًا من التسليم"), t("Return window: 14 days from delivery date", "مدة الإرجاع: 14 يومًا من تاريخ التسليم"), t("Delivered 6 days ago", "تم التسليم قبل 6 أيام")][index] }));
   // "Required for the live pilot" was an internal note, not a customer claim.
   const productPrinciples = [t("Human-approved rules", "قواعد يعتمدها التاجر"), t("Frozen evidence", "أدلة محفوظة"), t("Deterministic engine", "محرك قواعد حتمي"), t("Store-isolated data", "بيانات معزولة لكل متجر"), t("Traced to your policy", "مرتبطة بسياستك"), t("Answers in seconds", "إجابات خلال ثوانٍ")];
-  const examples = EXAMPLES.map((example) => isArabic ? ({ ...example, messages: [{ ...example.messages[0], text: `هل يمكنني إرجاع هذا المنتج؟ رقم طلبي ${example.facts.orderId}.` }, { ...example.messages[1], text: example.decision.outcome === "ELIGIBLE" ? "هذا المنتج مؤهل للإرجاع. تم استيفاء جميع شروط السياسة." : example.decision.outcome === "MANUAL_REVIEW" ? "لا يتوفر تاريخ التسليم، لذلك يحتاج المتجر إلى مراجعة الطلب." : "هذا المنتج خارج مدة الإرجاع المحددة في السياسة.", rule: example.decision.outcome === "MANUAL_REVIEW" ? "تاريخ التسليم غير متوفر · يلزم مراجعة التاجر" : "مدة الإرجاع 14 يومًا من تاريخ التسليم" }] }) : example);
+  const examples = EXAMPLES.map((example) => isArabic ? ({ ...example, messages: [{ ...example.messages[0], text: `هل يمكنني إرجاع هذا المنتج؟ رقم طلبي \u2066${example.facts.orderId.replace("-", "\u2011")}\u2069.` }, { ...example.messages[1], text: example.decision.outcome === "ELIGIBLE" ? "هذا المنتج مؤهل للإرجاع. تم استيفاء جميع شروط السياسة." : example.decision.outcome === "MANUAL_REVIEW" ? "لا يتوفر تاريخ التسليم، لذلك يحتاج المتجر إلى مراجعة الطلب." : "هذا المنتج خارج مدة الإرجاع المحددة في السياسة.", rule: example.decision.outcome === "MANUAL_REVIEW" ? "تاريخ التسليم غير متوفر · يلزم مراجعة التاجر" : "مدة الإرجاع 14 يومًا من تاريخ التسليم" }] }) : example);
   const setupSteps = [
     { label: t("Connect your store", "اربط متجرك"), icon: "store" as const },
     { label: t("Approve your policy", "اعتمد سياستك"), icon: FileCheck2 },
@@ -244,10 +254,13 @@ export function LandingPage() {
             variants={{ hidden: {}, visible: { transition: { delayChildren: reduceMotion ? 0 : 0.08, staggerChildren: reduceMotion ? 0 : 0.11 } } }}
             className="hero-card-content"
           >
-            <motion.h1 variants={heroItem} className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-white/70 text-balance">
-              <span className="size-1.5 shrink-0 rounded-full bg-primary" />
-              {t("Returns management and WhatsApp customer support for Saudi stores", "إدارة المرتجعات وخدمة العملاء عبر واتساب للمتاجر السعودية")}
-            </motion.h1>
+            {/* Badge used to be the H1 (owner, 2026-10-20: the headline below is the H1 now). Previous text, kept for revert:
+                t("A smart platform for customer support and returns on WhatsApp", "منصة ذكية لخدمة العملاء وإدارة المرتجعات على واتساب")
+                t("WhatsApp customer support and returns for Saudi stores", "خدمة العملاء والمرتجعات عبر واتساب للمتاجر السعودية") */}
+            <motion.p variants={heroItem} className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] py-1 pe-3.5 ps-1.5 text-[13px] font-medium !text-white/75">
+              <span className="hero-badge-dot" aria-hidden="true" />
+              {t("For online stores in Saudi Arabia", "للمتاجر الإلكترونية في السعودية")}
+            </motion.p>
 
             <HeroTagline
               key={heroRun}
@@ -256,6 +269,7 @@ export function LandingPage() {
               body={heroBody}
               isArabic={isArabic}
               onComplete={onHeroIntroComplete}
+              asHeading
             />
 
             <motion.div
@@ -266,7 +280,8 @@ export function LandingPage() {
             >
               <Button asChild size="lg" className="group bg-white text-[#0F0F12] hover:bg-white/90">
                 <a href="#contact">
-                  {t("Sign up now", "سجّل الآن")}
+                  {/* Previous label: t("Sign up now", "سجّل الآن") */}
+                  {t("Try Reload", "جرّب ريلود")}
                   <ArrowRight className={cn("size-4 transition-transform", isArabic ? "rotate-180 group-hover:-translate-x-1" : "group-hover:translate-x-1")} />
                 </a>
               </Button>
@@ -332,6 +347,8 @@ export function LandingPage() {
 
             {/* Three steps on one thin line. The line draws itself once when the
                 intro finishes, then stays still; each step lifts on hover. */}
+            {/* Hero 1-2-3 steps removed (owner, 2026-10-20): too much in the hero, and the
+                "Prepare. Approve. Then share." section covers the steps. Kept for revert:
             <motion.ol
               variants={heroItem}
               initial="hidden"
@@ -361,6 +378,7 @@ export function LandingPage() {
                 </li>
               ))}
             </motion.ol>
+            */}
           </motion.div>
         </div>
       </section>
@@ -398,11 +416,21 @@ export function LandingPage() {
         </>
       )}
 
+      {/* Commented out (owner, 2026-10-20): repeated the hub's three services. The hub links to the solution pages instead.
+      <HomepageSolutions /> */}
+
+      {/* v201 order (owner, 2026-10-20): demo → ask Reload → why Reload. */}
+      <ConversationDemo />
+      <AskReloadStrip />
+      <WhyReload />
+
       <SpeedComparison />
 
-      <ReturnWalkthrough />
+      {/* Replaced by ConversationDemo (owner, 2026-10-20), kept for revert:
+      <ReturnWalkthrough /> */}
 
-      <Benefits />
+      {/* Replaced by WhyReload (owner, 2026-10-20), kept for revert:
+      <Benefits /> */}
 
       {SHOW_WHY_RELOAD && (
         <>
@@ -498,7 +526,10 @@ export function LandingPage() {
         </OutcomeSequence>
       </div>
 
-      <ReturnsCostCalculator />
+      {/* Calculator replaced here by the integrations hub (owner, 2026-10-20). It stays on
+          /tools/returns-cost-calculator with its full request form. Kept for revert:
+      <ReturnsCostCalculator withRequestForm={false} /> */}
+      <ConnectionHub />
 
       {SHOW_POLICY_DEMO && <PolicyTransformation />}
 
@@ -768,8 +799,14 @@ export function LandingPage() {
         </>
       )}
 
+      {/* Moved up to where the calculator was (owner, 2026-10-20). */}
+      <HomepageSetup />
+      <TrustReload />
       <PublicPricing/>
       <PublicFaq/>
+      <QuickContact />
+      {/* Commented out (owner, 2026-10-20): duplicated the existing contact form (same #contact anchor).
+      <HomepageContact /> */}
       <SeoProse variant="home" />
 
       {/* Final CTA */}
@@ -780,7 +817,7 @@ export function LandingPage() {
               <h2 className="font-display text-3xl font-semibold tracking-[-0.02em] text-foreground md:text-[40px] md:leading-[1.1] text-balance">
                 {/* Previous title, kept for review: "See a policy become an answer." */}
                 {t("Start with ", "ابدأ بـ")}
-                <Mark>{t("one return", "أول طلب إرجاع")}</Mark>.
+                <Mark>{t("your store", "متجرك")}</Mark>.
               </h2>
               <p className="max-w-md text-lg leading-relaxed text-muted-foreground text-pretty">
                 {/* Previous copy, kept for review:

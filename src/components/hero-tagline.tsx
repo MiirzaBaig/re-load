@@ -60,18 +60,21 @@ function splitWords(text: string) {
 function RevealedLine({
   text,
   className,
+  lineClassName,
   delay,
   wordByWord,
 }: {
   text: string;
   className?: string;
+  /** Class for the whole line (e.g. the drawn underline), not each word. */
+  lineClassName?: string;
   delay: number;
   wordByWord: boolean;
 }) {
   if (!wordByWord) {
     return (
       <motion.span
-        className={cn("hero-tagline-line block", className)}
+        className={cn("hero-tagline-line", lineClassName ?? "block", className)}
         variants={lineReveal}
         custom={delay}
         initial="hidden"
@@ -86,7 +89,7 @@ function RevealedLine({
 
   return (
     <motion.span
-      className="hero-tagline-line block"
+      className={cn("hero-tagline-line", lineClassName ?? "block")}
       variants={lineContainer}
       custom={delay}
       initial="hidden"
@@ -121,12 +124,18 @@ export function HeroTagline({
   body,
   isArabic,
   onComplete,
+  asHeading = false,
 }: {
   line1: string;
   line2: string;
   body: string;
   isArabic: boolean;
   onComplete?: () => void;
+  /**
+   * The headline is the page H1: one flowing sentence whose closing words
+   * (line2) are highlighted and underlined, instead of two stacked lines.
+   */
+  asHeading?: boolean;
 }) {
   const reduceMotion = useReducedMotion();
   const onCompleteRef = useRef(onComplete);
@@ -147,13 +156,20 @@ export function HeroTagline({
     return () => window.clearTimeout(id);
   }, [line1, line2, body, isArabic, reduceMotion, bodyDelay]);
 
+  const Title = asHeading ? "h1" : "p";
+  const titleClass = asHeading
+    ? "hero-headline mx-auto max-w-[20ch] font-display text-[34px] font-semibold leading-[1.08] tracking-[-0.035em] text-foreground text-balance sm:text-[50px] lg:text-[60px]"
+    : "mx-auto max-w-[18ch] font-display text-[40px] font-semibold leading-[1.02] tracking-[-0.04em] text-foreground text-balance sm:text-[56px] lg:text-[64px]";
+  const accentLine = asHeading ? "hero-accent-line" : undefined;
+
   if (reduceMotion) {
     return (
       <div className="flex flex-col items-start gap-7">
-        <p className="mx-auto max-w-[18ch] font-display text-[40px] font-semibold leading-[1.02] tracking-[-0.04em] text-foreground text-balance sm:text-[56px] lg:text-[64px]">
-          <span className="block">{line1}</span>
-          <span className="hero-gradient-text block">{line2}</span>
-        </p>
+        <Title className={titleClass}>
+          <span className={asHeading ? "hero-tagline-line inline" : "block"}>{line1}</span>
+          {asHeading && " "}
+          <span className={cn("hero-gradient-text", asHeading ? "hero-tagline-line hero-accent-line" : "block")}>{line2}</span>
+        </Title>
         <p className="mx-auto max-w-[40ch] text-base leading-relaxed text-muted-foreground md:text-[17px] text-pretty">
           {body}
         </p>
@@ -163,15 +179,19 @@ export function HeroTagline({
 
   return (
     <div className="flex flex-col items-start gap-7">
-      <p className="mx-auto max-w-[18ch] font-display text-[40px] font-semibold leading-[1.02] tracking-[-0.04em] text-foreground text-balance sm:text-[56px] lg:text-[64px]">
-        <RevealedLine text={line1} delay={0.05} wordByWord={wordByWord} />
+      <Title className={titleClass}>
+        <RevealedLine text={line1} lineClassName={asHeading ? "inline" : undefined} delay={0.05} wordByWord={wordByWord} />
+        {asHeading && " "}
         <RevealedLine
           text={line2}
           className="hero-gradient-text"
+          lineClassName={accentLine}
           delay={line2Delay}
-          wordByWord={wordByWord}
+          // One piece in headline mode, so the highlight is one smooth
+          // gradient instead of restarting on every word.
+          wordByWord={wordByWord && !asHeading}
         />
-      </p>
+      </Title>
 
       <motion.p
         className="mx-auto max-w-[40ch] text-base leading-relaxed text-muted-foreground md:text-[17px] text-pretty"
