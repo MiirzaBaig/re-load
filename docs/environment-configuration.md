@@ -39,3 +39,8 @@ Salla public app is 1155852112 and remains gated by SALLA_PUBLIC_APP_READY (abse
 Next.js loads root env files automatically. A copied empty optional variable lets the relevant code default/fallback run; required empty secrets are NOT functional credentials. Edge Function local serving has a separate env-file option; use a deliberately populated development-only file rather than the production inventory.
 
 Keep private files owner-readable only and outside Git. `.env.example` is intentionally the only env file eligible for tracking. Use a password manager for durable credential storage; this local file is not a complete backup.
+
+
+## Zid development OAuth — 2026-10-21
+
+Server-only client ID/secret, `ZID_DEV_ENCRYPTION_KEY`, exact `ZID_OAUTH_ORIGIN`, explicit `ZID_DEV_STORE_IDS` and default-off `ZID_DEV_OAUTH_ENABLED` are recorded locally. The development key is new and separate; never replace `INTEGRATION_ENCRYPTION_KEY`. The dev-only private migration and host configuration are prerequisites, not deployed resources. See zid-development-oauth.md. Raw development MCP link/metadata stay in the owner-only ~/.reload-secrets folder, outside the repository.

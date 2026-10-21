@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { adminClient } from "./supabase.ts";
+import { planAccess } from "./plan-access.ts";
 
 type Scope = {
   storeId: string;
@@ -53,14 +54,14 @@ export async function supportAllowed(storeId: string, admin = adminClient()) {
     p_environment: "live",
   });
   if (error) throw new Error("billing_check_failed");
-  if (
-    !data.enforcementEnabled ||
-    (data.trialUntil && Date.parse(data.trialUntil) > Date.now())
-  ) return true;
-  return data.plan === "premium" &&
-    Date.parse(data.periodStart) <= Date.now() &&
-    ["ACTIVE", "PAST_DUE", "CANCELED"].includes(data.status) &&
-    Date.parse(data.periodEnd) > Date.now();
+  return planAccess(data).support;
+}
+export async function checkoutEntitled(storeId: string, admin = adminClient()) {
+  const { data, error } = await admin.rpc("billing_snapshot", {
+    p_store: storeId, p_environment: "live",
+  });
+  if (error) throw new Error("billing_check_failed");
+  return planAccess(data).checkout;
 }
 export async function sendWithBilling<
   T extends { messages?: Array<{ id?: string }> },

@@ -184,8 +184,8 @@ export const PUBLIC_STEPS = [
   {
     title: ["Choose a plan and share your link", "اختر اشتراكًا وشارك الرابط"],
     body: [
-      "Choose Standard for returns or Premium for returns and support. Once access is activated, share your store’s unique WhatsApp link or QR code.",
-      "اختر ستاندرد للإرجاع أو بريميوم للإرجاع وخدمة العملاء. بعد تفعيل الوصول، شارك رابط واتساب أو رمز الاستجابة السريعة الخاص بمتجرك.",
+      "Both plans include customer support, product help and returns. Choose Premium for a larger message allowance. Once access is activated, share your store’s unique WhatsApp link or QR code.",
+      "الباقتان تشملان خدمة العملاء ومساعدة المنتجات والإرجاع. اختر بريميوم لرصيد رسائل أكبر. بعد تفعيل الوصول، شارك رابط واتساب أو رمز الاستجابة السريعة الخاص بمتجرك.",
     ],
   },
   {

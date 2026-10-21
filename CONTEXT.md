@@ -68,3 +68,7 @@ The 2026-10-13 audit checked clean source history, 21 ACTIVE hosted functions an
 ## SEO/GEO local review — 2026-10-17
 
 Arabic-first `/ar` and English `/en` public pages, localized pricing/FAQ/how-it-works, canonical/hreflang metadata, robots/sitemap, factual schema and bilingual OG preview artwork are implemented locally. Root `/` stays Arabic with canonical `/ar`; existing query/hash/QR and payment/auth routes are preserved. See SEO.md and GEO.md; updates must keep both trackers current. Salla wording is deliberately unchanged by owner request pending Make.com research. Released to main on 2026-10-18 together with guides, free merchant tools, store-type policy templates, llms.txt, AI-crawler rules and IndexNow.
+
+## Local sales work — 2026-10-21
+
+Not deployed: both-plan support entitlement alignment and a private, expiring single-product WhatsApp selection with exact variants, quantity, quote review and fresh availability/price checks. It finishes with the public product-page link. No purchasing adapter, paid-order attribution or OTO action is enabled. See docs/whatsapp-sales.md for implementation boundaries and the missing local encryption-key dependency. Ollama renewal remains deferred by the owner.

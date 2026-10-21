@@ -683,10 +683,10 @@ export function BillingPage() {
               const features = [
                 premium ? t("2,000 outgoing messages each month", "2,000 رسالة صادرة شهريًا") : t("500 outgoing messages each month", "500 رسالة صادرة شهريًا"),
                 t("Return requests and policy checks", "طلبات الإرجاع والتحقق من السياسة"),
-                premium
-                  ? t("Product questions, order tracking and support tickets", "أسئلة المنتجات، متابعة الطلبات وتذاكر الدعم")
-                  : t("Order verification and return case tracking", "التحقق من الطلب ومتابعة الإرجاع"),
-                ...(premium ? [t("AI customer support in Arabic and English", "دعم العملاء بالذكاء الاصطناعي بالعربية والإنجليزية")] : []),
+                t("Product questions, recommendations and product links", "أسئلة المنتجات والتوصيات وروابط المنتجات"),
+                t("Order tracking and support tickets", "متابعة الطلبات وتذاكر الدعم"),
+                t("AI customer support in Arabic and English", "دعم العملاء بالذكاء الاصطناعي بالعربية والإنجليزية"),
+                ...(premium ? [t("Coming soon: checkout links and shipping tools", "قريبًا: روابط الدفع وأدوات الشحن")] : []),
                 t("Guided setup and merchant dashboard", "إعداد موجّه ولوحة تحكم للمتجر"),
               ];
               return (
@@ -706,14 +706,14 @@ export function BillingPage() {
                       </span>
                     ) : premium ? (
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--foreground)]/30 bg-[var(--foreground)]/10 px-2.5 py-1 text-[11px] font-medium text-[var(--foreground)]">
-                        {t("Includes AI support", "يشمل دعم الذكاء الاصطناعي")}
+                        {t("More message capacity", "رصيد رسائل أكبر")}
                       </span>
                     ) : null}
                   </div>
                   <p className="mt-1.5 text-sm text-muted-foreground">
                     {premium
-                      ? t("Support and returns, together on WhatsApp.", "خدمة العملاء والإرجاع معًا على واتساب.")
-                      : t("A clear return journey for your customers.", "رحلة إرجاع واضحة لعملائك.")}
+                      ? t("More capacity for growing support teams.", "رصيد أكبر لفرق خدمة العملاء المتنامية.")
+                      : t("Support, product help and returns on WhatsApp.", "خدمة العملاء ومساعدة المنتجات والإرجاع على واتساب.")}
                   </p>
                   <div className="mt-6 flex items-baseline gap-1.5">
                     <span className="text-sm font-medium text-muted-foreground">SAR</span>

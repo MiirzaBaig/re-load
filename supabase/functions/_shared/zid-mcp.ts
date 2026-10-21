@@ -76,6 +76,12 @@ export class ZidMcp {
   }
 
   /** Call an allowlisted tool action and return its decoded payload. */
+  async listTools() {
+    await this.init();
+    const result = await this.rpc("tools/list", {});
+    return Array.isArray(result?.tools) ? result.tools : [];
+  }
+
   async call(tool: string, args: Record<string, unknown> & { action: string }) {
     if (!ALLOWED[tool]?.includes(args.action)) throw new ZidMcpError("zid_tool_not_allowed");
     await this.init();

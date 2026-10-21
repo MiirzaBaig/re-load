@@ -1,6 +1,6 @@
 # Current execution plan
 
-Updated: 2026-10-20. Status: planning; this document does not claim implementation or deployment. Source code and recorded tests remain authoritative. No shipping or checkout purchase has been booked as part of this planning work.
+Updated: 2026-10-21. Status: implementation in progress; this document does not claim implementation or deployment. Source code and recorded tests remain authoritative. No shipping or checkout purchase has been booked as part of this planning work.
 
 ## Confirmed product decisions
 
@@ -42,8 +42,8 @@ Product lookup and public product links exist in the assistant; Zid variant beha
 
 ### 2. Align plan entitlements
 
-- [ ] Audit Standard/Premium backend restrictions, merchant workspace and public copy.
-- [ ] Enable approved support/recommendations/product links in both plans.
+- [x] Audit Standard/Premium backend restrictions, merchant workspace and public copy (local 2026-10-21).
+- [x] Enable approved support/recommendations/product links in both plans (local; not deployed).
 - [ ] Define separate server-enforced checkout and shipping capabilities for Premium.
 - [ ] Preserve allowance reservations, annual monthly resets and merchant-approved knowledge.
 - [ ] Test Standard direct API bypasses and expired/inactive subscription behavior.
@@ -60,9 +60,9 @@ Product lookup and public product links exist in the assistant; Zid variant beha
 
 - [ ] Improve product matching for customer preferences; verify budget and variant constraints against actual facts.
 - [ ] Keep recommendations grounded; do not imply current name/SKU search supports arbitrary semantic discovery.
-- [ ] Persist a bounded shopping draft scoped to merchant and conversation.
+- [x] Persist a bounded single-product selection scoped to merchant and conversation in existing private flow state (local).
 - [ ] Support changes, removals, cancellation and returning to a selection without losing context.
-- [ ] Handle unknown availability, unavailable variants and provider outages honestly.
+- [x] Handle unknown availability, unavailable variants and provider outages without inventing stock (local tests).
 
 ### 5. Premium checkout
 
@@ -173,3 +173,33 @@ Automatic shipping; abandoned-checkout reminders; bulk marketing queue/opt-outs/
 2026-10-20 hub follow-up: phase 10 now includes the requested central Reload connection map and trust section. Existing animations/design retained. Full v201 section reconciliation and explicit deferred/unverified demo/form behavior recorded in homepage-v201-review.md. Do not equate logo presence with production integration acceptance.
 
 2026-10-20 latest hub polish: simplified to an open conceptual diagram with no backend/status copy, no nested panels, unboxed service icons and brief one-shot interactions. Availability details stay on solution/pricing pages; no backend changes. See homepage-v201-review.md.
+
+## Task 2 progress — 2026-10-21
+
+Owner explicitly deferred Ollama renewal and approved continuing the sales steps. See [WhatsApp sales contract](whatsapp-sales.md). Standard support access and matching billing/public copy are updated locally. Deterministic single-product selection, exact variants, quantity, review/edit/cancel, 30-minute expiry, fresh stock/price checks and stale-button protection are implemented through the existing private atomic conversation state. Product help can search names/SKUs without Ollama. No SQL migration is required for this change.
+
+The selection currently finishes with a public product link, not a checkout. A strict paid-Premium entitlement helper is built, but actual checkout creation, durable purchase attempts, order attribution/payment tracking and OTO are NOT implemented or deployed. Zid's official partner API exists; current MCP purchase permissions/shape are unproven. Purchasing writes remain blocked. Original encryption key missing locally; server API access restored with the supplied valid key. Do not reset existing credential encryption.
+
+Validation on 2026-10-21: 107 Deno tests passed, including Standard product-help wiring without Ollama, selection freshness/expiry/tenant boundaries, prior OTP/returns regression and refusal of purchasing writes. TypeScript and production build passed. The local public SEO checker passed all 46 localized pages plus sitemap/robots/root/private-route checks. Browser pricing checks passed at 1440px/390px in Arabic RTL and English with no page errors or horizontal overflow (reduced-motion setting). Authenticated billing-screen visual review, real variant acceptance, new WhatsApp delivery, actual checkout/payment and OTO were not tested. Existing deployed dev-store Zid product read returned HTTP200 with one product; no purchase was created. Changes remain local and uncommitted.
+
+
+## Direct connector capability verification — 2026-10-21
+
+The supplied development MCP link authenticated successfully. Inspected all 19 advertised tools with no pagination cursor: Orders has no purchase-create action; AbandonedCarts only lists/reads; no checkout/payment-link creation tool is advertised. Read-only Products.list/get verified development-store identity and live product facts. No order/payment write was attempted. See [Zid checkout capability review](zid-checkout-capability-review.md) for the exact action inventory and official API references. The missing original local encryption key no longer blocks this audit. The next dependency is inspecting/configuring Reload’s OAuth app and proving the official partner order/payment-link API with granted permissions. Checkout creation and payment attribution remain unfinished; do not claim the connector supports them.
+
+
+## Public-app rejection follow-up — 2026-10-21
+
+The generic rejection does not identify its actual cause. Verified proposed connect/callback URLs currently return HTTP404, and the public OAuth integration is not ready for review. Rechecked Zid’s current OAuth-first activation and standard Zid-plan billing requirements; a free development listing does not approve external subscription charging. See [public-app review readiness](zid-public-app-review.md). Resolve Zid-specific billing approval before implementing a production activation/payment sequence; do not change existing StreamPay billing or working MCP connections on this basis.
+
+
+## Development-store OAuth implementation — 2026-10-21
+
+Owner approved continuing in the development store. Built local connect/callback/status routes and an isolated private attempt migration. This is a read-only authorization/payment-method probe with an explicit development-store allowlist, browser-bound single-use state and separately encrypted temporary tokens. It does not replace MCP, bind a merchant workspace, create orders or grant paid access. Hosted migration, HTTPS test deployment and real Zid authorization are still pending. See [development OAuth check](zid-development-oauth.md) for exact configuration, tests and limits. Public-app publishing and billing approval remain outstanding.
+
+Development OAuth checks: 12 mocked route/contract tests and isolated PostgreSQL assertions passed, plus all 107 Deno regressions, TypeScript and production build. Disabled status view checked at desktop/390px light/dark with reduced motion, no scripts/page errors/overflow; real consent still pending. CLI project access does not include Reload, so hosted SQL was not applied. No commit, push or deployment.
+
+
+### Hosted database update — 2026-10-21
+
+Owner restored CLI access to the Reload project and authorized applying only the new development migration. Applied 202610210001_zid_dev_oauth in one transaction, recorded its migration history, and requested a PostgREST schema refresh. Verified the private table exists, anon cannot read it, authenticated users cannot execute its result RPC, and service_role can create attempts. No existing commerce credentials/connections or subscription settings were modified. This supersedes earlier CLI-access/hosted-migration pending notes. OAuth route deployment, HTTPS configuration and real provider consent remain pending; no checkout or payment was created.

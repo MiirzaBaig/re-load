@@ -198,3 +198,8 @@ Unit tests: `supabase/functions/tests/zid-product.test.ts` (9).
 ## Current handoff status — 2026-10-13
 
 Zid product tools are already called from the WhatsApp assistant, and verified tracking is wired through customer-tracking.ts. Order-email OTP uses the registered-order contact internally. Staff support and customer Inbox share persisted conversations/cases/tickets; they do not obtain unrestricted connector access. No global Zid secret is needed: each merchant supplies their own connector link, encrypted privately. The development-store tests above do not establish live variants, large-catalogue behavior, throughput or written commercial-use approval. See CONTEXT.md for rollout boundaries.
+
+
+## Direct connector capability verification — 2026-10-21
+
+The supplied development MCP link authenticated successfully. Inspected all 19 advertised tools with no pagination cursor: Orders has no purchase-create action; AbandonedCarts only lists/reads; no checkout/payment-link creation tool is advertised. Read-only Products.list/get verified development-store identity and live product facts. No order/payment write was attempted. See [Zid checkout capability review](zid-checkout-capability-review.md) for the exact action inventory and official API references. The missing original local encryption key no longer blocks this audit. The next dependency is inspecting/configuring Reload’s OAuth app and proving the official partner order/payment-link API with granted permissions. Checkout creation and payment attribution remain unfinished; do not claim the connector supports them.

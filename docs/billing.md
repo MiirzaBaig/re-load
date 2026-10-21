@@ -52,7 +52,7 @@ A server-only return verifier recovers initial payment confirmation when redirec
 
 `billing_settings.enforcement_enabled` starts false. Do not enable it until live billing is accepted and existing pilots receive explicit finite access through `billing_grant_pilot(store, expiry)` (owner-only, at most 30 days). No automatic mass grandfathering.
 
-When enabled, live access checks guard incoming assistant work, actual outgoing Meta sends (including queued staff replies), private order lookup, return evaluation and photo analysis. Sandbox never grants live access. Standard menus/tools remain return-only; Premium permits general customer support.
+When enabled, live access checks guard incoming assistant work, actual outgoing Meta sends (including queued staff replies), private order lookup, return evaluation and photo analysis. Sandbox never grants live access. Both Standard and Premium permit general customer support, product recommendations and public product links (local entitlement update 2026-10-21). Premium-only purchasing/shipping eligibility is separate from platform capability: checkout and OTO actions remain disabled until implemented and accepted.
 
 A database lock reserves one allowance unit before paid work/send. Delivered/read callbacks settle it; definite failures release it. Network uncertainty retains the reservation to prevent overspending or duplicate sends. Early delivery callbacks are retained and applied when the send receipt arrives. Customer messages remain in Inbox when automation waits for billing. There is no automatic replay of those paused customer messages after payment.
 

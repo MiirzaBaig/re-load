@@ -70,8 +70,8 @@ export function SeoProse({ variant }: { variant: Variant }) {
       ),
       p: [
         t(
-          `Standard is SAR ${standard.price / 100} a month for returns and policy checks, with ${standard.messages.toLocaleString("en")} delivered messages. Premium is SAR ${premium.price / 100} a month and adds AI customer support in Arabic and English, with ${premium.messages.toLocaleString("en")} messages. Paying yearly saves 20%, prices include VAT, and you can prepare your store for free before choosing.`,
-          `ستاندرد بسعر ${standard.price / 100} ريال شهريًا لطلبات الإرجاع والتحقق من السياسة، مع ${standard.messages.toLocaleString("en")} رسالة مسلّمة. وبريميوم بسعر ${premium.price / 100} ريال شهريًا ويضيف خدمة العملاء بالذكاء الاصطناعي بالعربية والإنجليزية، مع ${premium.messages.toLocaleString("en")} رسالة. الدفع السنوي يوفر 20٪، والأسعار شاملة الضريبة، ويمكنك تجهيز متجرك مجانًا قبل الاختيار.`,
+          `Standard is SAR ${standard.price / 100} a month for customer support, product help and returns, with ${standard.messages.toLocaleString("en")} delivered messages. Premium is SAR ${premium.price / 100} a month for the same support features and a larger allowance of ${premium.messages.toLocaleString("en")} messages. Paying yearly saves 20%, prices include VAT, and you can prepare your store for free before choosing.`,
+          `ستاندرد بسعر ${standard.price / 100} ريال شهريًا لخدمة العملاء ومساعدة المنتجات والإرجاع، مع ${standard.messages.toLocaleString("en")} رسالة مسلّمة. وبريميوم بسعر ${premium.price / 100} ريال شهريًا لنفس ميزات الدعم وبرصيد أكبر يبلغ ${premium.messages.toLocaleString("en")} رسالة. الدفع السنوي يوفر 20٪، والأسعار شاملة الضريبة، ويمكنك تجهيز متجرك مجانًا قبل الاختيار.`,
         ),
         <>
           {t("See ", "اطّلع على ")}

@@ -6,7 +6,8 @@ import { reviseTicketDraft } from "./ticket-draft.ts";
 import { whatsappRouteInput } from "./whatsapp-route-input.ts";
 import { extractOrderReference } from "./return-photo.ts";
 import { answerStoreQuestion } from "./customer-assistant.ts";
-import { zidOrderTracking } from "./zid-catalog.ts";
+import { advanceShopping, startShopping, type ShoppingReply, type ShoppingSelection } from "./shopping-selection.ts";
+import { zidProductsFor, zidProductDetails, zidOrderTracking } from "./zid-catalog.ts";
 import { trackingMessage } from "./customer-tracking.ts";
 import { sha256 } from "./crypto.ts";
 import { env, json } from "./http.ts";
@@ -47,7 +48,7 @@ async function persistAndDeliver(admin: Admin, messageId: string, plan: ReplyPla
 type Admin = ReturnType<typeof adminClient>;
 type MetaMessage = { id?: string; from?: string; timestamp?: string; type?: string; text?: { body?: string }; image?: { id?: string; mime_type?: string; caption?: string }; interactive?: { button_reply?: { id?: string }; list_reply?: { id?: string } } };
 type Item = { id: string; name: string; sku: string; quantity: number; price: number };
-type Context = { emailChallengeId?: string; emailVerified?: boolean; generalHistory?: Array<{role:string;content:string}>; extractedOrder?: string; serviceMode?: "QUESTION" | "PRODUCT" | "TRACK" | "COMPLAINT" | "HUMAN"; ticketDraft?: string; ticketEditing?: boolean; returnResume?: { step: string; context: Record<string, unknown> }; caseId?: string | null; orderNumber?: string; identityReviewId?: string; verificationToken?: string; order?: { orderId: string; customerName: string; orderStatus?: string; customerEmail?: string; items: Item[] }; itemId?: string; quantity?: number; reason?: string; condition?: string; photoEvidenceId?: string; photoReviewRequired?: boolean; decisionId?: string; reportType?: "BUG" | "FEEDBACK"; reportMessage?: string; itemPage?: number };
+type Context = { shopping?: ShoppingSelection; emailChallengeId?: string; emailVerified?: boolean; generalHistory?: Array<{role:string;content:string}>; extractedOrder?: string; serviceMode?: "QUESTION" | "PRODUCT" | "TRACK" | "COMPLAINT" | "HUMAN"; ticketDraft?: string; ticketEditing?: boolean; returnResume?: { step: string; context: Record<string, unknown> }; caseId?: string | null; orderNumber?: string; identityReviewId?: string; verificationToken?: string; order?: { orderId: string; customerName: string; orderStatus?: string; customerEmail?: string; items: Item[] }; itemId?: string; quantity?: number; reason?: string; condition?: string; photoEvidenceId?: string; photoReviewRequired?: boolean; decisionId?: string; reportType?: "BUG" | "FEEDBACK"; reportMessage?: string; itemPage?: number };
 type Conversation = { id: string; language: string; contact_id: string; return_case_id: string | null };
 type Store = { id: string; name: string; return_code: string };
 
@@ -296,16 +297,34 @@ function ticketPreview(storeName:string,draft:string,language:"ar"|"en") {
 
 function ticketButtons(language:"ar"|"en") {return [{id:"send_ticket",title:language === "ar"?"إرسال للمتجر":"Send to store"},{id:"edit_ticket",title:language === "ar"?"تعديل الرسالة":"Edit message"},{id:"cancel_ticket",title:language === "ar"?"إلغاء":"Cancel"}];}
 
+async function shoppingReply(to: string, language: "ar" | "en", reply: ShoppingReply) {
+  const body = reply.body.slice(0, reply.rows?.length || reply.buttons?.length ? 1024 : 3500);
+  if (reply.rows?.length) return { body, result: await sendWhatsAppList(to, body, language === "ar" ? "اختيار" : "Choose", reply.rows), type: "INTERACTIVE" as const };
+  if (reply.buttons?.length) return { body, result: await sendWhatsAppButtons(to, body, reply.buttons), type: "INTERACTIVE" as const };
+  return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
+}
+
 async function processFlowInner(admin: Admin, store: Store, conversation: Conversation, to: string, input: string, profileName?: string, message?: MetaMessage) {
   let language: "ar" | "en" = conversation.language === "en" ? "en" : "ar";
   const normalized = input.trim().toLowerCase();
   const flow = await getFlow(admin, conversation.id);
   const fullSupport = await supportAllowed(store.id, admin);
   const supportChoice = ["ask_question","shop_products","track_order","open_ticket","human_support","track_tickets"].includes(normalized);
-  if (!fullSupport && (supportChoice || flow.context.serviceMode || flow.context.ticketDraft)) {
+  if (!fullSupport && (supportChoice || flow.context.serviceMode || flow.context.ticketDraft || flow.context.shopping)) {
     await setFlow(admin, conversation.id, "MENU", { returnResume: flow.context.returnResume });
     const body = language === "ar" ? "نساعدك هنا في الإرجاع ومتابعة طلبات الإرجاع. للاستفسارات الأخرى، تواصل مع المتجر من صفحة التواصل في موقعه." : "We can help with returns and return updates here. For other questions, please use the contact details on the store’s website.";
     return { body, result: await sendWhatsAppButtons(to, body, [{ id: "start_return", title: language === "ar" ? "طلب إرجاع" : "Start a return" }, { id: "check_status", title: language === "ar" ? "متابعة إرجاع" : "Track a return" }]), type: "INTERACTIVE" as const };
+  }
+  // Selection state is stored in the existing private conversation context and
+  // committed atomically with its reply by processFlow/the inbox worker.
+  const navigation = ["menu", "القائمة", "مساعدة", "help", "start_return", "check_status", "ask_question", "shop_products", "track_order", "open_ticket", "human_support", "track_tickets", "feedback_options", "report_bug", "send_feedback", "language_ar", "language_en", "ar", "en", "العربية", "عربي", "english"];
+  if (fullSupport && ["MENU", "COMPLETE"].includes(flow.step) && !flow.context.ticketDraft && !navigation.includes(normalized) && (flow.context.shopping || normalized.startsWith("shop:"))) {
+    const selection = await advanceShopping(flow.context.shopping, { storeId: store.id, conversationId: conversation.id }, input, language,
+      productId => zidProductDetails(admin, store.id, productId, language));
+    if (selection) {
+      await setFlow(admin, conversation.id, "MENU", { ...flow.context, shopping: selection.state ?? undefined });
+      return shoppingReply(to, language, selection);
+    }
   }
   if (normalized === "resume_return" && flow.context.returnResume) {
     await setFlow(admin, conversation.id, flow.context.returnResume.step, flow.context.returnResume.context as Context);
@@ -793,6 +812,25 @@ After the store reviews it, come back and tap Continue. Your order details stay 
       const body=language === "ar" ? "نساعدك هنا في الإرجاع ومتابعته. للاستفسارات الأخرى، تواصل مع المتجر من موقعه." : "We can help with returns and return updates here. For other questions, please contact the store through its website.";
       return {body,result:await sendWhatsAppButtons(to,body,[{id:"start_return",title:language === "ar"?"طلب إرجاع":"Start a return"},{id:"check_status",title:language === "ar"?"متابعة إرجاع":"Track a return"}]),type:"INTERACTIVE" as const};
     }
+    // An explicit Product help choice needs no model classification: search
+    // names/SKUs directly. This remains usable while the text provider is offline.
+    if (flow.context.serviceMode === "PRODUCT") {
+      const result = await zidProductsFor(admin, store.id, input.slice(0, 160), { language });
+      if (result.ok && result.products.length) {
+        const selection = startShopping(store.id, conversation.id, result.products, language);
+        if (selection) {
+          await setFlow(admin, conversation.id, "MENU", { returnResume: flow.context.returnResume, shopping: selection.state ?? undefined });
+          return shoppingReply(to, language, selection);
+        }
+      }
+      if (result.ok || result.error !== "not_connected") {
+        await setFlow(admin, conversation.id, "MENU", { ...flow.context, reportMessage: input.slice(0,4096) });
+        const body = language === "ar"
+          ? result.ok ? "ما لقيت منتجًا بهذا الاسم. جرّب اسم المنتج أو رمزه، أو أرسل سؤالك للمتجر." : "ما قدرنا نراجع المنتجات الآن. تقدر تعيد المحاولة أو ترسل سؤالك للمتجر."
+          : result.ok ? "I couldn’t find that product. Try its name or SKU, or send your question to the store." : "I couldn’t check the products just now. You can try again or send your question to the store.";
+        return { body, result: await sendWhatsAppButtons(to, body, [{id:"create_ticket",title:language === "ar"?"إرسال السؤال":"Send my question"},{id:"menu",title:language === "ar"?"القائمة":"Menu"}]), type:"INTERACTIVE" as const };
+      }
+    }
     const answer=await answerStoreQuestion(store.id,store.name,input,language,flow.context.generalHistory??[]);
     if(answer.intent === "RETURN") return processFlowInner(admin,store,conversation,to,"start_return",profileName,message);
     if(answer.intent === "TRACK") return processFlowInner(admin,store,conversation,to,"track_order",profileName,message);
@@ -801,8 +839,16 @@ After the store reviews it, come back and tap Continue. Your order details stay 
       const body=ticketPreview(store.name,input.slice(0,4096),language);
       return {body,result:await sendWhatsAppButtons(to,body,ticketButtons(language)),type:"INTERACTIVE" as const};
     }
-    if(answer.text){await setFlow(admin,conversation.id,"MENU",{returnResume:flow.context.returnResume,generalHistory:[...(flow.context.generalHistory??[]),{role:"user",content:input.slice(0,1000)},{role:"assistant",content:answer.text}].slice(-6)});return {body:answer.text,result:await sendWhatsAppText(to,answer.text),type:"TEXT" as const};}
-    await setFlow(admin,conversation.id,"MENU",{returnResume:flow.context.returnResume,reportMessage:input.slice(0,4096)});
+    if ("selectionProducts" in answer && answer.selectionProducts?.length) {
+      const selection = startShopping(store.id, conversation.id, answer.selectionProducts, language);
+      if (selection) {
+        await setFlow(admin, conversation.id, "MENU", { returnResume: flow.context.returnResume, shopping: selection.state ?? undefined,
+          generalHistory: [...(flow.context.generalHistory ?? []), { role: "user", content: input.slice(0,1000) }, { role: "assistant", content: answer.text ?? selection.body }].slice(-6) });
+        return shoppingReply(to, language, { ...selection, body: answer.text && answer.text.length <= 700 ? `${answer.text}\n\n${selection.body}` : selection.body });
+      }
+    }
+    if(answer.text){await setFlow(admin,conversation.id,"MENU",{...flow.context,returnResume:flow.context.returnResume,generalHistory:[...(flow.context.generalHistory??[]),{role:"user",content:input.slice(0,1000)},{role:"assistant",content:answer.text}].slice(-6)});return {body:answer.text,result:await sendWhatsAppText(to,answer.text),type:"TEXT" as const};}
+    await setFlow(admin,conversation.id,"MENU",{...flow.context,returnResume:flow.context.returnResume,reportMessage:input.slice(0,4096)});
     const body=language === "ar" ? `ما عندي معلومة مؤكدة عن هذا الآن، وما أبي أعطيك إجابة غير دقيقة. تبغى نرسل سؤالك لفريق ${store.name}؟` : `I don’t have a confirmed answer to that right now. Would you like to send your question to ${store.name} so they can check?`;
     return {body,result:await sendWhatsAppButtons(to,body,[{id:"create_ticket",title:language === "ar"?"إرسال السؤال":"Send my question"},{id:"menu",title:language === "ar"?"القائمة":"Menu"}]),type:"INTERACTIVE" as const};
   }

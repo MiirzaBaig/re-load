@@ -120,3 +120,10 @@ Reviewed the combined frontend changes, including later hero, rotating illustrat
 Production build and TypeScript passed. Browser checks covered ar/en at 1440 and 390px: no overflow, one H1, one contact anchor, no copied placeholders, correct annual totals, and mocked contact success UI; zero page errors. Contact endpoint rejected null/array/malformed bodies, bad/cross-site origins and oversized requests. A synthetic contact was saved through the local API into the configured Supabase backend, then deleted successfully; this does not prove Vercel production environment settings. Extended public SEO checks passed. No paid checkout, OTO booking, real merchant/contact message or live billing change performed. Exported HTML references and unrelated pricing-research draft remain local, outside this release.
 
 Latest visual follow-up: hub mark/animation polish and hidden duplicate outcome-phone section, with footer/solution back-links redirected to existing anchors. Production build (including TypeScript), public SEO assertions and diff whitespace checks passed before commit. No backend or pricing contract changed.
+
+
+### 2026-10-21 — plan description alignment (local)
+
+Standard and Premium both include customer support, product help and returns. Updated public setup instructions and pricing prose that still described support as Premium-only. Prices, URLs, metadata structure, Salla wording and upcoming checkout/shipping status are unchanged. This copy update does not claim purchase creation or shipping is live.
+
+Validation: production build and public SEO assertions passed; browser pricing checks in Arabic/English at 1440px and 390px had no page errors or horizontal overflow. No public URL/schema change. Search indexing and external analytics acceptance remain external.

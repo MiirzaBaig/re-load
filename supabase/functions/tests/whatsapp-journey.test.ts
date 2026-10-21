@@ -282,3 +282,17 @@ Deno.test("email OTP fallback opens the existing merchant identity review",async
   await processFlow(h.admin,store,conversation,"966500000000","identity_request");
   assert(h.state().step === "AWAITING_ORDER");assert(h.state().context.identityReviewId === "review-id");
 });
+
+Deno.test("shopping cancellation uses the private conversation transition, never a provider write", async () => {
+  const h = harness("MENU", { shopping: { storeId: store.id, conversationId: conversation.id, token: "current", expiresAt: Date.now() + 60_000, stage: "PRODUCT", candidates: [{id:"p1",name:"Shoes"}] } });
+  const reply = await processFlow(h.admin, store, conversation, "966500000000", "shop:current:cancel");
+  assert(reply.body.includes("No order was placed"));
+  assert(!h.state().context.shopping);
+  assert(h.calls.every(call => ["billing_snapshot", "get_whatsapp_flow_state", "set_whatsapp_flow_state"].includes(call.name)));
+});
+Deno.test("a shopping button copied from a different merchant cannot resolve any product", async () => {
+  const h = harness("MENU", { shopping: { storeId: "other-store", conversationId: conversation.id, token: "current", expiresAt: Date.now() + 60_000, stage: "PRODUCT", candidates: [{id:"p1",name:"Other merchant product"}] } });
+  const reply = await processFlow(h.admin, store, conversation, "966500000000", "shop:current:product:0");
+  assert(!reply.body.includes("Other merchant product") && !h.state().context.shopping);
+  assert(!h.calls.some(c => c.name === "get_zid_credential"));
+});
