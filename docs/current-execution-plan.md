@@ -203,3 +203,7 @@ Development OAuth checks: 12 mocked route/contract tests and isolated PostgreSQL
 ### Hosted database update — 2026-10-21
 
 Owner restored CLI access to the Reload project and authorized applying only the new development migration. Applied 202610210001_zid_dev_oauth in one transaction, recorded its migration history, and requested a PostgREST schema refresh. Verified the private table exists, anon cannot read it, authenticated users cannot execute its result RPC, and service_role can create attempts. No existing commerce credentials/connections or subscription settings were modified. This supersedes earlier CLI-access/hosted-migration pending notes. OAuth route deployment, HTTPS configuration and real provider consent remain pending; no checkout or payment was created.
+
+### Public WhatsApp entry — 2026-10-21
+
+Approved: bilingual visitor/merchant/order-help welcome, warm restrained copy and deployment of the WhatsApp worker. Adds public service information, pricing/setup/contact links and store-link guidance. Store links keep the merchant journey; public entry clears old routing. Dedicated private language-preference migration; no new checkout, OTO or billing-enforcement activation. See [whatsapp-public-welcome.md](whatsapp-public-welcome.md).

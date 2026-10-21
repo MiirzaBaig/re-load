@@ -3,6 +3,7 @@ import { customerFirstName, merchantDisplayName } from "./presentation.ts";
 import { decrypt } from "./crypto.ts";
 import { requestOrderOtp, verifyOrderOtp } from "./email-otp.ts";
 import { reviseTicketDraft } from "./ticket-draft.ts";
+import { isPublicEntry, publicReply } from "./whatsapp-public.ts";
 import { whatsappRouteInput } from "./whatsapp-route-input.ts";
 import { extractOrderReference } from "./return-photo.ts";
 import { answerStoreQuestion } from "./customer-assistant.ts";
@@ -863,7 +864,7 @@ export async function handleMessage(phoneNumberId: string, message: MetaMessage,
   if (!messageId || !waId) return;
   const admin = adminClient();
   const publicInput = textOf(message).trim().toLowerCase();
-  const publicEntry = ["reload", "public_language_ar", "public_language_en"].includes(publicInput);
+  const publicEntry = isPublicEntry(publicInput);
   if (!await claim(admin, null, messageId, `MESSAGE_${String(message.type ?? "unknown").toUpperCase()}`)) return;
   if (preparedReply) {
     if(message.type === "staff_reply") {
@@ -881,31 +882,18 @@ export async function handleMessage(phoneNumberId: string, message: MetaMessage,
     if (done.error) throw done.error;
     return;
   }
-  const routeCode = whatsappRouteInput(publicInput);
-  const { data: routedStoreId, error: routeError } = await admin.rpc("whatsapp_route_code", { p_phone: phoneNumberId, p_sender: waId, p_code: routeCode });
+  const routeCode = whatsappRouteInput(/^(RL-[0-9A-F]{10})$/i.test(publicInput) ? `return ${publicInput}` : publicInput);
+  const { data: routedStoreId, error: routeError } = await admin.rpc("whatsapp_route_code", { p_phone: phoneNumberId, p_sender: waId, p_code: publicEntry ? "INVALID" : routeCode });
   if (routeError) throw routeError;
   const connection = routedStoreId ? { store_id: routedStoreId as string } : null;
   if (publicEntry || !connection) {
     try {
-      let plan: ReplyPlan;
-      if (publicInput === "public_language_ar") {
-        plan = await sendWhatsAppText(waId, [
-          "للتواصل مع متجرك، افتح رابط واتساب اللي شاركه معك المتجر. نساعدك في استفسارات المنتجات، متابعة الطلبات، والإرجاع.",
-          "",
-          "عندك متجر؟ سجّل اهتمامك ونتواصل معك: https://www.reload.sa/#contact",
-        ].join("\n"));
-      } else if (publicInput === "public_language_en") {
-        plan = await sendWhatsAppText(waId, [
-          "Need help with your store? Open the WhatsApp link it shared. We can help with products, orders and returns here.",
-          "",
-          "Run a store? Leave your details and we’ll get in touch: https://www.reload.sa/#contact",
-        ].join("\n"));
-      } else {
-        plan = await sendWhatsAppButtons(waId, "يا هلا، حيّاك الله في ريلود 👋\nHi, welcome to Reload.\n\nاختر لغتك · Choose your language", [
-          { id: "public_language_ar", title: "العربية" },
-          { id: "public_language_en", title: "English" },
-        ]);
-      }
+      const preference = await admin.rpc("whatsapp_public_language", { p_phone: phoneNumberId, p_sender: waId });
+      if (preference.error) throw preference.error;
+      const reply = publicReply(textOf(message), preference.data === "en" ? "en" : "ar", !publicEntry && routeCode !== null);
+      const savedLanguage = await admin.rpc("whatsapp_public_language", { p_phone: phoneNumberId, p_sender: waId, p_language: reply.language });
+      if (savedLanguage.error) throw savedLanguage.error;
+      const plan = await sendWhatsAppButtons(waId, reply.body, reply.buttons);
       await persistAndDeliver(admin, messageId, plan);
       const done = await admin.from("integration_events").update({ status: "PROCESSED", processed_at: new Date().toISOString() })
         .eq("provider", "whatsapp").eq("external_event_id", messageId);

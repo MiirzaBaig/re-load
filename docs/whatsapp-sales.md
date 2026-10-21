@@ -1,6 +1,6 @@
 # WhatsApp shopping selection and checkout
 
-Updated 2026-10-21. **Local implementation, not deployed.** No customer purchase, payment link or shipment was created during this work.
+Updated 2026-10-21. **WhatsApp worker deployed on 2026-10-21; live conversation acceptance remains pending.** No customer purchase, payment link or shipment was created during this work.
 
 ## What works in this change
 

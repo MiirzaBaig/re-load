@@ -71,4 +71,8 @@ Arabic-first `/ar` and English `/en` public pages, localized pricing/FAQ/how-it-
 
 ## Local sales work — 2026-10-21
 
-Not deployed: both-plan support entitlement alignment and a private, expiring single-product WhatsApp selection with exact variants, quantity, quote review and fresh availability/price checks. It finishes with the public product-page link. No purchasing adapter, paid-order attribution or OTO action is enabled. See docs/whatsapp-sales.md for implementation boundaries and the missing local encryption-key dependency. Ollama renewal remains deferred by the owner.
+Deployed in the WhatsApp worker on 2026-10-21; live conversation acceptance pending: both-plan support entitlement alignment and a private, expiring single-product WhatsApp selection with exact variants, quantity, quote review and fresh availability/price checks. It finishes with the public product-page link. No purchasing adapter, paid-order attribution or OTO action is enabled. See docs/whatsapp-sales.md for implementation boundaries and the missing local encryption-key dependency. Ollama renewal remains deferred by the owner.
+
+## Public WhatsApp welcome — 2026-10-21
+
+Arabic/English visitor information, merchant signup guidance and customer store-routing help are implemented in the WhatsApp worker. Explicit `reload` clears previous store routing without deleting merchant conversations. Public replies are deterministic and do not access merchant data or AI. See docs/whatsapp-public-welcome.md for deployment and acceptance evidence.
