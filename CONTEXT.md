@@ -75,4 +75,4 @@ Deployed in the WhatsApp worker on 2026-10-21; live conversation acceptance pend
 
 ## Public WhatsApp welcome — 2026-10-21
 
-Arabic/English visitor information, merchant signup guidance and customer store-routing help are implemented in the WhatsApp worker. Explicit `reload` clears previous store routing without deleting merchant conversations. Public replies are deterministic and do not access merchant data or AI. See docs/whatsapp-public-welcome.md for deployment and acceptance evidence.
+Arabic/English visitor information, merchant signup guidance and customer store-routing help are implemented in the WhatsApp worker. Public welcome asks for Arabic/English first (Arabic first); explicit choices remain stable, with main-menu navigation and reviewed-knowledge explanations. No automatic learning or policy edits are enabled. Explicit `reload` clears previous store routing without deleting merchant conversations. Public replies are deterministic and do not access merchant data or AI. See docs/whatsapp-public-welcome.md for deployment and acceptance evidence.

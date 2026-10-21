@@ -882,7 +882,7 @@ export async function handleMessage(phoneNumberId: string, message: MetaMessage,
     if (done.error) throw done.error;
     return;
   }
-  const routeCode = whatsappRouteInput(/^(RL-[0-9A-F]{10})$/i.test(publicInput) ? `return ${publicInput}` : publicInput);
+  const routeCode = whatsappRouteInput(publicInput);
   const { data: routedStoreId, error: routeError } = await admin.rpc("whatsapp_route_code", { p_phone: phoneNumberId, p_sender: waId, p_code: publicEntry ? "INVALID" : routeCode });
   if (routeError) throw routeError;
   const connection = routedStoreId ? { store_id: routedStoreId as string } : null;
@@ -890,9 +890,11 @@ export async function handleMessage(phoneNumberId: string, message: MetaMessage,
     try {
       const preference = await admin.rpc("whatsapp_public_language", { p_phone: phoneNumberId, p_sender: waId });
       if (preference.error) throw preference.error;
-      const reply = publicReply(textOf(message), preference.data === "en" ? "en" : "ar", !publicEntry && routeCode !== null);
-      const savedLanguage = await admin.rpc("whatsapp_public_language", { p_phone: phoneNumberId, p_sender: waId, p_language: reply.language });
-      if (savedLanguage.error) throw savedLanguage.error;
+      const reply = publicReply(textOf(message), preference.data === "en" ? "en" : preference.data === "ar" ? "ar" : null, !publicEntry && routeCode !== null);
+      if (reply.language) {
+        const savedLanguage = await admin.rpc("whatsapp_public_language", { p_phone: phoneNumberId, p_sender: waId, p_language: reply.language });
+        if (savedLanguage.error) throw savedLanguage.error;
+      }
       const plan = await sendWhatsAppButtons(waId, reply.body, reply.buttons);
       await persistAndDeliver(admin, messageId, plan);
       const done = await admin.from("integration_events").update({ status: "PROCESSED", processed_at: new Date().toISOString() })

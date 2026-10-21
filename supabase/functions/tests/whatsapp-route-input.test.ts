@@ -9,10 +9,13 @@ Deno.test("routing recognises short and existing UUID links", () => {
       "41B7E4A9-6B94-4856-B0C0-F94F641C4897",
   );
   assert(whatsappRouteInput("hello") === null);
+  assert(whatsappRouteInput("rl-ab12cd34ef") === "RL-AB12CD34EF");
 });
 Deno.test("invalid explicit routes never reuse the previous merchant", () => {
   for (const text of [
     "return DEMO-NOVA",
+    "RL-bad",
+    "RL-AB12CD34EF extra",
     "return",
     "return RL-bad",
     "return RL-AB12CD34EF extra",

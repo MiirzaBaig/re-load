@@ -207,3 +207,7 @@ Owner restored CLI access to the Reload project and authorized applying only the
 ### Public WhatsApp entry — 2026-10-21
 
 Approved: bilingual visitor/merchant/order-help welcome, warm restrained copy and deployment of the WhatsApp worker. Adds public service information, pricing/setup/contact links and store-link guidance. Store links keep the merchant journey; public entry clears old routing. Dedicated private language-preference migration; no new checkout, OTO or billing-enforcement activation. See [whatsapp-public-welcome.md](whatsapp-public-welcome.md).
+
+### Welcome polish — 2026-10-21
+
+Arabic-first explicit language selection, stable remembered language, warmer bounded copy, clear home/back actions, broader common-question handling and merchant-approved knowledge explanation. Fixed bare malformed RL routing fallback. Duplicate inbound and accepted-receipt recovery are covered by delivery tests. No autonomous self-training or policy publication; existing reviewed knowledge remains authoritative. Worker redeployment only; no additional SQL required.
