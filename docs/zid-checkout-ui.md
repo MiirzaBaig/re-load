@@ -40,3 +40,11 @@ No commit/push/deploy, database mutation or provider call was performed by this 
 
 
 Release approval — 2026-10-24: owner approved committing and pushing the reviewed checkout UI and accompanying local safety/evidence improvements to main for website review. This approval does not reset the unknown attempt or enable customer checkout/shipping. No additional SQL is required. Deployment completion remains a separate check.
+
+## Cross-session paused state — 2026-10-24
+
+An owner reopened authorization and validated a T-shirt while an older shoe attempt remained UNKNOWN. The atomic creation claim correctly rejected the second order, but the review still displayed Details accepted and a create button. The private session RPC now exposes only an aggregate creation_blocked flag (no other session data). A fresh/ready session with that flag shows Checkout testing is paused, without a review/create form. An already_started response also selects this paused screen to cover races. Draft preparation refuses to contact Zid while a known blocker exists. Existing created results remain readable; the atomic creation guard is unchanged.
+
+Only migration 202610240001_zid_checkout_blocker_visibility is applied and recorded. No checkout row was cleared or reset: the old UNKNOWN attempt and newer READY draft remain. This resolves the contradictory screen, not the underlying uncertain provider write. Tests cover cross-session blocking, no provider writes during blocked preparation, and the creation-claim race. The new paused screen is included in both-language/mobile/desktop/theme/motion browser fixtures.
+
+Paused-state release verification: 28 checkout tests, isolated SQL fixtures, native POST/referrer browser regression and production build/TypeScript passed. All 112 screen combinations plus no-JavaScript fallback passed. Hosted checks confirm the migration is recorded, the flag is included in the function, anonymous callers are refused, and exactly one READY and one UNKNOWN record remain. No provider creation retry was made.

@@ -71,6 +71,17 @@ async function renderCheckout(request: NextRequest, submitted?: FormData) {
     const job = ctx.session.checkout;
     hasCreatedOrder = job?.state === "CREATED";
     hasUnresolvedAttempt = !!job && ["CREATING", "UNKNOWN"].includes(job.state);
+    if (
+      !hasCreatedOrder &&
+      !hasUnresolvedAttempt &&
+      (ctx.session.creation_blocked === true || error === "already_started")
+    ) {
+      return checkoutPage(
+        language,
+        t("اختبار الدفع متوقف مؤقتًا", "Checkout testing is paused"),
+        `<p class="subtitle">${t("هناك محاولة سابقة تحتاج مراجعة قبل إنشاء طلب آخر.", "An earlier attempt needs checking before another order can be created.")}</p><p class="store">${checkoutIcon("store")}<span>${t("متجر التطوير", "Development store")} <strong>${e(ctx.session.store_name)}</strong></span></p>${checkoutNotice("waiting", t("محاولة سابقة لم تُحسم بعد", "An earlier attempt is unresolved"), t("قد يكون زد استلم طلبًا سابقًا، لكن نتيجته لم تتأكد. لن نُنشئ طلبًا جديدًا حتى تُراجع تلك المحاولة.", "Zid may have received an earlier order request, but its outcome is unconfirmed. New orders stay paused until that attempt is checked."))}<p class="side-note">${t("هذا الاختيار لم يُرسل كطلب جديد من هذه المحاولة. إعادة الربط أو تغيير المنتج لا يزيل قفل الأمان.", "This selection was not sent as a new order from this attempt. Reconnecting or choosing another product does not remove the safety lock.")}</p><div class="actions"><a class="action secondary" href="?lang=${language}">${t("أعد تحميل السجل المحفوظ", "Reload saved status")}</a></div><p class="side-note">${t("إعادة التحميل تعرض سجل ريلود المحفوظ فقط؛ لا تبحث تلقائيًا عن الطلب في زد.", "Reloading only shows Reload’s saved record; it does not automatically search Zid for the order.")}</p>`,
+      );
+    }
     const currentStep =
       hasCreatedOrder || hasUnresolvedAttempt
         ? 3

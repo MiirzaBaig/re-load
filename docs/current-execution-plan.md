@@ -262,3 +262,7 @@ Checkout UI final local checks: production build/TypeScript, 26 checkout tests, 
 
 
 Release approval — 2026-10-24: owner approved committing and pushing the reviewed checkout UI and accompanying local safety/evidence improvements to main for website review. This approval does not reset the unknown attempt or enable customer checkout/shipping. No additional SQL is required. Deployment completion remains a separate check.
+
+### Cross-session checkout safety display — 2026-10-24
+
+The old UNKNOWN shoe attempt correctly blocked a newer T-shirt creation, but its READY review still offered Create. Fixed with a service-only aggregate blocker flag and a paused UI for fresh/ready sessions (including claim rejection races). Added guard before blocked preparation. Applied only 202610240001_zid_checkout_blocker_visibility and kept both attempt records unchanged. This is a UI/read-model correction, not recovery of the unknown order. No new provider order/payment/shipment is created.

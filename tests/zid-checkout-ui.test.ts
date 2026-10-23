@@ -76,6 +76,7 @@ test("checkout screens, styled selects, field validation and language preservati
               "created",
               "waiting",
               "disabled",
+              "blocked",
               "error",
             ]) {
               await go(stage);
@@ -99,7 +100,10 @@ test("checkout screens, styled selects, field validation and language preservati
                 `${stage} overflows ${language}/${width}/${colorScheme}`,
               );
               assert.equal(shape.dir, language === "ar" ? "rtl" : "ltr");
-              assert.equal(shape.current, stage === "disabled" ? 0 : 1);
+              assert.equal(
+                shape.current,
+                ["disabled", "blocked"].includes(stage) ? 0 : 1,
+              );
               assert.equal(shape.unlabelled, 0);
               if (reducedMotion === "reduce")
                 assert.equal(shape.motion, "none");
@@ -238,7 +242,7 @@ test("checkout screens, styled selects, field validation and language preservati
                 );
                 assert.equal(submission, null);
               }
-              if (stage === "waiting") {
+              if (stage === "waiting" || stage === "blocked") {
                 assert.equal(await page.locator("form").count(), 0);
                 assert.equal(await page.locator(".notice.waiting").count(), 1);
               }

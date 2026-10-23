@@ -37,5 +37,7 @@ begin
  perform public.finish_zid_dev_oauth_attempt(repeat('a',64),repeat('b',64),'3258532','testing-z',true,'zid-dev-v1.fake');
  perform public.prepare_zid_dev_checkout(repeat('b',64),'zid-checkout-v1.fake','{}');
  select revision into revision_id from private.zid_dev_checkouts where session_hash=repeat('a',64);
+ if (public.get_zid_dev_checkout_session(repeat('b',64))->>'creation_blocked')::boolean is distinct from true then raise exception 'blocker_not_visible'; end if;
+ if public.get_zid_dev_checkout_session(repeat('e',64)) is not null then raise exception 'blocker_wrong_browser'; end if;
  if public.claim_zid_dev_checkout(repeat('b',64),revision_id) then raise exception 'reconnect_bypassed_unknown'; end if;
 end $$;

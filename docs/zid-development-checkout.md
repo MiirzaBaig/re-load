@@ -130,3 +130,7 @@ Owner approved proceeding with both forms and all error/waiting wording. Details
 
 
 Release approval — 2026-10-24: owner approved committing and pushing the reviewed checkout UI and accompanying local safety/evidence improvements to main for website review. This approval does not reset the unknown attempt or enable customer checkout/shipping. No additional SQL is required. Deployment completion remains a separate check.
+
+### Cross-session blocker display — 2026-10-24
+
+The owner reached a newer T-shirt review and creation was refused because the earlier shoe attempt remained UNKNOWN. Corrected the misleading review/create display: session reads now expose an aggregate creation_blocked flag through the existing service-only RPC, and fresh/ready sessions show a paused screen. An already_started query also fails closed to that screen after a race. Blocked preparation performs no provider writes. Only migration 202610240001 was applied/recorded; no attempt was reset, retried, cancelled or marked successful. Provider outcome reconciliation remains outstanding. See zid-checkout-ui.md.

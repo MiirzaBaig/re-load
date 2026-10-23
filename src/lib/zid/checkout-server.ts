@@ -27,6 +27,7 @@ export type Session = {
   store_name: string;
   token_ciphertext: string;
   checkout: Job | null;
+  creation_blocked?: boolean;
 };
 export class CheckoutError extends Error {
   constructor(
@@ -284,6 +285,8 @@ export async function checkoutOptions(ctx: CheckoutSession) {
   };
 }
 export async function prepareCheckout(ctx: CheckoutSession, form: FormData) {
+  if (ctx.session.creation_blocked === true)
+    throw new CheckoutError("already_started", 409);
   const input = checkoutInput(form),
     options = await checkoutOptions(ctx);
   if (!options.shipping.some((s: any) => s.id === input.shipping))

@@ -97,6 +97,7 @@ async function harness(
         store_name: "testing-z",
         token_ciphertext: token,
         checkout: h.job,
+        creation_blocked: options.blocked === true || h.blocked === true,
       });
     if (url.includes("/prepare_zid_dev_checkout")) {
       if (h.job && ["CREATING", "CREATED", "UNKNOWN"].includes(h.job.state))
@@ -495,6 +496,9 @@ test("checkout UI snapshots cover review, waiting, created and failed states wit
     h.job.state = "UNKNOWN";
     await capture("waiting");
     h.job = null;
+    h.blocked = true;
+    await capture("blocked");
+    h.blocked = false;
     process.env.ZID_DEV_CHECKOUT_ENABLED = "false";
     try {
       await capture("disabled");
@@ -875,4 +879,51 @@ test("conflicting provider totals hide payment and do not create a replacement o
     },
     { invoice: [{ code: "total", value: "999.00" }] },
   );
+});
+
+test("a prior unresolved session hides review/creation and blocks fresh preparation without provider writes", async () => {
+  const options: Record<string, any> = {};
+  await harness(async (h) => {
+    await prepareCheckout(await checkoutSession(browser), form());
+    options.blocked = true;
+    for (const lang of ["en", "ar"]) {
+      const response = await GET(
+        new NextRequest(
+          origin + "/api/integrations/zid/checkout?lang=" + lang,
+          { headers: { cookie: `${ZID_COOKIE}=${browser}` } },
+        ),
+      );
+      const html = await response.text();
+      assert(!html.includes('name="action" value="create"'));
+      assert(!html.includes("Details accepted"));
+      if (lang === "en") assert(html.includes("Checkout testing is paused"));
+    }
+    const before = h.calls.length;
+    await assert.rejects(
+      prepareCheckout(await checkoutSession(browser), form()),
+    );
+    assert(
+      !h.calls
+        .slice(before)
+        .some((call: any) => call.url.startsWith("https://api.zid.sa")),
+    );
+    assert.equal(h.createCalls, 0);
+  }, options);
+});
+
+test("a rejected creation claim cannot return to a misleading ready-to-create review", async () => {
+  await harness(async (h) => {
+    await prepareCheckout(await checkoutSession(browser), form());
+    const response = await GET(
+      new NextRequest(
+        origin + "/api/integrations/zid/checkout?lang=en&error=already_started",
+        { headers: { cookie: `${ZID_COOKIE}=${browser}` } },
+      ),
+    );
+    const html = await response.text();
+    assert(html.includes("An earlier attempt is unresolved"));
+    assert(!html.includes("Create test order and link"));
+    assert(!html.includes("Details accepted"));
+    assert.equal(h.createCalls, 0);
+  });
 });
