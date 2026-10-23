@@ -11,6 +11,6 @@ export async function GET(request:NextRequest){
     if(error||!data?.[0])return statusPage("الربط لم يكتمل بعد", "No completed development connection is available in this browser. Retry if you cancelled authorization.",409);
     const result=data[0];
     const payment=result.payment_link_available===true ? "رابط الدفع متاح ضمن طرق الدفع. لم ننشئ رابط دفع بعد.\nPayment-link method is available. No payment link has been created." : result.payment_link_available===false ? "لم نجد طريقة دفع مفعّلة لرابط الدفع.\nNo enabled payment-link method was found." : "تعذر التحقق من طرق الدفع. نحتاج مراجعة الصلاحيات.\nPayment methods could not be verified. Check the granted permissions.";
-    return statusPage("نجح اختبار ربط متجر التطوير",`${result.store_name}\nDevelopment-store authorization verified.\n\n${payment}\n\nهذا اختبار فقط؛ لم نغيّر ربط متجرك الحالي ولم ننشئ طلبًا أو عملية دفع.\nTest only: your existing Reload connection is unchanged. No order or charge was created.`);
+    return statusPage("نجح اختبار ربط متجر التطوير",`${result.store_name}\nDevelopment-store authorization verified.\n\n${payment}\n\nهذه خطوة ربط تجريبية فقط؛ لم تغيّر ربط متجرك الحالي ولم تنشئ طلبًا أو عملية دفع.\nThis authorization step leaves your existing Reload connection unchanged and does not create an order or charge.`,200,process.env.ZID_DEV_CHECKOUT_ENABLED === "true" && result.payment_link_available === true);
   }catch{return statusPage("الاختبار غير متاح الآن", "The development connection is unavailable. Please retry later.",503);}
 }

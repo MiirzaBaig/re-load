@@ -78,6 +78,16 @@ async function setFlow(admin: Admin, id: string, step: string, context: Context 
   if (error) throw error;
 }
 
+function generalContext(context: Context): Context {
+  return { shopping: context.shopping, returnResume: context.returnResume, generalHistory: context.generalHistory };
+}
+
+function selectionReminder(context: Context, language: "ar" | "en") {
+  return context.shopping?.stage === "QUANTITY"
+    ? language === "ar" ? "\n\nاختيارك محفوظ. كم قطعة تحتاج؟ أرسل رقمًا من 1 إلى 20، أو اكتب «إلغاء»." : "\n\nYour selection is saved. How many would you like? Send a number from 1 to 20, or type CANCEL."
+    : "";
+}
+
 async function recordJourneyIssue(admin: Admin, conversation: string, kind: string, message?: string) {
   try {
     const { error } = await admin.rpc("record_journey_issue", { p_conversation: conversation, p_kind: kind, p_message: message ?? null });
@@ -815,7 +825,7 @@ After the store reviews it, come back and tap Continue. Your order details stay 
     }
     // An explicit Product help choice needs no model classification: search
     // names/SKUs directly. This remains usable while the text provider is offline.
-    if (flow.context.serviceMode === "PRODUCT") {
+    if (flow.context.serviceMode === "PRODUCT" && !flow.context.shopping) {
       const result = await zidProductsFor(admin, store.id, input.slice(0, 160), { language });
       if (result.ok && result.products.length) {
         const selection = startShopping(store.id, conversation.id, result.products, language);
@@ -848,10 +858,15 @@ After the store reviews it, come back and tap Continue. Your order details stay 
         return shoppingReply(to, language, { ...selection, body: answer.text && answer.text.length <= 700 ? `${answer.text}\n\n${selection.body}` : selection.body });
       }
     }
-    if(answer.text){await setFlow(admin,conversation.id,"MENU",{...flow.context,returnResume:flow.context.returnResume,generalHistory:[...(flow.context.generalHistory??[]),{role:"user",content:input.slice(0,1000)},{role:"assistant",content:answer.text}].slice(-6)});return {body:answer.text,result:await sendWhatsAppText(to,answer.text),type:"TEXT" as const};}
-    await setFlow(admin,conversation.id,"MENU",{...flow.context,returnResume:flow.context.returnResume,reportMessage:input.slice(0,4096)});
+    if (answer.text) {
+      const body = answer.text + selectionReminder(flow.context, language);
+      await setFlow(admin, conversation.id, "MENU", { ...generalContext(flow.context), generalHistory: [...(flow.context.generalHistory ?? []), { role: "user", content: input.slice(0,1000) }, { role: "assistant", content: answer.text }].slice(-6) });
+      return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
+    }
+    await setFlow(admin,conversation.id,"MENU",{...generalContext(flow.context),reportMessage:input.slice(0,4096)});
     const body=language === "ar" ? `ما عندي معلومة مؤكدة عن هذا الآن، وما أبي أعطيك إجابة غير دقيقة. تبغى نرسل سؤالك لفريق ${store.name}؟` : `I don’t have a confirmed answer to that right now. Would you like to send your question to ${store.name} so they can check?`;
-    return {body,result:await sendWhatsAppButtons(to,body,[{id:"create_ticket",title:language === "ar"?"إرسال السؤال":"Send my question"},{id:"menu",title:language === "ar"?"القائمة":"Menu"}]),type:"INTERACTIVE" as const};
+    const replyBody = body + selectionReminder(flow.context, language);
+    return {body:replyBody,result:await sendWhatsAppButtons(to,replyBody,[{id:"create_ticket",title:language === "ar"?"إرسال السؤال":"Send my question"},{id:"menu",title:language === "ar"?"القائمة":"Menu"}]),type:"INTERACTIVE" as const};
   }
   const body = language === "ar" ? "ما فهمت اختيارك بشكل واضح. اكتب «القائمة» ونبدأ من المكان المناسب." : "I didn’t catch that. Type MENU and we’ll get you to the right place.";
   return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };

@@ -45,7 +45,7 @@ The order documentation names both third_create_order and order_create; verify t
 
 ## Next configuration needed
 
-Inspect the existing Reload OAuth app configuration in Zid Partners (app 8201 in the owner screenshot). Client ID/secret, registered callback and order-creation permissions must be verified before an OAuth purchase adapter is enabled. No Zid OAuth adapter currently exists in this repository. Keep existing MCP support/returns working; do not force merchant migration merely to inspect the development-store API.
+Inspect the active Reload OAuth app configuration in Zid Partners; app 8201 came from an older screenshot and must not be assumed to match the current configured client. Client ID/secret, registered callback and order-creation permissions must be verified before an OAuth purchase adapter is enabled. A read-only development OAuth probe exists; no purchase adapter exists. Keep existing MCP support/returns working; do not force merchant migration merely to inspect the development-store API.
 
 The development MCP link and raw metadata are stored only in ~/.reload-secrets with owner-only file permissions; no connection URL or token belongs in this document. The original integration encryption key is still unavailable locally, but it is no longer needed to finish this direct connector capability audit. Production encryption and existing saved connections were not changed.
 
@@ -62,3 +62,9 @@ The generic rejection does not identify its actual cause. Verified proposed conn
 ## Development-store OAuth implementation — 2026-10-21
 
 Owner approved continuing in the development store. Built local connect/callback/status routes and an isolated private attempt migration. This is a read-only authorization/payment-method probe with an explicit development-store allowlist, browser-bound single-use state and separately encrypted temporary tokens. It does not replace MCP, bind a merchant workspace, create orders or grant paid access. Hosted migration, HTTPS test deployment and real Zid authorization are still pending. See [development OAuth check](zid-development-oauth.md) for exact configuration, tests and limits. Public-app publishing and billing approval remain outstanding.
+
+## Current capability investigation — 2026-10-22
+
+Rechecked official [Create Order](https://docs.zid.sa/create-order-20612055e0), [Validate Order Request](https://docs.zid.sa/validate-order-request-36477334e0) and [Payment Methods](https://docs.zid.sa/list-of-payment-method). The documented creation request includes customer/consignee contact, destination, product SKU/quantity, shipping method and payment method; a product selection alone is insufficient. The payment-link method must come from the authorized store and be enabled. Never copy example IDs/customer details into real requests. payment_link_configs.expiryDateTime belongs inside payment_method. The creation response includes an order id and payment_link field; persist the returned order mapping for attribution rather than relying on comments or redirects. The validation example returns only SUCCESS_WITHOUT_PAYLOAD, not shipping/VAT totals or a payment confirmation. Guest behavior, stock reservation, usable shipping methods, totals, expiry enforcement, duplicates and authoritative paid status still need development-store acceptance.
+
+Live Reload connect/status endpoints now exist and respond 503 while gated; earlier 404 records above are historical. The isolated OAuth migration is already hosted. Local credentials/configuration exist, but OAuth test is disabled and no completed authorization has been demonstrated. Owner is checking partner callback/redirection/scopes. No customer/payment writes were executed in this review. Keep purchase/OTO disabled.

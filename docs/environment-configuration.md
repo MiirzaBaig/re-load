@@ -44,3 +44,5 @@ Keep private files owner-readable only and outside Git. `.env.example` is intent
 ## Zid development OAuth — 2026-10-21
 
 Server-only client ID/secret, `ZID_DEV_ENCRYPTION_KEY`, exact `ZID_OAUTH_ORIGIN`, explicit `ZID_DEV_STORE_IDS` and default-off `ZID_DEV_OAUTH_ENABLED` are recorded locally. The development key is new and separate; never replace `INTEGRATION_ENCRYPTION_KEY`. The dev-only private migration and host configuration are prerequisites, not deployed resources. See zid-development-oauth.md. Raw development MCP link/metadata stay in the owner-only ~/.reload-secrets folder, outside the repository.
+
+Development-only Zid checkout proof additionally reads `ZID_DEV_CHECKOUT_ENABLED` (default false) and optional `ZID_DEV_PAYMENT_HOSTS` (exact provider-confirmed payment-link hosts; no wildcards). These server settings never activate merchant checkout or billing. See [zid-development-checkout.md](zid-development-checkout.md).

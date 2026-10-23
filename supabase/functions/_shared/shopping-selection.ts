@@ -298,7 +298,7 @@ export async function advanceShopping(
   // Unrelated natural conversation still reaches the assistant; it must not be
   // trapped behind a shopping menu. Buttons remain the unambiguous selection route.
   if (
-    !actionInput && !["QUANTITY"].includes(s.stage) &&
+    !actionInput && (s.stage !== "QUANTITY" || !/^(?:(?:quantity|qty|الكمية)\s*)?[+-]?[\d.]+$/i.test(quantityInput)) &&
     !["confirm", "yes", "نعم", "تأكيد", "تاكيد"].includes(action) &&
     !(s.stage === "PRODUCT" && /^[1-4]$/.test(action))
   ) return null;

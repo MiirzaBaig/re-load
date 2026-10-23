@@ -1,6 +1,6 @@
 # Current execution plan
 
-Updated: 2026-10-21. Status: implementation in progress; this document does not claim implementation or deployment. Source code and recorded tests remain authoritative. No shipping or checkout purchase has been booked as part of this planning work.
+Updated: 2026-10-22. Status: implementation in progress; deployment evidence is recorded per task below. Source code and recorded tests remain authoritative. No shipping or checkout purchase has been booked as part of this planning work.
 
 ## Confirmed product decisions
 
@@ -30,7 +30,7 @@ Updated: 2026-10-21. Status: implementation in progress; this document does not 
 
 ## Current implementation baseline
 
-Product lookup and public product links exist in the assistant; Zid variant behavior and production-scale catalogue acceptance remain incomplete. A persistent shopping-selection flow and checkout creation are not implemented. OTO booking/tracking is not implemented. Existing returns, knowledge drafts, email OTP, Inbox, staff support and subscription sandbox work are foundations to extend, not rebuild.
+Product lookup and public product links exist in the assistant; Zid variant behavior and production-scale catalogue acceptance remain incomplete. A bounded single-product shopping-selection flow is deployed in the WhatsApp worker; it ends at a public product-page link. Checkout creation is not implemented. OTO booking/tracking is not implemented. Existing returns, knowledge drafts, email OTP, Inbox, staff support and subscription sandbox work are foundations to extend, not rebuild.
 
 ## Ordered task list
 
@@ -43,10 +43,10 @@ Product lookup and public product links exist in the assistant; Zid variant beha
 ### 2. Align plan entitlements
 
 - [x] Audit Standard/Premium backend restrictions, merchant workspace and public copy (local 2026-10-21).
-- [x] Enable approved support/recommendations/product links in both plans (local; not deployed).
-- [ ] Define separate server-enforced checkout and shipping capabilities for Premium.
-- [ ] Preserve allowance reservations, annual monthly resets and merchant-approved knowledge.
-- [ ] Test Standard direct API bypasses and expired/inactive subscription behavior.
+- [x] Enable approved support/recommendations/product links in both plans (WhatsApp worker deployed 2026-10-21).
+- [ ] Wire separate server checks into future checkout and shipping write endpoints. Pure entitlement decisions for both exist; live snapshot checkout helper exists. No purchase/shipping write endpoints exist yet.
+- [x] Existing allowance reservations, annual monthly reset implementation and merchant-approved knowledge were preserved by this change; live rollout acceptance remains separate.
+- [ ] Exercise real purchase/shipping endpoints against Standard bypass attempts once implemented. Existing unit tests cover expired/inactive/future/invalid billing, trial exceptions and Standard/Premium capability separation.
 
 ### 3. Verify platform purchase capabilities
 
@@ -60,8 +60,8 @@ Product lookup and public product links exist in the assistant; Zid variant beha
 
 - [ ] Improve product matching for customer preferences; verify budget and variant constraints against actual facts.
 - [ ] Keep recommendations grounded; do not imply current name/SKU search supports arbitrary semantic discovery.
-- [x] Persist a bounded single-product selection scoped to merchant and conversation in existing private flow state (local).
-- [ ] Support changes, removals, cancellation and returning to a selection without losing context.
+- [x] Persist a bounded single-product selection scoped to merchant and conversation in existing private flow state (worker deployed 2026-10-21).
+- [x] Single-selection edit/cancel, quantity changes, expiry and stale-button behavior are implemented and unit-tested. Quantity side-question handling added 2026-10-22; manual acceptance remains pending. Multi-item cart is not implemented.
 - [x] Handle unknown availability, unavailable variants and provider outages without inventing stock (local tests).
 
 ### 5. Premium checkout
@@ -211,3 +211,24 @@ Approved: bilingual visitor/merchant/order-help welcome, warm restrained copy an
 ### Welcome polish — 2026-10-21
 
 Arabic-first explicit language selection, stable remembered language, warmer bounded copy, clear home/back actions, broader common-question handling and merchant-approved knowledge explanation. Fixed bare malformed RL routing fallback. Duplicate inbound and accepted-receipt recovery are covered by delivery tests. No autonomous self-training or policy publication; existing reviewed knowledge remains authoritative. Worker redeployment only; no additional SQL required.
+
+### Small fixes and next capability check — 2026-10-22
+
+- General answers and unanswered-question fallbacks now retain only selection, resumable return and bounded chat history; old top-level order/OTP/verification state is dropped. Return resume remains intentionally available and conversation-bound.
+- Quantity side questions bypass quantity parsing/product-search mode, use the existing approved-answer assistant and append a reminder to resume quantity. Numbers still recheck product stock before review. Unknown answers offer merchant review rather than invented information. Text-model availability is still required for natural store answers.
+- Public WhatsApp prices/allowances now read BILLING_PLANS from the existing shared billing contract. No separate welcome prices to maintain.
+- Existing bounded development OAuth limiter remains; its global 40-attempt window is a recorded test limitation, not a production activation mechanism.
+- Rechecked official Zid create/validate/payment-method documentation. A method must be enabled with code payment_link.zidpay, and expiry configuration belongs inside payment_method. Docs still name both third_create_order and order_create; verify actual app grants. Validation success alone supplies no quote/payment proof.
+- Live connect/status URLs return 503 (gated). Local private settings exist but development OAuth remains disabled. Owner is checking callback/redirection and Order Create in Zid Partners; do not assume app 8201 matches the configured client. No real test checkout created.
+
+Small fixes deployed 2026-10-22: whatsapp-inbox ACTIVE, version 29. All 115 backend tests, 12 mocked OAuth tests and TypeScript passed. Safe endpoint probes returned GET405 / invalid-ticket POST403. No new SQL/migration needed. Actual model-backed WhatsApp side-question acceptance and real Zid authorization remain untested. Source changes were approved for push on 2026-10-23.
+
+### Hosted configuration verified — 2026-10-22
+
+Owner imported the private production environment settings and redeployed the website. A direct connect request returned HTTP302 to oauth.zid.sa/oauth/authorize with client ID 8022, the exact registered www.reload.sa callback, fresh state and an HttpOnly browser cookie. Response is private/no-store. An unrelated status request without the browser cookie returned HTTP401, as expected. Only one authorization attempt was started for this check; no consent, code exchange, store identity, payment-method result or order creation is claimed. Owner must authorize testing-z in the same browser used to open the connection link.
+
+### Development checkout proof — 2026-10-22
+
+Owner completed testing-z authorization; independent read-only store/catalogue/payment/shipping calls succeeded. Empty-request validation reached HTTP422 with no customer details/order writes. Built an isolated browser-bound Arabic/English guided validation/review/create/status flow with encrypted private attempts and atomic duplicate/uncertainty protection. This is development-only and remains separately gated; customer Premium checkout/OTO are not enabled. Detailed implementation, migration, tests and remaining live acceptance: [zid-development-checkout.md](zid-development-checkout.md). Do not mark Task 3 complete until a real valid development checkout and payment-state acceptance are recorded.
+
+Development checkout release checks: 18 mocked checkout tests, 12 OAuth tests, 115 backend tests, isolated SQL, TypeScript, production build and 41 browser checks passed. New isolated migration 202610220001 is applied; website source was approved for push on 2026-10-23; deployment/test-flag status and live checkout acceptance remain separate checks. Full valid order/payment acceptance is still pending. No automatic purchase, card collection, production Premium activation or OTO shipment is enabled.

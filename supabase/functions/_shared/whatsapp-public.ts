@@ -1,3 +1,5 @@
+import { BILLING_PLANS } from "./billing-contract.ts";
+
 /** Public Reload information only: no AI calls, merchant reads or order access. */
 export type PublicLanguage = "ar" | "en";
 type PublicTopic = "menu" | "explore" | "pricing" | "start" | "order" | "team" | "knowledge";
@@ -56,6 +58,10 @@ export function publicReply(input: string, previous?: PublicLanguage | null, inv
   const order = button("order", ar ? "مساعدة بخصوص طلب" : "Help with an order");
   const start = button("start", ar ? "عندي متجر" : "I run a store");
   const pricing = button("pricing", ar ? "شوف الباقات" : "See the plans");
+  const { standard, premium } = BILLING_PLANS;
+  const money = (halalas: number) => (halalas / 100).toLocaleString("en-US", { minimumFractionDigits: halalas % 100 ? 2 : 0, maximumFractionDigits: 2 });
+  const count = (value: number) => value.toLocaleString("en-US");
+  const annualDiscount = Math.round((1 - standard.annualPrice / (standard.price * 12)) * 100);
   const topic = invalidRoute ? "order" : chosen ? "menu" : topicOf(text);
   let body: string;
   let buttons = [button("explore", ar ? "تعرّف على ريلود" : "Explore Reload"), start, order];
@@ -68,8 +74,8 @@ export function publicReply(input: string, previous?: PublicLanguage | null, inv
       break;
     case "pricing":
       body = ar
-        ? "هذه باقات ريلود:\n\nستاندرد — 149 ر.س شهريًا\n500 رسالة صادرة كل شهر.\n\nبريميوم — 299 ر.س شهريًا\n2,000 رسالة صادرة كل شهر.\n\nالباقتان تشملان خدمة العملاء والإرجاع والمساعدة في اختيار المنتجات. جميع الأسعار شاملة الضريبة.\n\nالتجهيز مجاني، وتفعيل المساعد يحتاج اشتراكًا مدفوعًا.\n\nالدفع السنوي يوفر 20٪: ستاندرد 1,430.40 ر.س، وبريميوم 2,870.40 ر.س. رصيد الرسائل يتجدد شهريًا، حتى مع الدفع السنوي.\n\nالتفاصيل: https://www.reload.sa/ar/pricing"
-        : "Here are Reload’s plans:\n\nStandard — SAR 149/month\n500 outgoing messages each month.\n\nPremium — SAR 299/month\n2,000 outgoing messages each month.\n\nBoth include customer support, returns and product assistance. All prices include VAT.\n\nSetup is free; activating the assistant needs a paid plan.\n\nAnnual billing saves 20%: Standard SAR 1,430.40/year or Premium SAR 2,870.40/year. Message allowances refresh monthly, including on annual plans.\n\nDetails: https://www.reload.sa/en/pricing";
+        ? `هذه باقات ريلود:\n\nستاندرد — ${money(standard.price)} ر.س شهريًا\n${count(standard.messages)} رسالة صادرة كل شهر.\n\nبريميوم — ${money(premium.price)} ر.س شهريًا\n${count(premium.messages)} رسالة صادرة كل شهر.\n\nالباقتان تشملان خدمة العملاء والإرجاع والمساعدة في اختيار المنتجات. جميع الأسعار شاملة الضريبة.\n\nالتجهيز مجاني، وتفعيل المساعد يحتاج اشتراكًا مدفوعًا.\n\nالدفع السنوي يوفر ${annualDiscount}٪: ستاندرد ${money(standard.annualPrice)} ر.س، وبريميوم ${money(premium.annualPrice)} ر.س. رصيد الرسائل يتجدد شهريًا، حتى مع الدفع السنوي.\n\nالتفاصيل: https://www.reload.sa/ar/pricing`
+        : `Here are Reload’s plans:\n\nStandard — SAR ${money(standard.price)}/month\n${count(standard.messages)} outgoing messages each month.\n\nPremium — SAR ${money(premium.price)}/month\n${count(premium.messages)} outgoing messages each month.\n\nBoth include customer support, returns and product assistance. All prices include VAT.\n\nSetup is free; activating the assistant needs a paid plan.\n\nAnnual billing saves ${annualDiscount}%: Standard SAR ${money(standard.annualPrice)}/year or Premium SAR ${money(premium.annualPrice)}/year. Message allowances refresh monthly, including on annual plans.\n\nDetails: https://www.reload.sa/en/pricing`;
       buttons = [start, back, change];
       break;
     case "team":

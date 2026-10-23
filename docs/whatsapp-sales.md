@@ -69,3 +69,9 @@ Recorded checks (2026-10-21): 107 backend tests, TypeScript and production build
 ## Direct connector capability verification — 2026-10-21
 
 The supplied development MCP link authenticated successfully. Inspected all 19 advertised tools with no pagination cursor: Orders has no purchase-create action; AbandonedCarts only lists/reads; no checkout/payment-link creation tool is advertised. Read-only Products.list/get verified development-store identity and live product facts. No order/payment write was attempted. See [Zid checkout capability review](zid-checkout-capability-review.md) for the exact action inventory and official API references. The missing original local encryption key no longer blocks this audit. The next dependency is inspecting/configuring Reload’s OAuth app and proving the official partner order/payment-link API with granted permissions. Checkout creation and payment attribution remain unfinished; do not claim the connector supports them.
+
+## Follow-up fixes — 2026-10-22
+
+General-answer and unknown-answer context now explicitly retains only shopping, resumable return and chat history. At the shopping quantity step, non-numeric side questions reach the approved-answer assistant without a product-search detour; replies remind the customer to enter quantity. The selection survives and numeric resumption still checks live stock. Public WhatsApp prices now read the shared billing contract. No checkout/payment/shipment creation is added.
+
+Small fixes deployed 2026-10-22: whatsapp-inbox ACTIVE, version 29. All 115 backend tests, 12 mocked OAuth tests and TypeScript passed. Safe endpoint probes returned GET405 / invalid-ticket POST403. No new SQL/migration needed. Actual model-backed WhatsApp side-question acceptance and real Zid authorization remain untested. Source changes were approved for push on 2026-10-23.

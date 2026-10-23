@@ -1,6 +1,6 @@
 # Zid development-store OAuth check
 
-2026-10-21. Built locally, not deployed or accepted against Zid OAuth yet. This is a read-only development proof, not a complete public OAuth integration or purchasing adapter.
+2026-10-22. Source routes are deployed behind a disabled configuration gate; real Zid OAuth acceptance is pending. This is a read-only development proof, not a complete public OAuth integration or purchasing adapter.
 
 ## Purpose
 
@@ -22,7 +22,7 @@ The status response is independent of the marketing React layout: no GTM, extern
 
 Private local `.env` now contains the owner-supplied client ID/secret and a generated **development-only** encryption key. `ZID_DEV_OAUTH_ENABLED=false` by default. The allowed store is the owner-confirmed development store. No values are included in this document.
 
-Apply **only** `supabase/migrations/202610210001_zid_dev_oauth.sql` to the intended testing backend after reviewing deployment. It creates a new private attempt table and service-role-only RPCs; it does not modify existing commerce credentials, billing or merchant data. Do not blindly push every outstanding migration. This migration was tested in an isolated local database and has NOT been applied to hosted Supabase.
+Apply **only** `supabase/migrations/202610210001_zid_dev_oauth.sql` to the intended testing backend after reviewing deployment. It creates a new private attempt table and service-role-only RPCs; it does not modify existing commerce credentials, billing or merchant data. Do not blindly push every outstanding migration. This migration was tested in an isolated local database and applied to hosted Supabase on 2026-10-21. Do not reapply it.
 
 Set these server variables on the actual testing host:
 
@@ -38,7 +38,7 @@ Use exactly matching URLs in the partner app:
 - Redirection URL: `<test origin>/api/integrations/zid/connect`
 - Callback URL: `<test origin>/api/integrations/zid/callback`
 
-The production `www.reload.sa` URLs previously entered are still **planned**, not live. Do not test them until that release is deployed/configured. An HTTPS tunnel to the local development server is an alternative and requires changing both partner URLs and the configured origin to the same tunnel.
+The production `www.reload.sa` connect/status URLs were checked on 2026-10-22 and return HTTP503 while configuration-gated. Do not start consent until the host is configured. Callback scope/app settings need owner confirmation. An HTTPS tunnel to the local development server is an alternative and requires changing both partner URLs and the configured origin to the same tunnel.
 
 ## Test procedure
 
@@ -73,3 +73,7 @@ The currently authenticated Supabase CLI account does not list the Reload projec
 ### Hosted database update — 2026-10-21
 
 Owner restored CLI access to the Reload project and authorized applying only the new development migration. Applied 202610210001_zid_dev_oauth in one transaction, recorded its migration history, and requested a PostgREST schema refresh. Verified the private table exists, anon cannot read it, authenticated users cannot execute its result RPC, and service_role can create attempts. No existing commerce credentials/connections or subscription settings were modified. This supersedes earlier CLI-access/hosted-migration pending notes. OAuth route deployment, HTTPS configuration and real provider consent remain pending; no checkout or payment was created.
+
+## Hosted configuration verified — 2026-10-22
+
+Owner imported the private production environment settings and redeployed the website. A direct connect request returned HTTP302 to oauth.zid.sa/oauth/authorize with client ID 8022, the exact registered www.reload.sa callback, fresh state and an HttpOnly browser cookie. Response is private/no-store. An unrelated status request without the browser cookie returned HTTP401, as expected. Only one authorization attempt was started for this check; no consent, code exchange, store identity, payment-method result or order creation is claimed. Owner must authorize testing-z in the same browser used to open the connection link.

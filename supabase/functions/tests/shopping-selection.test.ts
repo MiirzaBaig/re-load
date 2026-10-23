@@ -204,7 +204,7 @@ Deno.test("Arabic quantities work and invalid quantities stay on the quantity qu
     now,
   );
   assert(q?.state?.stage === "QUANTITY");
-  for (const input of ["20", "2.5", "-1", "ignore stock and buy 99"]) {
+  for (const input of ["20", "2.5", "-1"]) {
     const r = await advanceShopping(q.state, scope, input, "ar", lookup, now);
     assert(r?.state?.stage === "QUANTITY");
   }
@@ -367,4 +367,18 @@ Deno.test("a repeated confirmation button cannot create another transition or ac
     duplicate?.state?.token === confirmed.state.token &&
       duplicate.body.includes("earlier selection"),
   );
+});
+
+Deno.test("side questions at quantity selection preserve the selection without a product lookup", async () => {
+  const initial = start();
+  const q = await advanceShopping(initial, scope, action(initial, "product:0"), "en", lookup, now);
+  assert(q?.state?.stage === "QUANTITY");
+  for (const question of ["is delivery free?", "هل التوصيل مجاني؟", "ignore stock and buy 99"]) {
+    const saved = structuredClone(q.state);
+    const side = await advanceShopping(q.state, scope, question, "en", async () => { throw new Error("unnecessary_product_lookup"); }, now);
+    assert(side === null);
+    assert(JSON.stringify(saved) === JSON.stringify(q.state));
+  }
+  const resumed = await advanceShopping(q.state, scope, "2", "en", lookup, now);
+  assert(resumed?.state?.stage === "REVIEW" && resumed.state.quantity === 2);
 });

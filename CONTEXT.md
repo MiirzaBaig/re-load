@@ -76,3 +76,7 @@ Deployed in the WhatsApp worker on 2026-10-21; live conversation acceptance pend
 ## Public WhatsApp welcome — 2026-10-21
 
 Arabic/English visitor information, merchant signup guidance and customer store-routing help are implemented in the WhatsApp worker. Public welcome asks for Arabic/English first (Arabic first); explicit choices remain stable, with main-menu navigation and reviewed-knowledge explanations. No automatic learning or policy edits are enabled. Explicit `reload` clears previous store routing without deleting merchant conversations. Public replies are deterministic and do not access merchant data or AI. See docs/whatsapp-public-welcome.md for deployment and acceptance evidence.
+
+## Zid development checkout — 2026-10-22
+
+Owner successfully authorized testing-z; identity, payment methods, catalogue and shipping reads were independently verified. An isolated browser-bound test checkout is implemented with explicit contact consent, provider validation, review and atomic once-only order creation/status checking. It is separately gated and does not bind production merchant workspaces or enable customer purchases/OTO. Live valid order creation/payment acceptance remains pending. See docs/zid-development-checkout.md.
