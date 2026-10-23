@@ -57,6 +57,7 @@ const form = () => {
     phone: "0500000000",
     city: "Riyadh",
     address: "Test address",
+    addressExtra: "Test building",
     consent: "yes",
   }).forEach(([k, v]) => f.set(k, v));
   return f;
@@ -295,6 +296,7 @@ test("preparation reads live stock, validates and saves encrypted contacts witho
   await harness(async (h) => {
     const ctx = await checkoutSession(browser);
     await prepareCheckout(ctx, form());
+    assert.equal(h.calls.find((c: any) => c.url.endsWith("/drafts/validate")).body.consignee.address.line_2, "Test building");
     assert.equal(h.createCalls, 0);
     assert.equal(h.job.state, "READY");
     assert(!JSON.stringify(h.job.summary).includes("test@example.com"));

@@ -7,6 +7,7 @@ export type CheckoutInput = {
   phone: string;
   city: string;
   address: string;
+  addressExtra: string;
   consent: boolean;
 };
 export function checkoutInput(form: FormData): CheckoutInput {
@@ -21,7 +22,8 @@ export function checkoutInput(form: FormData): CheckoutInput {
     name = field("name", 100),
     email = field("email", 160),
     city = field("city", 80),
-    address = field("address", 200);
+    address = field("address", 200),
+    addressExtra = field("addressExtra", 200);
   const phone = field("phone", 18)
     .replace(/[\s+-]/g, "")
     .replace(/^00966/, "966")
@@ -49,9 +51,20 @@ export function checkoutInput(form: FormData): CheckoutInput {
     phone,
     city,
     address,
+    addressExtra,
     quantity: Number(quantityText),
     consent: true,
   };
+}
+/** Translate only known provider fields; never return raw validation text or submitted values. */
+export function zidValidationCode(value: unknown) {
+  const rows = (value as { message?: { validations?: unknown } })?.message
+    ?.validations;
+  return Array.isArray(rows) &&
+    rows.length <= 50 &&
+    rows.some((row) => row?.field === "consignee.address.line_2")
+    ? "address_details_required"
+    : "validation_failed";
 }
 export function safePaymentUrl(
   value: unknown,

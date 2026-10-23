@@ -30,6 +30,10 @@ export function checkoutPage(
   );
 }
 export const checkoutMessages: Record<string, [string, string]> = {
+  address_details_required: [
+    "زد يحتاج تفاصيل إضافية للعنوان. أضف رقم المبنى أو الحي أو الشقة في حقل «تفاصيل العنوان»، ثم تحقق مجددًا.",
+    "Zid needs a second address line. Add your building, district or apartment in Address details, then validate again.",
+  ],
   disabled: [
     "اختبار الدفع غير مفعّل بعد. فريق ريلود يجهّز الخطوة التالية.",
     "Checkout testing is not enabled yet. Reload is preparing the next step.",

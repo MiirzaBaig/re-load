@@ -7,6 +7,7 @@ import {
   checkoutInput,
   developmentOrder,
   safePaymentUrl,
+  zidValidationCode,
 } from "./checkout-contract";
 export const TEST_STORE = "3258532";
 type Job = {
@@ -155,17 +156,26 @@ export async function zidRequest(
   } catch {
     throw new CheckoutError("provider_unknown", 502);
   }
-  if (!response.ok)
+  const text = await response.text();
+  if (text.length > 2_000_000) throw new CheckoutError("provider_unknown", 502);
+  if (!response.ok) {
+    let validationCode = "validation_failed";
+    if (response.status === 422) {
+      try {
+        validationCode = zidValidationCode(JSON.parse(text));
+      } catch {
+        /* Keep the safe generic message. */
+      }
+    }
     throw new CheckoutError(
       response.status === 401 || response.status === 403
         ? "permission_required"
         : response.status === 422
-          ? "validation_failed"
+          ? validationCode
           : "provider_unknown",
       response.status === 422 ? 422 : 502,
     );
-  const text = await response.text();
-  if (text.length > 2_000_000) throw new CheckoutError("provider_unknown", 502);
+  }
   try {
     return JSON.parse(text);
   } catch {
@@ -303,6 +313,7 @@ export async function prepareCheckout(ctx: CheckoutSession, form: FormData) {
       contact: customer,
       address: {
         line_1: input.address,
+        line_2: input.addressExtra,
         city_name: input.city,
         country_code: "SA",
       },
@@ -465,7 +476,7 @@ export async function createCheckout(ctx: CheckoutSession, revision: string) {
       error instanceof CheckoutError ? error.code : "provider_unknown";
     const state =
       creationStarted &&
-      !["validation_failed", "permission_required"].includes(code)
+      !["validation_failed", "address_details_required", "permission_required"].includes(code)
         ? "UNKNOWN"
         : "FAILED";
     try {
@@ -549,6 +560,7 @@ export function checkoutDraft(ctx: CheckoutSession): FormData | undefined {
     phone: `0${payload.customer.mobile_number}`,
     city: payload.consignee.address.city_name,
     address: payload.consignee.address.line_1,
+    addressExtra: payload.consignee.address.line_2 ?? "",
   };
   for (const [name, value] of Object.entries(values))
     form.set(name, String(value));
