@@ -18,6 +18,9 @@ export function checkoutPage(
       status,
       headers: {
         ...privateHeaders,
+        // Native form POSTs need a non-opaque Origin for our strict CSRF check.
+        // Same-origin retains it locally while withholding referrers from other sites.
+        "Referrer-Policy": "same-origin",
         "Content-Type": "text/html; charset=utf-8",
         "Content-Security-Policy":
           privateHeaders["Content-Security-Policy"] +
