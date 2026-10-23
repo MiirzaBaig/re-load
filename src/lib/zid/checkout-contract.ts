@@ -10,6 +10,10 @@ export type CheckoutInput = {
   addressExtra: string;
   consent: boolean;
 };
+export const latinDigits = (value: string) =>
+  value.replace(/[٠-٩۰-۹]/g, (digit) =>
+    String(digit.charCodeAt(0) - (digit <= "٩" ? 0x660 : 0x6f0)),
+  );
 export function checkoutInput(form: FormData): CheckoutInput {
   const field = (key: string, max: number) => {
     const value = String(form.get(key) ?? "").trim();
@@ -24,14 +28,12 @@ export function checkoutInput(form: FormData): CheckoutInput {
     city = field("city", 80),
     address = field("address", 200),
     addressExtra = field("addressExtra", 200);
-  const phone = field("phone", 18)
+  const phone = latinDigits(field("phone", 18))
     .replace(/[\s+-]/g, "")
     .replace(/^00966/, "966")
     .replace(/^966/, "")
     .replace(/^0/, "");
-  const quantityText = field("quantity", 2).replace(/[٠-٩]/g, (d) =>
-    String("٠١٢٣٤٥٦٧٨٩".indexOf(d)),
-  );
+  const quantityText = latinDigits(field("quantity", 2));
   if (
     !/^[a-zA-Z0-9-]+$/.test(product) ||
     !/^\d+$/.test(shipping) ||
@@ -111,7 +113,9 @@ export function developmentOrder(
   if (
     row.order_total === null ||
     row.order_total === "" ||
+    !["string", "number"].includes(typeof row.order_total) ||
     !Number.isFinite(total) ||
+    !Number.isSafeInteger(Math.round(total * 100)) ||
     total <= 0
   )
     throw new Error("order_total_unknown");
@@ -125,5 +129,100 @@ export function developmentOrder(
           ? "pending"
           : "unknown",
     link: typeof row.payment_link === "string" ? row.payment_link : null,
+    closed: [
+      "cancelled",
+      "canceled",
+      "reversed",
+      "reverse_in_progress",
+      "partially_reversed",
+    ].includes(
+      String((row.order_status as { code?: unknown } | undefined)?.code ?? ""),
+    ),
+    guest:
+      row.is_guest_customer === 1 || row.is_guest_customer === true
+        ? true
+        : row.is_guest_customer === 0 || row.is_guest_customer === false
+          ? false
+          : null,
+    invoice: invoiceAmounts(row.payment),
+    items:
+      Array.isArray(row.products) && row.products.length <= 20
+        ? row.products.map((item: Record<string, unknown>) => ({
+            sku: typeof item?.sku === "string" ? item.sku.slice(0, 200) : null,
+            quantity:
+              Number.isSafeInteger(item?.quantity) && Number(item.quantity) > 0
+                ? Number(item.quantity)
+                : null,
+          }))
+        : null,
   };
+}
+
+export type InvoiceAmount = {
+  kind: "subtotal" | "vat" | "total";
+  amount: number;
+};
+function invoiceAmounts(payment: unknown): InvoiceAmount[] {
+  const rows = (payment as { invoice?: unknown } | undefined)?.invoice;
+  if (!Array.isArray(rows) || rows.length > 30) return [];
+  const codes: Record<string, InvoiceAmount["kind"]> = {
+    sub_totals_before_vat: "subtotal",
+    vat: "vat",
+    total: "total",
+  };
+  const result: InvoiceAmount[] = [];
+  for (const [code, kind] of Object.entries(codes)) {
+    const matches = rows.filter((row) => row?.code === code);
+    if (matches.length !== 1) continue;
+    const raw = matches[0].value;
+    if (
+      (typeof raw !== "string" && typeof raw !== "number") ||
+      String(raw).trim() === ""
+    )
+      continue;
+    const amount = Number(raw);
+    if (
+      Number.isFinite(amount) &&
+      amount >= 0 &&
+      Number.isSafeInteger(Math.round(amount * 100))
+    )
+      result.push({ kind, amount });
+  }
+  return result;
+}
+
+/** Read only the exact selected product; stock differences are observations, not reservation proof. */
+export function stockSample(
+  raw: Record<string, unknown>,
+  productId: string,
+  storeId: string,
+  sku: string,
+) {
+  if (
+    String(raw?.id) !== productId ||
+    String(raw?.store_id) !== storeId ||
+    raw?.sku !== sku
+  )
+    return null;
+  if (raw.is_infinite === true) return { unlimited: true, quantity: null };
+  if (
+    raw.is_infinite === false &&
+    Number.isSafeInteger(raw.quantity) &&
+    Number(raw.quantity) >= 0
+  )
+    return { unlimited: false, quantity: Number(raw.quantity) };
+  return null;
+}
+
+export function matchesSelection(
+  items: ReturnType<typeof developmentOrder>["items"],
+  sku: string,
+  quantity: number,
+) {
+  if (items === null) return "unknown" as const;
+  return items.length === 1 &&
+    items[0].sku === sku &&
+    items[0].quantity === quantity
+    ? ("matched" as const)
+    : ("changed" as const);
 }

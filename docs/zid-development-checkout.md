@@ -1,6 +1,6 @@
 # Zid development checkout — implementation and acceptance
 
-Updated 2026-10-22. This is a private development-store capability test, not merchant-ready Premium checkout. Customer checkout and OTO stay disabled.
+Updated 2026-10-23. This is a private development-store capability test, not merchant-ready Premium checkout. Customer checkout and OTO stay disabled.
 
 ## Confirmed provider facts
 
@@ -80,3 +80,53 @@ The website source was approved for commit and push on 2026-10-23. Deployment an
 ## Release review — 2026-10-23
 
 The owner approved committing and pushing this development-only release. Re-ran 18 checkout tests, 12 OAuth tests, 115 backend tests, isolated SQL fixtures, production build and the 41 Arabic/English browser checks. Review confirmed the subtotal/final-total distinction, exact store/order matching, safe link recovery, and duplicate/unknown write protection. Editing restores only this browser's encrypted draft; contact consent is not prechecked. No actual checkout or payment is claimed from mocked tests.
+
+
+## Acceptance-screen improvements — 2026-10-23 (local)
+
+Commit d303502 deployed the original private checkout proof. The following follow-up is local and has not been committed, pushed or deployed:
+
+- The form accepts Arabic and Persian digits for Saudi phone numbers and quantities. Switching language submits the unfinished form privately, retains its values, and does not validate or create an order. Browser back/restore resets its action and busy state. Notification consent is always asked again.
+- A single highlighted step, native keyboard navigation, the existing locally hosted Arabic sans font, light/dark surfaces, short entrance/press motion and reduced-motion support keep the test readable. No third-party fonts or analytics were added.
+- Payment links are withheld for cancelled/returning orders, missing or different items/quantities, conflicting reported invoice/order totals, unknown payment state, removed links and invalid/elapsed requested deadlines. An order remains saved; the screen never suggests creating a replacement just to recover a link.
+- The result displays only allowlisted numeric invoice subtotal/VAT/total fields, explicit guest/registered status, the requested deadline in Saudi time, and stock samples for the exact selected product before creation and at status check. Missing values remain unknown. Provider titles, addresses, customer identities and internal status strings are not rendered.
+- The requested deadline is not proof that Zid actually expires the page at that time. Observed stock changes do not prove reservation; other orders or merchant edits can affect stock. A failed stock read does not hide a successfully verified payment result. Shipping charges remain for inspection on Zid's payment page; no amount is invented by subtraction.
+- These values fit the existing encrypted result envelope. No SQL migration, secret rotation, production entitlement change or WhatsApp worker deployment is required for this follow-up.
+
+Provider references rechecked: [Create Order](https://docs.zid.sa/create-order-20612055e0), [View Order](https://docs.zid.sa/view-order-12479054e0), [View Product](https://docs.zid.sa/get-a-product-by-id), [Order statuses](https://docs.zid.sa/update-order-by-id). Source examples establish parsing contracts, not live checkout acceptance.
+
+Checks: 25 checkout tests, 12 OAuth tests and 115 backend regressions passed. Production build/TypeScript passed. All 92 browser checks passed for Arabic/English, 390px/1440px, light/dark, normal/reduced motion, incomplete-form language switching, submit feedback and restored-page state, with no console/page errors or horizontal overflow. Mobile Arabic payment results were visually inspected. Provider responses are mocked; no full real order/payment acceptance is claimed.
+
+Live session check initially found no active authorization, no created checkout records and no uncertain attempts. The owner has since reported successful fresh testing-z authorization, but their status page still has no checkout continuation button: the Production checkout flag/redeployment needs checking. The owner will enter authorized contact details directly in the private form. Continue the live checklist above once the form opens; do not use a real card without confirming Zid's test payment procedure.
+
+
+### Native form submission incident — 2026-10-23
+
+The owner reached the real form but Validate details returned invalid_request. Reproduced the cause in Chromium: the shared no-referrer policy makes a native form POST send Origin: null, which the strict verifier rejects. Focused fix 1f4803d overrides only the checkout HTML policy to same-origin; foreign navigation still receives no referrer, and null/missing/foreign origins remain rejected. See [form fix and browser regression](zid-checkout-form-fix.md). The fix is pushed to both repositories. GitHub/Vercel reports deployment success, and a live checkout response now returns Referrer-Policy: same-origin with private/no-store caching. Real owner form submission still needs retrying. The broader local checkout improvements remain uncommitted. No real order/payment acceptance is inferred from this fix.
+
+
+### Provider address validation — 2026-10-23
+
+After the native POST fix, the owner's validation reached Zid and failed because consignee.address.line_2 was required. A validation-only authorized probe confirmed this exact field error, without an order-creation call. Focused commit 355a587 adds required Address details alongside Street address, forwards it as line_2, restores it on edit and maps that known provider error to reviewed Arabic/English help without exposing raw provider text. The source is pushed to both repositories; deployment must complete before retrying from a refreshed form. Isolated release checks passed: address tests, existing checkout/OAuth tests, real browser POST/referrer regression and production build. No SQL or credential change is needed. The owner's full street/building/district details must be entered privately; real successful order/payment acceptance remains pending. Dropdown/field styling revamp and broader local acceptance-screen changes remain separate and uncommitted.
+
+
+## UI redesign — 2026-10-24 (owner approved, local)
+
+Owner requested a complete coordinated redesign of details, review, error and uncertain-result screens, including all fields, labels and dropdowns matching Reload's existing controls. The owner subsequently approved implementation. Clear Arabic/English, RTL/mobile/light/dark, aligned hints, contextual field errors, one primary next action and restrained reduced-motion-aware transitions are implemented locally; see zid-checkout-ui.md. Previous technical safeguards and fixes remain intact.
+
+The owner reached a successful provider validation/review, then saw the uncertain creation screen. Do not call this a confirmed creation failure or payment success. The current UNKNOWN/CREATING screen's Refresh status only reloads stored state; it does not reconcile a provider order. The next technical investigation must inspect the exact attempt/provider records without another create call. Future copy must describe that honestly, avoid duplicate warnings and never promise automatic recovery that is not implemented.
+
+
+### Read-only store inspection — 2026-10-24
+
+Owner explicitly requested checking testing-z after the uncertain creation. Verified exact store identity through the authorized API, then read its documented orders list. It reported five total orders, all created on 2026-10-09. None matched the attempted customer's email or phone, and no new order near the 2026-10-23 18:29 UTC attempt was listed. No create, payment, cancellation, shipment, database-state reset or credential refresh was performed. The saved attempt remains UNKNOWN with no order reference.
+
+This is evidence that no matching order is visible in the inspected orders API, not definitive proof that the original create request had no side effect or cannot finish later. Do not clear the uncertainty lock or resend creation on list absence alone. The exact failure response/uncertain-write reconciliation still needs investigation; the existing implementation does not retain a safe provider error code/request reference for that failed call. Keep the owner's UI redesign as a draft.
+
+
+### Checkout UI redesign — 2026-10-24 (local)
+
+Owner approved proceeding with both forms and all error/waiting wording. Details are grouped, controls aligned, product/delivery listboxes match Reload styling, Arabic/English labels are shortened, and errors link to fields. Review shows one clear product/subtotal summary and requires explicit confirmation. Unknown outcomes say Order result not confirmed, with one waiting notice and an honest Reload saved status action; no automatic provider-check claim or duplicate order action. Existing privacy, merchant/payment boundaries and uncertainty protection remain intact. Implementation/validation tracker: [checkout UI](zid-checkout-ui.md). Local only: do not claim it is deployed or that the unknown attempt has been resolved. No SQL push is needed.
+
+
+Release approval — 2026-10-24: owner approved committing and pushing the reviewed checkout UI and accompanying local safety/evidence improvements to main for website review. This approval does not reset the unknown attempt or enable customer checkout/shipping. No additional SQL is required. Deployment completion remains a separate check.

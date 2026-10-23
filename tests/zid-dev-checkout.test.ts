@@ -7,6 +7,8 @@ import {
   checkoutInput,
   developmentOrder,
   safePaymentUrl,
+  stockSample,
+  matchesSelection,
 } from "../src/lib/zid/checkout-contract";
 import {
   checkoutSession,
@@ -45,6 +47,7 @@ const rawProduct = {
   currency: "SAR",
   price: 100,
   quantity: 10,
+  is_infinite: false,
 };
 const form = () => {
   const f = new FormData();
@@ -139,8 +142,10 @@ async function harness(
           { ...rawProduct, id: "hidden", is_published: false },
         ],
       });
-    if (url.endsWith("/products/shoe-1/"))
+    if (url.endsWith("/products/shoe-1/")) {
+      if (options.stockFailure && h.createCalls) return json({}, 503);
       return json({ ...rawProduct, ...(options.product ?? {}) });
+    }
     if (url.endsWith("/payment-methods"))
       return json({
         payload: [
@@ -172,6 +177,7 @@ async function harness(
           currency_code: "SAR",
           order_total: "230.00",
           payment_status: "pending",
+          products: [{ sku: "TEST-SHOE", quantity: 2 }],
           payment_link: "https://testing.zid.store/pay/test-private",
         },
       });
@@ -184,7 +190,16 @@ async function harness(
           currency_code: "SAR",
           order_total: "230.00",
           payment_status: options.paid ? "paid" : "pending",
-          payment_link: options.refreshedLink,
+          order_status: { code: options.orderStatus ?? "new" },
+          products:
+            options.orderItems === undefined
+              ? [{ sku: "TEST-SHOE", quantity: 2 }]
+              : options.orderItems,
+          is_guest_customer: options.guest,
+          payment: options.invoice ? { invoice: options.invoice } : undefined,
+          payment_link: Object.hasOwn(options, "refreshedLink")
+            ? options.refreshedLink
+            : "https://testing.zid.store/pay/test-private",
         },
       });
     throw new Error("Unexpected test path");
@@ -296,7 +311,11 @@ test("preparation reads live stock, validates and saves encrypted contacts witho
   await harness(async (h) => {
     const ctx = await checkoutSession(browser);
     await prepareCheckout(ctx, form());
-    assert.equal(h.calls.find((c: any) => c.url.endsWith("/drafts/validate")).body.consignee.address.line_2, "Test building");
+    assert.equal(
+      h.calls.find((c: any) => c.url.endsWith("/drafts/validate")).body
+        .consignee.address.line_2,
+      "Test building",
+    );
     assert.equal(h.createCalls, 0);
     assert.equal(h.job.state, "READY");
     assert(!JSON.stringify(h.job.summary).includes("test@example.com"));
@@ -452,6 +471,21 @@ test("checkout UI snapshots cover review, waiting, created and failed states wit
       }
     };
     await capture("details");
+    for (const lang of ["ar", "en"]) {
+      const response = await GET(
+        new NextRequest(
+          origin +
+            "/api/integrations/zid/checkout?lang=" +
+            lang +
+            "&error=address_details_required",
+          { headers: { cookie: `${ZID_COOKIE}=${browser}` } },
+        ),
+      );
+      writeFileSync(
+        `${process.env.RELOAD_CHECKOUT_UI_DIR}/error-${lang}.html`,
+        await response.text(),
+      );
+    }
     let ctx = await checkoutSession(browser);
     await prepareCheckout(ctx, form());
     await capture("review");
@@ -582,7 +616,263 @@ test("editing a review restores this browser's details and still asks for consen
     assert(html.includes('value="Test User"'));
     assert(html.includes('value="test@example.com"'));
     assert(html.includes('value="Test address"'));
+    assert(html.includes('value="Test building"'));
     assert(!/name="consent"[^>]*checked/.test(html));
     assert.equal(h.createCalls, 0);
   });
+});
+
+test("uncertain creation shows one honest waiting message, no automatic-check claim or create action", async () => {
+  await harness(
+    async (h) => {
+      let ctx = await checkoutSession(browser);
+      await prepareCheckout(ctx, form());
+      ctx = await checkoutSession(browser);
+      await assert.rejects(createCheckout(ctx, h.job.revision));
+      const response = await GET(
+        new NextRequest(
+          origin +
+            "/api/integrations/zid/checkout?lang=en&error=provider_unknown",
+          {
+            headers: { cookie: `${ZID_COOKIE}=${browser}` },
+          },
+        ),
+      );
+      const html = await response.text();
+      assert(html.includes("Order result not confirmed"));
+      assert(html.includes("does not automatically search Zid"));
+      assert(!html.includes("Checking this attempt"));
+      assert(!html.includes("We couldn’t reach Zid"));
+      assert(!html.includes('name="action" value="create"'));
+      assert.equal((html.match(/class="notice waiting"/g) ?? []).length, 1);
+      assert.equal(h.createCalls, 1);
+    },
+    { timeout: true },
+  );
+});
+
+test("Arabic and Persian digits are accepted without accepting malformed contact or decimal quantities", () => {
+  for (const [phone, quantity] of [
+    ["٠٥٠٠٠٠٠٠٠٠", "٢"],
+    ["+۹۶۶۵۰۰۰۰۰۰۰۰", "۲"],
+  ]) {
+    const f = form();
+    f.set("phone", phone);
+    f.set("quantity", quantity);
+    assert.equal(checkoutInput(f).phone, "500000000");
+    assert.equal(checkoutInput(f).quantity, 2);
+  }
+  const f = form();
+  f.set("quantity", "٢٫٥");
+  assert.throws(() => checkoutInput(f));
+});
+
+test("order observations allowlist invoice numbers, explicit guest flags and the exact product stock", () => {
+  const order = developmentOrder(
+    {
+      order: {
+        id: 123,
+        store_id: 3258532,
+        currency_code: "SAR",
+        order_total: "230.00",
+        is_guest_customer: "1",
+        products: null,
+        payment: {
+          invoice: [
+            {
+              code: "vat",
+              value: "30",
+              title: "<script>private title</script>",
+            },
+            { code: "total", value: "230" },
+            { code: "unknown_internal_field", value: "100" },
+            { code: "sub_totals_before_vat", value: null },
+          ],
+        },
+      },
+    },
+    "3258532",
+  );
+  assert.deepEqual(order.invoice, [
+    { kind: "vat", amount: 30 },
+    { kind: "total", amount: 230 },
+  ]);
+  assert.equal(order.guest, null);
+  assert.equal(matchesSelection(order.items, "TEST-SHOE", 2), "unknown");
+  assert.equal(
+    stockSample(
+      { ...rawProduct, store_id: 999 },
+      "shoe-1",
+      "3258532",
+      "TEST-SHOE",
+    ),
+    null,
+  );
+  assert.equal(
+    stockSample(
+      { ...rawProduct, sku: "different" },
+      "shoe-1",
+      "3258532",
+      "TEST-SHOE",
+    ),
+    null,
+  );
+  assert.deepEqual(
+    stockSample(
+      { ...rawProduct, quantity: 0 },
+      "shoe-1",
+      "3258532",
+      "TEST-SHOE",
+    ),
+    { unlimited: false, quantity: 0 },
+  );
+  assert.deepEqual(
+    stockSample(
+      { ...rawProduct, is_infinite: true },
+      "shoe-1",
+      "3258532",
+      "TEST-SHOE",
+    ),
+    { unlimited: true, quantity: null },
+  );
+});
+
+test("cancelled, changed or missing order items and removed links never offer stale payment", async () => {
+  for (const options of [
+    { orderStatus: "cancelled" },
+    { orderStatus: "reversed" },
+    { orderItems: [{ sku: "DIFFERENT", quantity: 2 }] },
+    { orderItems: [{ sku: "TEST-SHOE", quantity: 3 }] },
+    { orderItems: null },
+    { refreshedLink: null },
+  ])
+    await harness(async (h) => {
+      let ctx = await checkoutSession(browser);
+      await prepareCheckout(ctx, form());
+      ctx = await checkoutSession(browser);
+      await createCheckout(ctx, h.job.revision);
+      ctx = await checkoutSession(browser);
+      assert.equal((await readCheckoutResult(ctx, true))?.link, null);
+      const response = await GET(
+        new NextRequest(origin + "/api/integrations/zid/checkout?lang=en", {
+          headers: { cookie: `${ZID_COOKIE}=${browser}` },
+        }),
+      );
+      assert(!(await response.text()).includes("Open secure payment page"));
+      assert.equal(h.createCalls, 1);
+    }, options);
+});
+
+test("expired or malformed requested deadlines block payment without creating replacement orders", async () => {
+  for (const deadline of [
+    "invalid",
+    new Date(Date.now() - 10000).toISOString(),
+  ])
+    await harness(async (h) => {
+      let ctx = await checkoutSession(browser);
+      await prepareCheckout(ctx, form());
+      ctx = await checkoutSession(browser);
+      await createCheckout(ctx, h.job.revision);
+      const saved = openPrivate<any>(h.job.result_ciphertext, sessionHash, key);
+      saved.linkExpires = deadline;
+      h.job.result_ciphertext = sealCheckout(saved, sessionHash, key);
+      ctx = await checkoutSession(browser);
+      const result = await readCheckoutResult(ctx, true);
+      assert.equal(result?.expired, true);
+      assert.equal(result?.link, null);
+      assert.equal(h.createCalls, 1);
+    });
+});
+
+test("stock observations are independent of payment confirmation and make no reservation claim", async () => {
+  const options: Record<string, any> = {
+    paid: true,
+    guest: 1,
+    invoice: [
+      { code: "vat", value: "30.00" },
+      { code: "total", value: "230.00" },
+    ],
+  };
+  await harness(async (h) => {
+    let ctx = await checkoutSession(browser);
+    await prepareCheckout(ctx, form());
+    ctx = await checkoutSession(browser);
+    await createCheckout(ctx, h.job.revision);
+    options.product = { quantity: 8 };
+    ctx = await checkoutSession(browser);
+    const result = await readCheckoutResult(ctx, true);
+    assert.equal(result?.payment, "paid");
+    assert.deepEqual(result?.stockBefore, { unlimited: false, quantity: 10 });
+    assert.deepEqual(result?.stockAfter, { unlimited: false, quantity: 8 });
+    assert.equal(result?.guest, true);
+    options.stockFailure = true;
+    assert.equal((await readCheckoutResult(ctx, true))?.payment, "paid");
+    const response = await GET(
+      new NextRequest(origin + "/api/integrations/zid/checkout?lang=en", {
+        headers: { cookie: `${ZID_COOKIE}=${browser}` },
+      }),
+    );
+    const html = await response.text();
+    assert(html.includes("VAT reported by Zid"));
+    assert(html.includes("does not prove this order reserved the item"));
+    assert(!html.includes("test@example.com"));
+  }, options);
+});
+
+test("switching language preserves an unfinished form without provider validation or order creation", async () => {
+  await harness(async (h) => {
+    const f = form();
+    f.set("quantity", "");
+    f.set("csrf", csrfFor(browser));
+    f.set("action", "language");
+    f.set("lang", "ar");
+    const response = await POST(
+      new NextRequest(origin + "/api/integrations/zid/checkout", {
+        method: "POST",
+        headers: {
+          cookie: `${ZID_COOKIE}=${browser}`,
+          origin,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams([...f.entries()] as [
+          string,
+          string,
+        ][]).toString(),
+      }),
+    );
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    assert(html.includes('lang="ar"'));
+    assert(html.includes('value="Test User"'));
+    assert(html.includes('value="test@example.com"'));
+    assert(!/name="consent"[^>]*checked/.test(html));
+    assert(!h.calls.some((c: any) => c.url.endsWith("/drafts/validate")));
+    assert.equal(h.createCalls, 0);
+    assert.equal(h.job, null);
+  });
+});
+
+test("conflicting provider totals hide payment and do not create a replacement order", async () => {
+  await harness(
+    async (h) => {
+      let ctx = await checkoutSession(browser);
+      await prepareCheckout(ctx, form());
+      ctx = await checkoutSession(browser);
+      await createCheckout(ctx, h.job.revision);
+      ctx = await checkoutSession(browser);
+      const result = await readCheckoutResult(ctx, true);
+      assert.equal(result?.totalsMatch, false);
+      assert.equal(result?.link, null);
+      const response = await GET(
+        new NextRequest(origin + "/api/integrations/zid/checkout?lang=en", {
+          headers: { cookie: `${ZID_COOKIE}=${browser}` },
+        }),
+      );
+      const html = await response.text();
+      assert(html.includes("invoice total differs"));
+      assert(!html.includes("Open secure payment page"));
+      assert.equal(h.createCalls, 1);
+    },
+    { invoice: [{ code: "total", value: "999.00" }] },
+  );
 });

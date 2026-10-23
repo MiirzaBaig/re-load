@@ -7,6 +7,8 @@ import {
   checkoutInput,
   developmentOrder,
   safePaymentUrl,
+  stockSample,
+  matchesSelection,
   zidValidationCode,
 } from "./checkout-contract";
 export const TEST_STORE = "3258532";
@@ -387,9 +389,11 @@ export async function createCheckout(ctx: CheckoutSession, revision: string) {
       ctx.config.key,
     );
     await checkoutIdentity(ctx);
-    const fresh = productInfo(
-      await zidRequest(ctx, `/products/${envelope.productId}/`),
+    const rawProduct = await zidRequest(
+      ctx,
+      `/products/${envelope.productId}/`,
     );
+    const fresh = productInfo(rawProduct);
     const quantity = envelope.payload.products[0].quantity;
     if (
       !fresh ||
@@ -457,6 +461,16 @@ export async function createCheckout(ctx: CheckoutSession, revision: string) {
       storeUrl: envelope.storeUrl,
       linkExpires:
         envelope.payload.payment_method.payment_link_configs.expiryDateTime,
+      productId: envelope.productId,
+      sku: fresh.sku,
+      quantity,
+      stockBefore: stockSample(
+        rawProduct,
+        envelope.productId,
+        TEST_STORE,
+        fresh.sku,
+      ),
+      selection: matchesSelection(order.items, fresh.sku, quantity),
     };
     const saved = await ctx.admin.rpc("finish_zid_dev_checkout", {
       p_browser_hash: ctx.browserHash,
@@ -476,7 +490,11 @@ export async function createCheckout(ctx: CheckoutSession, revision: string) {
       error instanceof CheckoutError ? error.code : "provider_unknown";
     const state =
       creationStarted &&
-      !["validation_failed", "address_details_required", "permission_required"].includes(code)
+      ![
+        "validation_failed",
+        "address_details_required",
+        "permission_required",
+      ].includes(code)
         ? "UNKNOWN"
         : "FAILED";
     try {
@@ -511,22 +529,57 @@ export async function readCheckoutResult(
     );
     result.payment = fresh.payment;
     result.total = fresh.total;
-    if (fresh.link !== null)
-      result.link = safePaymentUrl(
-        fresh.link,
-        result.storeUrl,
-        (process.env.ZID_DEV_PAYMENT_HOSTS ?? "")
-          .split(",")
-          .map((host) => host.trim())
-          .filter(Boolean),
-      );
+    result.closed = fresh.closed;
+    result.guest = fresh.guest;
+    result.invoice = fresh.invoice;
+    result.selection = matchesSelection(
+      fresh.items,
+      result.sku,
+      result.quantity,
+    );
+    // An explicitly missing link revokes the old link too. Never fall back to a stale destination.
+    result.link = safePaymentUrl(
+      fresh.link,
+      result.storeUrl,
+      (process.env.ZID_DEV_PAYMENT_HOSTS ?? "")
+        .split(",")
+        .map((host) => host.trim())
+        .filter(Boolean),
+    );
   }
-  const expired = Date.parse(result.linkExpires) <= Date.now();
+  let stockAfter = null;
+  if (
+    typeof result.productId === "string" &&
+    /^[a-zA-Z0-9-]+$/.test(result.productId)
+  ) {
+    try {
+      stockAfter = stockSample(
+        await zidRequest(ctx, `/products/${result.productId}/`),
+        result.productId,
+        TEST_STORE,
+        result.sku,
+      );
+    } catch {
+      /* Stock visibility must never hide a valid payment-status result. */
+    }
+  }
+  const expiry = Date.parse(result.linkExpires);
+  const expired = !Number.isFinite(expiry) || expiry <= Date.now();
+  const invoiceTotal = result.invoice?.find(
+    (row: { kind: string }) => row.kind === "total",
+  );
+  const totalsMatch =
+    !invoiceTotal ||
+    Math.round(invoiceTotal.amount * 100) === Math.round(result.total * 100);
   return {
     total: result.total,
     payment: result.payment,
     link:
-      !expired && result.payment === "pending"
+      !expired &&
+      !result.closed &&
+      totalsMatch &&
+      result.selection === "matched" &&
+      result.payment === "pending"
         ? safePaymentUrl(
             result.link,
             result.storeUrl,
@@ -537,6 +590,16 @@ export async function readCheckoutResult(
           )
         : null,
     expired,
+    totalsMatch,
+    closed: result.closed === true,
+    selection: result.selection ?? "unknown",
+    requestedExpiry: Number.isFinite(expiry)
+      ? new Date(expiry).toISOString()
+      : null,
+    invoice: result.invoice ?? [],
+    guest: result.guest ?? null,
+    stockBefore: result.stockBefore ?? null,
+    stockAfter,
   };
 }
 

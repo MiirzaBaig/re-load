@@ -30,7 +30,7 @@ Updated: 2026-10-22. Status: implementation in progress; deployment evidence is 
 
 ## Current implementation baseline
 
-Product lookup and public product links exist in the assistant; Zid variant behavior and production-scale catalogue acceptance remain incomplete. A bounded single-product shopping-selection flow is deployed in the WhatsApp worker; it ends at a public product-page link. Checkout creation is not implemented. OTO booking/tracking is not implemented. Existing returns, knowledge drafts, email OTP, Inbox, staff support and subscription sandbox work are foundations to extend, not rebuild.
+Product lookup and public product links exist in the assistant; Zid variant behavior and production-scale catalogue acceptance remain incomplete. A bounded single-product shopping-selection flow is deployed in the WhatsApp worker; it ends at a public product-page link. Production customer checkout creation is not enabled. An isolated development-store checkout proof is built; valid order/payment acceptance remains pending. OTO booking/tracking is not implemented. Existing returns, knowledge drafts, email OTP, Inbox, staff support and subscription sandbox work are foundations to extend, not rebuild.
 
 ## Ordered task list
 
@@ -232,3 +232,33 @@ Owner imported the private production environment settings and redeployed the we
 Owner completed testing-z authorization; independent read-only store/catalogue/payment/shipping calls succeeded. Empty-request validation reached HTTP422 with no customer details/order writes. Built an isolated browser-bound Arabic/English guided validation/review/create/status flow with encrypted private attempts and atomic duplicate/uncertainty protection. This is development-only and remains separately gated; customer Premium checkout/OTO are not enabled. Detailed implementation, migration, tests and remaining live acceptance: [zid-development-checkout.md](zid-development-checkout.md). Do not mark Task 3 complete until a real valid development checkout and payment-state acceptance are recorded.
 
 Development checkout release checks: 18 mocked checkout tests, 12 OAuth tests, 115 backend tests, isolated SQL, TypeScript, production build and 41 browser checks passed. New isolated migration 202610220001 is applied; website source was approved for push on 2026-10-23; deployment/test-flag status and live checkout acceptance remain separate checks. Full valid order/payment acceptance is still pending. No automatic purchase, card collection, production Premium activation or OTO shipment is enabled.
+
+
+### Checkout acceptance and next purchase boundary — 2026-10-23
+
+Owner approved proceeding with checkout, then Premium OTO shipping. Current work improves the isolated development test first: selected-item/quantity matching, cancelled-order and removed-link blocking, invoice-total consistency, explicit requested expiry and observed stock, plus preserved bilingual form entry and Arabic/Persian digits. See [development checkout acceptance](zid-development-checkout.md). Follow-up code remains local; d303502 is the previously deployed baseline. No SQL change is needed.
+
+25 checkout tests, 12 OAuth tests, 115 backend regressions and production build/TypeScript passed. All 92 browser checks passed for both languages, 390px/1440px, light/dark and normal/reduced motion, without console/page errors or overflow. A real valid order/payment remains pending. Owner reported a new successful testing-z authorization and will enter private contact details in the form; the missing continuation button indicates the checkout flag is not active in that deployment. No actual customer Premium checkout, production store OAuth binding/refresh, payment reconciliation/webhooks or OTO booking has been enabled.
+
+Next acceptance sequence: enable the isolated test flag/redeploy → enter owner-controlled contact details → validate → explicitly create one unpaid order → inspect the returned order/link, charges and stock → confirm supported test payment procedure → verify payment from the exact attributed order. Only then wire the proven adapter to merchant-bound Premium WhatsApp checkout. Shipping funding and sandbox configuration remain separate dependencies before live OTO booking.
+
+
+### Native form submission incident — 2026-10-23
+
+The owner reached the real form but Validate details returned invalid_request. Reproduced the cause in Chromium: the shared no-referrer policy makes a native form POST send Origin: null, which the strict verifier rejects. Focused fix 1f4803d overrides only the checkout HTML policy to same-origin; foreign navigation still receives no referrer, and null/missing/foreign origins remain rejected. See [form fix and browser regression](zid-checkout-form-fix.md). The fix is pushed to both repositories. GitHub/Vercel reports deployment success, and a live checkout response now returns Referrer-Policy: same-origin with private/no-store caching. Real owner form submission still needs retrying. The broader local checkout improvements remain uncommitted. No real order/payment acceptance is inferred from this fix.
+
+
+### Provider address validation — 2026-10-23
+
+After the native POST fix, the owner's validation reached Zid and failed because consignee.address.line_2 was required. A validation-only authorized probe confirmed this exact field error, without an order-creation call. Focused commit 355a587 adds required Address details alongside Street address, forwards it as line_2, restores it on edit and maps that known provider error to reviewed Arabic/English help without exposing raw provider text. The source is pushed to both repositories; deployment must complete before retrying from a refreshed form. Isolated release checks passed: address tests, existing checkout/OAuth tests, real browser POST/referrer regression and production build. No SQL or credential change is needed. The owner's full street/building/district details must be entered privately; real successful order/payment acceptance remains pending. Dropdown/field styling revamp and broader local acceptance-screen changes remain separate and uncommitted.
+
+
+### Checkout UI redesign — 2026-10-24 (local)
+
+Owner approved proceeding with both forms and all error/waiting wording. Details are grouped, controls aligned, product/delivery listboxes match Reload styling, Arabic/English labels are shortened, and errors link to fields. Review shows one clear product/subtotal summary and requires explicit confirmation. Unknown outcomes say Order result not confirmed, with one waiting notice and an honest Reload saved status action; no automatic provider-check claim or duplicate order action. Existing privacy, merchant/payment boundaries and uncertainty protection remain intact. Implementation/validation tracker: [checkout UI](zid-checkout-ui.md). Local only: do not claim it is deployed or that the unknown attempt has been resolved. No SQL push is needed.
+
+
+Checkout UI final local checks: production build/TypeScript, 26 checkout tests, 12 OAuth tests, 2 address tests, 115 backend regressions and native POST/referrer regression passed. 96 Chromium screen combinations passed across languages, widths, themes and motion settings, including dropdown interactions and field validation; no-JavaScript fallback passed separately in both languages. No console/page errors or overflow. Mobile Arabic/English screens visually inspected. Safari/Firefox, real provider order creation/payment and live deployment are not claimed. No new SQL or secret is required. Owner's uncertain attempt remains untouched.
+
+
+Release approval — 2026-10-24: owner approved committing and pushing the reviewed checkout UI and accompanying local safety/evidence improvements to main for website review. This approval does not reset the unknown attempt or enable customer checkout/shipping. No additional SQL is required. Deployment completion remains a separate check.
