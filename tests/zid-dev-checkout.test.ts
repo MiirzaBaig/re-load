@@ -171,6 +171,7 @@ async function harness(
       h.createCalls++;
       if (options.timeout) throw new TypeError("test network loss");
       if (options.createStatus) return json({}, options.createStatus);
+      if (options.createResponse) return json(options.createResponse);
       return json({
         order: {
           id: 123,
@@ -926,4 +927,46 @@ test("a rejected creation claim cannot return to a misleading ready-to-create re
     assert(!html.includes("Details accepted"));
     assert.equal(h.createCalls, 0);
   });
+});
+
+test("uncertain writes preserve safe phase/status metadata without storing raw provider replies", async () => {
+  for (const [options, phase, status] of [
+    [{ timeout: true }, "create_request", null],
+    [{ createStatus: 500 }, "create_request", 500],
+    [
+      {
+        createResponse: {
+          payload: {
+            private_email: "private@example.com",
+            token: "DO-NOT-KEEP",
+          },
+        },
+      },
+      "check_response",
+      null,
+    ],
+    [{ saveFailure: true }, "save_result", null],
+  ] as const)
+    await harness(async (h) => {
+      let ctx = await checkoutSession(browser);
+      await prepareCheckout(ctx, form());
+      ctx = await checkoutSession(browser);
+      await assert.rejects(createCheckout(ctx, h.job.revision));
+      assert.equal(h.job.state, "UNKNOWN");
+      const diagnostic = openPrivate<any>(
+        h.job.result_ciphertext,
+        sessionHash,
+        key,
+      );
+      assert.equal(diagnostic.phase, phase);
+      assert.equal(diagnostic.providerStatus, status);
+      assert.equal(
+        diagnostic.confirmedOrderId,
+        options.saveFailure ? "123" : null,
+      );
+      assert(!JSON.stringify(diagnostic).includes("private@example.com"));
+      assert(!JSON.stringify(diagnostic).includes("DO-NOT-KEEP"));
+      assert(!h.job.result_ciphertext.includes("Test address"));
+      assert.equal(h.createCalls, 1);
+    }, options);
 });

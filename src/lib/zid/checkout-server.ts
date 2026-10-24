@@ -33,6 +33,7 @@ export class CheckoutError extends Error {
   constructor(
     public code: string,
     public status = 400,
+    public providerStatus: number | null = null,
   ) {
     super(code);
   }
@@ -160,7 +161,8 @@ export async function zidRequest(
     throw new CheckoutError("provider_unknown", 502);
   }
   const text = await response.text();
-  if (text.length > 2_000_000) throw new CheckoutError("provider_unknown", 502);
+  if (text.length > 2_000_000)
+    throw new CheckoutError("provider_unknown", 502, response.status);
   if (!response.ok) {
     let validationCode = "validation_failed";
     if (response.status === 422) {
@@ -177,12 +179,13 @@ export async function zidRequest(
           ? validationCode
           : "provider_unknown",
       response.status === 422 ? 422 : 502,
+      response.status,
     );
   }
   try {
     return JSON.parse(text);
   } catch {
-    throw new CheckoutError("provider_unknown", 502);
+    throw new CheckoutError("provider_unknown", 502, response.status);
   }
 }
 export async function checkoutIdentity(ctx: CheckoutSession) {
@@ -385,6 +388,14 @@ export async function createCheckout(ctx: CheckoutSession, revision: string) {
   if (claimed.error || claimed.data !== true)
     throw new CheckoutError("already_started", 409);
   let creationStarted = false;
+  let phase: "recheck" | "create_request" | "check_response" | "save_result" =
+    "recheck";
+  let confirmedOrderId: string | null = null;
+  let responseShape: {
+    order: boolean;
+    payload: boolean;
+    code: boolean;
+  } | null = null;
   try {
     const envelope = openPrivate<any>(
       job.request_ciphertext,
@@ -445,12 +456,23 @@ export async function createCheckout(ctx: CheckoutSession, revision: string) {
     if (valid.code !== "SUCCESS_WITHOUT_PAYLOAD")
       throw new CheckoutError("validation_failed", 422);
     creationStarted = true;
+    phase = "create_request";
     const reply = await zidRequest(
       ctx,
       "/managers/store/drafts",
       envelope.payload,
     );
+    phase = "check_response";
+    responseShape = {
+      order:
+        !!reply && typeof reply === "object" && Object.hasOwn(reply, "order"),
+      payload:
+        !!reply && typeof reply === "object" && Object.hasOwn(reply, "payload"),
+      code:
+        !!reply && typeof reply === "object" && Object.hasOwn(reply, "code"),
+    };
     const order = developmentOrder(reply, TEST_STORE);
+    confirmedOrderId = order.id;
     const safe = {
       ...order,
       link: safePaymentUrl(
@@ -475,6 +497,7 @@ export async function createCheckout(ctx: CheckoutSession, revision: string) {
       ),
       selection: matchesSelection(order.items, fresh.sku, quantity),
     };
+    phase = "save_result";
     const saved = await ctx.admin.rpc("finish_zid_dev_checkout", {
       p_browser_hash: ctx.browserHash,
       p_state: "CREATED",
@@ -500,10 +523,35 @@ export async function createCheckout(ctx: CheckoutSession, revision: string) {
       ].includes(code)
         ? "UNKNOWN"
         : "FAILED";
+    // Safe metadata only: never persist or log raw provider bodies, URLs, contacts or tokens.
+    const diagnostic = {
+      version: 1,
+      phase,
+      outcome: state,
+      code,
+      providerStatus:
+        error instanceof CheckoutError ? error.providerStatus : null,
+      responseShape,
+      confirmedOrderId,
+      recordedAt: new Date().toISOString(),
+    };
+    console.warn("zid_checkout_attempt_failed", {
+      phase,
+      outcome: state,
+      code,
+      providerStatus: diagnostic.providerStatus,
+      responseShape,
+    });
     try {
       await ctx.admin.rpc("finish_zid_dev_checkout", {
         p_browser_hash: ctx.browserHash,
         p_state: state,
+        p_order_id: confirmedOrderId,
+        p_result_ciphertext: sealCheckout(
+          diagnostic,
+          ctx.session.session_hash,
+          ctx.config.key,
+        ),
       });
     } catch {
       /* Leave CREATING locked when storage is unavailable. */

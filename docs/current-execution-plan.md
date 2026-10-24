@@ -266,3 +266,7 @@ Release approval — 2026-10-24: owner approved committing and pushing the revie
 ### Cross-session checkout safety display — 2026-10-24
 
 The old UNKNOWN shoe attempt correctly blocked a newer T-shirt creation, but its READY review still offered Create. Fixed with a service-only aggregate blocker flag and a paused UI for fresh/ready sessions (including claim rejection races). Added guard before blocked preparation. Applied only 202610240001_zid_checkout_blocker_visibility and kept both attempt records unchanged. This is a UI/read-model correction, not recovery of the unknown order. No new provider order/payment/shipment is created.
+
+### Checkout recovery evidence — 2026-10-24
+
+Correct Vercel access restored. Original request logs confirm a handled redirect, but no original error/runtime trace was recorded. Latest read-only Zid inspection still shows no matching order; this does not authorize blind retry. Prepared local encrypted failure metadata and minimal safe runtime logging (29 checkout tests and build passed) and an unsent Zid support draft in zid-checkout-recovery.md. Existing UNKNOWN stays locked until provider confirmation or an authoritative matched order permits reconciliation. No creation retry/reset/live card/shipment performed.

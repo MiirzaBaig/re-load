@@ -134,3 +134,14 @@ Release approval — 2026-10-24: owner approved committing and pushing the revie
 ### Cross-session blocker display — 2026-10-24
 
 The owner reached a newer T-shirt review and creation was refused because the earlier shoe attempt remained UNKNOWN. Corrected the misleading review/create display: session reads now expose an aggregate creation_blocked flag through the existing service-only RPC, and fresh/ready sessions show a paused screen. An already_started query also fails closed to that screen after a race. Blocked preparation performs no provider writes. Only migration 202610240001 was applied/recorded; no attempt was reset, retried, cancelled or marked successful. Provider outcome reconciliation remains outstanding. See zid-checkout-ui.md.
+
+
+### Reconciliation investigation — 2026-10-24
+
+Owner requested resolving the original UNKNOWN attempt. Using a fresh, still-active authorization for verified testing-z, re-read Zid orders and compared contact fields against the original encrypted request only in memory. Zid reported five total orders, all from 2026-10-09; none matched. No create, cancellation, payment, shipment, reset or token refresh was performed. The original authorization row has been cleaned up; the independent encrypted checkout attempt remains.
+
+The original provider HTTP status, safe error code, request reference and response shape were not persisted. UNKNOWN alone cannot distinguish timeout, provider error, unexpected response or storage failure. List absence is not sufficient evidence for automatic retry. The current Vercel CLI account i-mirzabaig cannot access the Reload deployment scope; a log request was refused. Owner offered access. Next: access the correct Reload project's logs around 2026-10-23 18:29–18:31 UTC, inspect safe metadata and reconcile provider evidence before changing UNKNOWN. Do not use the stale unrelated local Vercel project link.
+
+### Original request logs inspected — 2026-10-24
+
+Owner completed Vercel CLI login as reload-dev-test with access to the correct mujeeb12/reload team/project. Original POST/GET access records are available, but no runtime error output or trace records exist for the handled failure. The original provider response cannot be reconstructed. A fresh authorized read still shows only five old orders and no matching creation. Lock remains intact. Added local safe diagnostic capture for future failures, with 29 tests/build passing. See [recovery evidence and unsent support draft](zid-checkout-recovery.md). No actual provider retry, attempt reset or payment was performed. Provider confirmation remains necessary for resolving the original UNKNOWN.
