@@ -6,6 +6,7 @@ import { isOpaque, storeIdentity, type ZidTokens } from "./oauth-contract";
 import {
   checkoutInput,
   developmentOrder,
+  developmentOrderReference,
   safePaymentUrl,
   stockSample,
   matchesSelection,
@@ -131,6 +132,7 @@ export async function zidRequest(
   ctx: CheckoutSession,
   path: string,
   body?: unknown,
+  onResponse?: (status: number) => void,
 ) {
   // Paths are fixed by this module. No caller-supplied origin, headers or auth scope.
   if (
@@ -160,7 +162,13 @@ export async function zidRequest(
   } catch {
     throw new CheckoutError("provider_unknown", 502);
   }
-  const text = await response.text();
+  onResponse?.(response.status);
+  let text: string;
+  try {
+    text = await response.text();
+  } catch {
+    throw new CheckoutError("provider_unknown", 502, response.status);
+  }
   if (text.length > 2_000_000)
     throw new CheckoutError("provider_unknown", 502, response.status);
   if (!response.ok) {
@@ -391,6 +399,7 @@ export async function createCheckout(ctx: CheckoutSession, revision: string) {
   let phase: "recheck" | "create_request" | "check_response" | "save_result" =
     "recheck";
   let confirmedOrderId: string | null = null;
+  let creationResponseStatus: number | null = null;
   let responseShape: {
     order: boolean;
     payload: boolean;
@@ -461,6 +470,7 @@ export async function createCheckout(ctx: CheckoutSession, revision: string) {
       ctx,
       "/managers/store/drafts",
       envelope.payload,
+      (status) => { creationResponseStatus = status; },
     );
     phase = "check_response";
     responseShape = {
@@ -471,8 +481,10 @@ export async function createCheckout(ctx: CheckoutSession, revision: string) {
       code:
         !!reply && typeof reply === "object" && Object.hasOwn(reply, "code"),
     };
+    // Preserve a verified store-bound reference even if totals/items cannot be parsed.
+    // Keep the attempt uncertain; an ID alone never exposes a link or enables retry.
+    confirmedOrderId = developmentOrderReference(reply, TEST_STORE);
     const order = developmentOrder(reply, TEST_STORE);
-    confirmedOrderId = order.id;
     const safe = {
       ...order,
       link: safePaymentUrl(
@@ -530,7 +542,9 @@ export async function createCheckout(ctx: CheckoutSession, revision: string) {
       outcome: state,
       code,
       providerStatus:
-        error instanceof CheckoutError ? error.providerStatus : null,
+        error instanceof CheckoutError
+          ? error.providerStatus ?? creationResponseStatus
+          : creationResponseStatus,
       responseShape,
       confirmedOrderId,
       recordedAt: new Date().toISOString(),

@@ -37,3 +37,18 @@ Use provider confirmation or an authoritative matched order/reference to reconci
 
 
 Owner priority — 2026-10-24: complete recovery, saved-attempt reconciliation, full checkout/payment acceptance and Premium WhatsApp/dashboard integration before any OTO development. Diagnostic release df3cb1c was pushed to both repositories and Vercel reports deployment success. The original lock is unchanged. Awaiting confirmation that the support draft has been sent and the provider's answer; no support message was sent through assistant tools.
+
+## Response-handling corrections — 24 October 2026 (local)
+
+Owner requested a fix before another test. Code review found two reproducible evidence-loss bugs, without establishing the cause of the original October 23 failure:
+
+- A successful JSON response could contain a valid testing-z order reference but fail strict total/currency parsing. Previously the order id was assigned only after that parsing, so the reference was lost. Capture the store-bound reference first, privately; still mark the attempt UNKNOWN and withhold payment/creation actions until authoritative reconciliation. A foreign-store reference is discarded.
+- Reading a provider response body could fail outside the typed HTTP error handling, losing its available HTTP status. Preserve that status on body-read errors and retain the creation-response status when strict parsing or later storage fails. HTTP200 is transport evidence only, not proof of a valid created order.
+
+32 mocked checkout tests passed, including new malformed-total/foreign-store and broken-body cases. They confirm one creation call, no retry or exposed payment link, safe metadata only and unchanged UNKNOWN protection. No live provider write, SQL reset, recovery RPC, order association or deployment was performed. No new migration/secret is required.
+
+The existing attempt cannot acquire the missing original response retroactively. Await authoritative Zid confirmation or an exact matched order before reconciliation; a retry is not yet safe merely because these code corrections are ready.
+
+Final verification: production Webpack build and TypeScript passed after these corrections. UI and database permissions were unchanged; no additional browser or live checkout acceptance is claimed.
+
+Release approved — 24 October 2026: owner requested pushing the remaining reviewed fixes while awaiting Zid’s reply. No provider reply or authoritative recovery evidence has been received through this session. Keep UNKNOWN locked. Website deployment completion remains separate from pushing source.

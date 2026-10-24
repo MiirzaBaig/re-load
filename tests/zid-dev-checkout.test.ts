@@ -177,6 +177,11 @@ async function harness(
     if (url.endsWith("/drafts")) {
       h.createCalls++;
       if (options.timeout) throw new TypeError("test network loss");
+      if (options.createBodyFailure) {
+        const response = json({}, options.createBodyFailure);
+        response.text = async () => { throw new TypeError("private response body failure"); };
+        return response;
+      }
       if (options.createStatus) return json({}, options.createStatus);
       if (options.createResponse) return json(options.createResponse);
       return json({
@@ -950,9 +955,9 @@ test("uncertain writes preserve safe phase/status metadata without storing raw p
         },
       },
       "check_response",
-      null,
+      200,
     ],
-    [{ saveFailure: true }, "save_result", null],
+    [{ saveFailure: true }, "save_result", 200],
   ] as const)
     await harness(async (h) => {
       let ctx = await checkoutSession(browser);
@@ -976,6 +981,45 @@ test("uncertain writes preserve safe phase/status metadata without storing raw p
       assert(!h.job.result_ciphertext.includes("Test address"));
       assert.equal(h.createCalls, 1);
     }, options);
+});
+
+test("a store-bound order reference survives invalid order totals without exposing a payment link or retrying", async () => {
+  for (const store of [3258532, 999999])
+    await harness(async (h) => {
+      let ctx = await checkoutSession(browser);
+      await prepareCheckout(ctx, form());
+      ctx = await checkoutSession(browser);
+      await assert.rejects(createCheckout(ctx, h.job.revision));
+      assert.equal(h.job.state, "UNKNOWN");
+      assert.equal(h.job.order_id, store === 3258532 ? "123" : null);
+      const diagnostic = openPrivate<any>(h.job.result_ciphertext, sessionHash, key);
+      assert.equal(diagnostic.confirmedOrderId, store === 3258532 ? "123" : null);
+      assert.equal(diagnostic.providerStatus, 200);
+      assert.equal(diagnostic.phase, "check_response");
+      assert(!JSON.stringify(diagnostic).includes("DO-NOT-KEEP"));
+      ctx = await checkoutSession(browser);
+      assert.equal(await readCheckoutResult(ctx, true), null);
+      await assert.rejects(createCheckout(ctx, h.job.revision));
+      assert.equal(h.createCalls, 1);
+    }, { createResponse: { order: { id: 123, store_id: store, currency_code: "SAR", order_total: "invalid", payment_link: "https://testing.zid.store/DO-NOT-KEEP" } } });
+});
+
+test("response body failures retain the actual HTTP status and never allow a creation retry", async () => {
+  for (const status of [200, 500])
+    await harness(async (h) => {
+      let ctx = await checkoutSession(browser);
+      await prepareCheckout(ctx, form());
+      ctx = await checkoutSession(browser);
+      await assert.rejects(createCheckout(ctx, h.job.revision));
+      const diagnostic = openPrivate<any>(h.job.result_ciphertext, sessionHash, key);
+      assert.equal(diagnostic.providerStatus, status);
+      assert.equal(diagnostic.phase, "create_request");
+      assert.equal(h.job.state, "UNKNOWN");
+      assert(!JSON.stringify(diagnostic).includes("private response body failure"));
+      ctx = await checkoutSession(browser);
+      await assert.rejects(createCheckout(ctx, h.job.revision));
+      assert.equal(h.createCalls, 1);
+    }, { createBodyFailure: status });
 });
 
 test("monitor observations are allowlisted and cannot change payment results or duplicate creation", async () => {

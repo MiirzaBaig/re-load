@@ -95,6 +95,13 @@ export function safePaymentUrl(
     return null;
   }
 }
+/** A store-bound reference is recovery evidence, not proof of a usable checkout. */
+export function developmentOrderReference(value: unknown, storeId: string): string | null {
+  const row = (value as { order?: Record<string, unknown> } | null)?.order;
+  return row && String(row.store_id) === storeId && /^\d{1,20}$/.test(String(row.id))
+    ? String(row.id)
+    : null;
+}
 export function developmentOrder(
   value: unknown,
   storeId: string,
