@@ -47,7 +47,7 @@ export function useLabels() {
           : value === "financing" ? t("Financing", "التمويل")
             : value === "both" ? t("Returns + financing", "الإرجاع والتمويل")
               : t("Not specified", "لم يُحدّد"),
-      code: (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase()),
+      code: (value: string) => value === "development_checkout" ? t("Checkout tests", "اختبارات الشراء") : value.replaceAll("_", " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase()),
     };
   }, [t, locale, isArabic]);
 }

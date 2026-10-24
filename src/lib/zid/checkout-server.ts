@@ -556,6 +556,22 @@ export async function createCheckout(ctx: CheckoutSession, revision: string) {
     } catch {
       /* Leave CREATING locked when storage is unavailable. */
     }
+    try {
+      const observation = await ctx.admin.rpc(
+        "record_zid_dev_checkout_observation",
+        {
+          p_browser_hash: ctx.browserHash,
+          p_stage: phase,
+          p_outcome: state === "UNKNOWN" ? "unconfirmed" : "failed",
+          p_code: code,
+          p_provider_status: diagnostic.providerStatus,
+        },
+      );
+      if (observation.error || observation.data !== true)
+        console.warn("zid_checkout_observation_unavailable");
+    } catch {
+      console.warn("zid_checkout_observation_unavailable");
+    }
     throw error;
   }
 }
@@ -578,6 +594,20 @@ export async function readCheckoutResult(
       TEST_STORE,
       job.order_id,
     );
+    try {
+      const observation = await ctx.admin.rpc(
+        "record_zid_dev_checkout_observation",
+        {
+          p_browser_hash: ctx.browserHash,
+          p_stage: "payment_checked",
+          p_outcome: fresh.payment,
+        },
+      );
+      if (observation.error || observation.data !== true)
+        console.warn("zid_checkout_observation_unavailable");
+    } catch {
+      console.warn("zid_checkout_observation_unavailable");
+    }
     result.payment = fresh.payment;
     result.total = fresh.total;
     result.closed = fresh.closed;

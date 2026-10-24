@@ -186,6 +186,10 @@ export function auditLabel(kind: string, t: T) {
       "Answer draft prepared for a merchant",
       "تجهيز مسودة إجابة للتاجر",
     ],
+    CHECKOUT_MONITOR_VIEWED: [
+      "Checkout journeys viewed",
+      "مراجعة رحلات الشراء",
+    ],
     DASHBOARD_VIEWED: ["Team desk opened", "فتح مساحة الفريق"],
     TEAM_INVITED: ["Teammate invited", "دعوة زميل"],
     TEAM_ROLE_CHANGED: ["Team permissions changed", "تغيير صلاحيات الفريق"],

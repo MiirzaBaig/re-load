@@ -2,6 +2,17 @@
 
 Updated: 2026-10-22. Status: implementation in progress; deployment evidence is recorded per task below. Source code and recorded tests remain authoritative. No shipping or checkout purchase has been booked as part of this planning work.
 
+## Active checkout milestones — owner priority, 2026-10-24
+
+OTO foundation, outbound shipping and return shipping are explicitly on hold until the four checkout milestones below are accepted. This ordering supersedes any suggestion to start OTO in parallel.
+
+1. **Resolve the provider uncertainty:** obtain Zid confirmation for the original 2026-10-23 18:29 UTC request, or identify an authoritative matching order. An unsent support draft and verified investigation evidence are in zid-checkout-recovery.md. Support delivery/reply is not claimed.
+2. **Reconcile the saved attempt:** associate a verified existing order, or record provider confirmation that no order/draft/link/pending creation exists before closing UNKNOWN. Preserve history, tenant checks and the atomic duplicate guard. Do not reset because a new product was selected or a list query returned no match.
+3. **Accept one complete development checkout:** fresh authorized details/review/consent, one creation, actual usable link, final tax/delivery totals, observed stock/reservation behaviour, actual expiry, guest/customer behaviour and provider-verified payment success/failure. Confirm Zid's test-payment procedure before entering a card. All remain acceptance items until evidence is recorded.
+4. **Premium WhatsApp and merchant visibility:** wire the proven platform adapter to an authenticated, tenant-bound merchant authorization with token lifecycle, strict paid Premium checks, confirmed customer selection/delivery details, idempotent attempts, private payment-link handoff, authoritative reconciliation and visible merchant progress. Standard retains product-page links. Keep production purchasing disabled until real merchant/customer acceptance passes.
+
+Current status: the review UI, duplicate/unknown guard and safe diagnostic recording are live. The original UNKNOWN is unresolved; no valid created order, usable payment link or completed payment is yet proven. The existing merchant MCP connection is read-only and does not supply production checkout permissions. No OTO action or shipping charge is enabled by these tasks.
+
 ## Confirmed product decisions
 
 | Area | Approved direction |
@@ -270,3 +281,14 @@ The old UNKNOWN shoe attempt correctly blocked a newer T-shirt creation, but its
 ### Checkout recovery evidence — 2026-10-24
 
 Correct Vercel access restored. Original request logs confirm a handled redirect, but no original error/runtime trace was recorded. Latest read-only Zid inspection still shows no matching order; this does not authorize blind retry. Prepared local encrypted failure metadata and minimal safe runtime logging (29 checkout tests and build passed) and an unsent Zid support draft in zid-checkout-recovery.md. Existing UNKNOWN stays locked until provider confirmation or an authoritative matched order permits reconciliation. No creation retry/reset/live card/shipment performed.
+
+### Admin journey visibility request — 2026-10-24
+
+Owner requested a clearer admin tracker for workflow steps, failures and useful next actions. Inspected existing Health/Activity/Payments and masked support workspace timelines before proposing an extension. Proposed design and implementation boundaries: [admin journey monitor](admin-journey-monitor-plan.md). Start with the isolated development checkout, preserve production merchant isolation, safe role-based diagnostics and unknown-write protection. This is a recorded proposal, not an implemented monitor or proof that missing historical provider responses can be recovered. Original four checkout milestones remain the priority; OTO stays deferred.
+
+
+### Admin journey monitor implemented — 2026-10-24
+
+The proposal above is now implemented in Admin → Activity: owner-only development checkout records, recorded steps, outcome filters, safe next actions and masked troubleshooting reports; merchant journeys link to the existing support workspace. Arabic/English, mobile, themes and reduced motion are covered. Source approved for release to main; migration 202610240002 is applied. Existing UNKNOWN/READY attempts are unchanged, and missing history is explicitly shown. There is no retry/unlock action. Implementation, security and check evidence: [admin journey monitor](admin-journey-monitor-plan.md). Checkout acceptance and OTO boundaries remain unchanged.
+
+Final monitor checks: production build/TypeScript, 30 checkout tests, 4 API tests, 3 projection tests, 115 backend tests and isolated SQL passed. The 56-assertion browser suite passed inside the actual admin shell in both languages, widths and themes; extra loading/recovery/keyboard/access-loss checks passed. Hosted owner/nonstaff read checks passed; original attempt states are unchanged. Temporary preview removed. Owner approved release to main after removing the sample preview; no provider write or uncertainty reset occurred.

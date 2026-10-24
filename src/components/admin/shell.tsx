@@ -30,10 +30,11 @@ import { isDue, useLabels } from "@/components/admin/use-labels";
 import { useLeads } from "@/components/admin/use-leads";
 import { LeadsView, type LeadFilters } from "@/components/admin/views/leads";
 import { MerchantDrawer, MerchantsView } from "@/components/admin/views/merchants";
-import { ActivityView, FeedbackView, HealthView, ReturnsView } from "@/components/admin/views/operations";
+import { FeedbackView, HealthView, ReturnsView } from "@/components/admin/views/operations";
 import { TodayView } from "@/components/admin/views/today";
 import { Avatar, TeamView, memberName } from "@/components/admin/views/team";
 import { PaymentsView } from "@/components/admin/views/payments";
+import { ActivityHub } from "@/components/admin/views/journey-monitor";
 import { AdminWelcome } from "@/components/admin/welcome";
 
 const SIDEBAR_KEY = "reload-admin-sidebar";
@@ -192,7 +193,7 @@ export function AdminShell({ initial, ...data }: AdminData & { initial: DeskStat
     health: t("Connection and delivery errors from real events.", "مشكلات الاتصال والتسليم من الأحداث الفعلية."),
     payments: t("Verified payments, renewals and checkouts that need attention.","الدفعات المؤكدة والتجديدات وعمليات الدفع التي تحتاج متابعة."),
     feedback: t("Reports from merchants and WhatsApp conversations.", "بلاغات التجار ومحادثات واتساب."),
-    activity: t("What happened, across merchants and the team.", "ما حدث لدى التجار والفريق."),
+    activity: t("Follow recorded journeys, understand interruptions and review team activity.", "تابع الرحلات المسجلة وافهم مواضع التعثر وراجع نشاط الفريق."),
     team: t("Who can open the desk, and what they can do.", "من يمكنه فتح المساحة، وماذا يمكنه أن يفعل."),
   };
 
@@ -278,7 +279,7 @@ export function AdminShell({ initial, ...data }: AdminData & { initial: DeskStat
             {state.view === "health" && <HealthView data={data} labels={labels} storeName={storeName} />}
             {state.view === "payments" && <PaymentsView />}
             {state.view === "feedback" && <FeedbackView data={data} labels={labels} storeName={storeName} />}
-            {state.view === "activity" && <ActivityView data={data} labels={labels} storeName={storeName} currentUserId={data.currentUserId} />}
+            {state.view === "activity" && <ActivityHub data={data} labels={labels} storeName={storeName} currentUserId={data.currentUserId} />}
             {state.view === "team" && <TeamView team={data.team} currentUserId={data.currentUserId} isOwner={data.role === "owner"} labels={labels} />}
           </motion.div>
         </div>

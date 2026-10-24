@@ -34,3 +34,6 @@ Our authorized orders API currently shows only five older orders and no matching
 ## Next action
 
 Use provider confirmation or an authoritative matched order/reference to reconcile the original attempt. A matched order must be checked against exact store, items/quantity, original contact details and timing before associating it with the attempt. If Zid confirms no creation or pending task, record that evidence before marking the old attempt definitively failed. Do not delete history or reset UNKNOWN solely to unlock the interface. After a correction is tested and diagnostic capture is deployed, obtain a fresh review/consent before any new creation. No live card or OTO booking is part of this recovery.
+
+
+Owner priority — 2026-10-24: complete recovery, saved-attempt reconciliation, full checkout/payment acceptance and Premium WhatsApp/dashboard integration before any OTO development. Diagnostic release df3cb1c was pushed to both repositories and Vercel reports deployment success. The original lock is unchanged. Awaiting confirmation that the support draft has been sent and the provider's answer; no support message was sent through assistant tools.

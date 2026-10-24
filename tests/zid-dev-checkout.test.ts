@@ -99,6 +99,13 @@ async function harness(
         checkout: h.job,
         creation_blocked: options.blocked === true || h.blocked === true,
       });
+    if (url.includes("/record_zid_dev_checkout_observation")) {
+      h.observations ??= [];
+      h.observations.push(body);
+      return options.observationFailure
+        ? json({ message: "unavailable" }, 503)
+        : json(true);
+    }
     if (url.includes("/prepare_zid_dev_checkout")) {
       if (h.job && ["CREATING", "CREATED", "UNKNOWN"].includes(h.job.state))
         return json(false);
@@ -969,4 +976,25 @@ test("uncertain writes preserve safe phase/status metadata without storing raw p
       assert(!h.job.result_ciphertext.includes("Test address"));
       assert.equal(h.createCalls, 1);
     }, options);
+});
+
+test("monitor observations are allowlisted and cannot change payment results or duplicate creation", async () => {
+  for (const observationFailure of [false, true])
+    await harness(
+      async (h) => {
+        let ctx = await checkoutSession(browser);
+        await prepareCheckout(ctx, form());
+        ctx = await checkoutSession(browser);
+        await createCheckout(ctx, h.job.revision);
+        ctx = await checkoutSession(browser);
+        const result = await readCheckoutResult(ctx, true);
+        assert.equal(result?.payment, "paid");
+        assert.equal(h.createCalls, 1);
+        assert.equal(h.observations[0].p_stage, "payment_checked");
+        assert.equal(h.observations[0].p_outcome, "paid");
+        assert(!JSON.stringify(h.observations).includes("test@example.com"));
+        assert(!JSON.stringify(h.observations).includes("Test address"));
+      },
+      { paid: true, observationFailure },
+    );
 });

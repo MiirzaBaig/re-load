@@ -58,3 +58,10 @@ Both migrations are deployed; customer-service and whatsapp-inbox are deployed s
 ## Latest website release
 
 Claude's 23bfbe7 workspace polish adds shared page headers, real setup checklist, policy review refinements, expanded Inbox and platform-specific knowledge-link guidance. These changes do not expand staff authority or transfer approval from the merchant. Subsequent footer commits affect the public website only. A new release's visual/build acceptance must be recorded separately from the historical checks above.
+
+
+## Admin Activity hub — 24 October 2026
+
+The website update groups Checkout tests, Merchant journeys and Audit log under `/admin?view=activity`. All existing staff roles can open the merchant journey links; only owners can fetch the isolated development checkout monitor. Its database RPC repeats owner/MFA checks and audits reads. No merchant membership, publishing authority or connection authority is added.
+
+Checkout tests shows saved, allowlisted events only. Refreshes run every 15 seconds while visible; temporary outages retain the last snapshot, while access loss clears it. Reports exclude contacts, payment links and credentials. The original unresolved checkout remains paused; historical events are not invented. Migration 202610240002 is applied, and source is approved for release to main. See [implementation and checks](admin-journey-monitor-plan.md).
