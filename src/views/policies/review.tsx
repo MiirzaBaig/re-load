@@ -30,6 +30,7 @@ import type { PolicyRule } from "@/lib/domain";
 import { supabase } from "@/lib/supabase";
 import { refreshWorkspace } from "@/lib/workspace-data";
 import { cn } from "@/lib/utils";
+import { DrawTick } from "@/components/ui/feedback-note";
 
 /*
  * The last look before a policy goes live. It reads as what will actually
@@ -819,22 +820,9 @@ function ReviewProgress({ approved, total, pending, canManage, onShowNext, t }: 
 }
 
 /** A check mark that draws itself when `play` is set (just approved). */
+/** Shared self-drawing tick (components/ui/feedback-note.tsx). */
 function DrawnCheck({ play }: { play: boolean }) {
-  return (
-    <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden="true">
-      <motion.path
-        d="M3.5 8.5l3 3 6-7"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        initial={play ? { pathLength: 0 } : false}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 0.45, ease: [0.2, 0, 0, 1], delay: 0.08 }}
-      />
-    </svg>
-  );
+  return <DrawTick play={play} />;
 }
 
 function RuleLine({

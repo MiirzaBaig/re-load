@@ -1,23 +1,22 @@
 "use client";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import {
-  Check,
   CreditCard,
   RefreshCw,
   ShieldCheck,
   Wallet,
-  TriangleAlert,
   Loader2,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { useLanguage } from "@/components/language-provider";
-import { Panel, Metric, TWEEN, EmptyState } from "@/components/desk/primitives";
+import { Panel, Metric, EmptyState } from "@/components/desk/primitives";
 import { PageHeader } from "@/components/desk/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FeedbackNote } from "@/components/ui/feedback-note";
 
 type Snapshot = {
   environment: "sandbox";
@@ -43,8 +42,7 @@ type Snapshot = {
 };
 export function ShippingWallet() {
   const { workspace } = useAuth(),
-    { t, isArabic } = useLanguage(),
-    reduce = useReducedMotion();
+    { t, isArabic } = useLanguage(); // reduced motion is handled inside FeedbackNote
   const [data, setData] = useState<Snapshot | null>(null),
     [error, setError] = useState<string | null>(null),
     [amount, setAmount] = useState("100"),
@@ -221,19 +219,13 @@ export function ShippingWallet() {
         </div>
       )}
       {error && (
-        <div
-          role="alert"
-          className="flex gap-3 rounded-2xl border border-destructive/20 bg-destructive/5 p-4 text-sm leading-6"
-        >
-          <TriangleAlert className="mt-1 size-4 shrink-0 text-destructive" />
-          <p>
-            {errorText[error] ||
-              t(
-                "We couldn’t confirm this step. Your balance is not changed by an unconfirmed payment. Refresh or check payment before paying again.",
-                "تعذر تأكيد هذه الخطوة. لا يُضاف رصيد مقابل دفع غير مؤكد. حدّث الصفحة أو تحقق من الدفع قبل المحاولة مجددًا.",
-              )}
-          </p>
-        </div>
+        <FeedbackNote key={error} tone="error">
+          {errorText[error] ||
+            t(
+              "We couldn’t confirm this step. Your balance is not changed by an unconfirmed payment. Refresh or check payment before paying again.",
+              "تعذر تأكيد هذه الخطوة. لا يُضاف رصيد مقابل دفع غير مؤكد. حدّث الصفحة أو تحقق من الدفع قبل المحاولة مجددًا.",
+            )}
+        </FeedbackNote>
       )}
       {!data && !error ? (
         <div
@@ -487,20 +479,12 @@ export function ShippingWallet() {
             </div>
             <AnimatePresence>
               {checked && (
-                <motion.p
-                  role="status"
-                  initial={{ opacity: 0, y: reduce ? 0 : 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={TWEEN}
-                  className="mt-3 flex gap-2 text-sm"
-                >
-                  <Check className="size-4" />
+                <FeedbackNote key="checked" tone="success" className="mt-3">
                   {t(
                     "Check finished. Only verified payments are added; pending payments stay unchanged.",
                     "اكتمل التحقق. تُضاف المدفوعات المؤكدة فقط، وتبقى الدفعات المعلقة دون تغيير.",
                   )}
-                </motion.p>
+                </FeedbackNote>
               )}
             </AnimatePresence>
           </Panel>

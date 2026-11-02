@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { Package, Loader2, CheckCircle2, TriangleAlert } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import { Package, Loader2 } from "lucide-react";
+import { FeedbackNote } from "@/components/ui/feedback-note";
 import { useLanguage } from "@/components/language-provider";
-import { Panel, TWEEN } from "@/components/desk/primitives";
+import { Panel } from "@/components/desk/primitives";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,13 +38,14 @@ export function ShippingParcelForm({
   profiles: ParcelProfile[];
   onSaved: () => void;
 }) {
-  const { t } = useLanguage(),
-    reduce = useReducedMotion();
+  const { t } = useLanguage(); // reduced motion is handled inside FeedbackNote
   const [form, setForm] = useState({ ...empty }),
     [consent, setConsent] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(false),
-    [saved, setSaved] = useState(false);
+    [saved, setSaved] = useState(false),
+    // Changes on every approval so the success tick replays.
+    [savedAt, setSavedAt] = useState(0);
   const current = useRef(store),
     lock = useRef(false);
   current.current = store;
@@ -127,6 +129,7 @@ export function ShippingParcelForm({
       if (!r.ok) throw Error();
       if (current.current !== target) return;
       setSaved(true);
+      setSavedAt(Date.now());
       setConsent(false);
       onSaved();
     } catch {
@@ -243,20 +246,9 @@ export function ShippingParcelForm({
             )}
           </Button>
         </fieldset>
-        {(error || saved) && (
-          <motion.div
-            initial={reduce ? false : { opacity: 0, y: 3 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={TWEEN}
-            role={error ? "alert" : "status"}
-            className={`flex gap-2 rounded-xl p-3 text-sm leading-6 ${error ? "bg-review/10 text-review" : "bg-muted/60"}`}
-          >
-            {error ? (
-              <TriangleAlert className="mt-1 size-4 shrink-0" />
-            ) : (
-              <CheckCircle2 className="mt-1 size-4 shrink-0" />
-            )}
-            <span>
+        <AnimatePresence mode="wait" initial={false}>
+          {(error || saved) && (
+            <FeedbackNote key={error ? "error" : "saved-" + savedAt} tone={error ? "error" : "success"}>
               {error
                 ? t(
                     "We couldn’t save these details. Check the measurements and your Premium access. If another tab changed this parcel, reload the latest settings before trying again.",
@@ -266,9 +258,9 @@ export function ShippingParcelForm({
                     "Parcel details approved. No shipment was booked.",
                     "اعتُمدت تفاصيل الطرد. لم يُحجز شحن.",
                   )}
-            </span>
-          </motion.div>
-        )}
+            </FeedbackNote>
+          )}
+        </AnimatePresence>
       </div>
     </Panel>
   );

@@ -29,6 +29,7 @@ import { formatDateString, formatDateTimeString } from "@/lib/numerals";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { getWhatsAppStartUrl } from "@/lib/whatsapp";
+import { DrawTick } from "@/components/ui/feedback-note";
 
 /*
  * Integrations hub: where a merchant connects their store and shares returns.
@@ -514,7 +515,7 @@ function ReturnPageCard({ returnPath, t }: { returnPath: string | null; t: T }) 
             <button type="button" onClick={() => void copy()} aria-label={t("Copy link", "نسخ الرابط")} className="relative grid size-7 shrink-0 place-items-center rounded-lg transition-colors hover:bg-muted">
               <AnimatePresence initial={false} mode="wait">
                 {copied
-                  ? <motion.span key="ok" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ opacity: 0 }} transition={QUICK}><Check className="size-3.5 text-eligible" /></motion.span>
+                  ? <motion.span key="ok" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ opacity: 0 }} transition={QUICK}><DrawTick className="size-3.5 text-eligible" /></motion.span>
                   : <motion.span key="copy" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={QUICK}><Copy className="size-3.5" /></motion.span>}
               </AnimatePresence>
             </button>

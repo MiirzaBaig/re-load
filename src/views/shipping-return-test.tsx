@@ -10,7 +10,6 @@ import {
   Package,
   RefreshCw,
   ShieldCheck,
-  TriangleAlert,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { useLanguage } from "@/components/language-provider";
@@ -27,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FeedbackNote } from "@/components/ui/feedback-note";
 
 type Attempt = {
   id: string;
@@ -355,19 +355,13 @@ export function ReturnTest() {
         </p>
       </div>
       {error && (
-        <div
-          role="alert"
-          className="flex gap-3 rounded-2xl border border-destructive/20 bg-destructive/5 p-4 text-sm leading-6"
-        >
-          <TriangleAlert className="mt-1 size-4 shrink-0" />
-          <p>
-            {messages[error] ||
-              t(
-                "We couldn’t confirm this step. Refresh the saved attempt before trying again. No unconfirmed amount is marked as spent.",
-                "تعذر تأكيد هذه الخطوة. حدّث العملية المحفوظة قبل المحاولة مجددًا. لا يُسجل مبلغ غير مؤكد كمصروف.",
-              )}
-          </p>
-        </div>
+        <FeedbackNote key={error} tone="error">
+          {messages[error] ||
+            t(
+              "We couldn’t confirm this step. Refresh the saved attempt before trying again. No unconfirmed amount is marked as spent.",
+              "تعذر تأكيد هذه الخطوة. حدّث العملية المحفوظة قبل المحاولة مجددًا. لا يُسجل مبلغ غير مؤكد كمصروف.",
+            )}
+        </FeedbackNote>
       )}
       {!canManage && (
         <p className="rounded-2xl border p-4 text-sm">

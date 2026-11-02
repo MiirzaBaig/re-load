@@ -24,6 +24,7 @@ import type { ReturnCase } from "@/lib/domain";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/language-provider";
+import { DrawTick } from "@/components/ui/feedback-note";
 
 /*
  * Overview has two moods.
@@ -297,7 +298,7 @@ function ReturnLinkItem({ path, t }: { path: string; t: T }) {
       <button type="button" onClick={() => void copy()} aria-label={t("Copy return link", "نسخ رابط الإرجاع")} className="grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95">
         <AnimatePresence initial={false} mode="wait">
           {copied
-            ? <motion.span key="ok" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ opacity: 0 }} transition={QUICK}><Check className="size-3.5 text-eligible" /></motion.span>
+            ? <motion.span key="ok" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ opacity: 0 }} transition={QUICK}><DrawTick className="size-3.5 text-eligible" /></motion.span>
             : <motion.span key="copy" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={QUICK}><Copy className="size-3.5" /></motion.span>}
         </AnimatePresence>
       </button>

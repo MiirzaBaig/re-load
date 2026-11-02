@@ -11,6 +11,7 @@ import { useLanguage } from "@/components/language-provider";
 import { supabase } from "@/lib/supabase";
 import { KnowledgeLinkGuide } from "@/components/knowledge-link-guide";
 import { cn } from "@/lib/utils";
+import { DrawTick } from "@/components/ui/feedback-note";
 
 /** The link field and the text box trade places: one folds, the other opens. */
 const SWAP = { ...TWEEN, duration: 0.34 } as const;
@@ -172,7 +173,7 @@ export function KnowledgeImportDialog({
                       className="field-bare h-10 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/70" />
                     <AnimatePresence initial={false} mode="popLayout">
                       {valid
-                        ? <motion.span key="ok" initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.4, opacity: 0 }} transition={QUICK} className="me-1 grid size-8 place-items-center rounded-full bg-eligible-muted text-eligible"><Check className="size-4" /></motion.span>
+                        ? <motion.span key="ok" initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.4, opacity: 0 }} transition={QUICK} className="me-1 grid size-8 place-items-center rounded-full bg-eligible-muted text-eligible"><DrawTick className="size-4" /></motion.span>
                         : <motion.button key="paste" type="button" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={QUICK} onClick={() => void paste()}
                             className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-muted px-3 text-xs font-medium transition-colors hover:bg-muted/70 active:scale-[.98]"><ClipboardPaste className="size-3.5" />{t("Paste", "لصق")}</motion.button>}
                     </AnimatePresence>

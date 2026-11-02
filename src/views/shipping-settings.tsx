@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/select";
 import { shippingTestCouriers } from "@/lib/shipping/settings-contract";
 import { testDigits } from "@/lib/oto/return-contract";
+import { DrawTick, FeedbackNote } from "@/components/ui/feedback-note";
 
 type Form = {
   warehouseId: string;
@@ -554,6 +555,13 @@ export function ShippingSettings() {
                     </motion.div>
                   )}
                 </AnimatePresence>
+                <AnimatePresence initial={false}>
+                  {(saved === "warehouse" || saved === "recoverWarehouse") && (
+                    <FeedbackNote key="warehouse-verified" tone="success">
+                      {t("Warehouse verified. Choose it above to use it.", "تم التحقق من المستودع. اختره أعلاه لاستخدامه.")}
+                    </FeedbackNote>
+                  )}
+                </AnimatePresence>
                 {!data.warehouses.length && data.providerReady && (
                   <p className="text-sm text-muted-foreground">{t("No warehouse yet. Add one below, then choose it.", "ما فيه مستودع بعد. أضف واحد تحت ثم اختره.")}</p>
                 )}
@@ -1057,19 +1065,7 @@ function Step({ n, done, title, subtitle, summary, open, onOpen, onContinue, las
 function InlineError({ show, text }: { show: boolean; text: string }) {
   return (
     <AnimatePresence initial={false}>
-      {show && (
-        <motion.p
-          role="alert"
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={TWEEN}
-          className="flex items-start gap-2 overflow-hidden text-sm leading-6 text-destructive"
-        >
-          <TriangleAlert className="mt-1 size-4 shrink-0" />
-          {text}
-        </motion.p>
-      )}
+      {show && <FeedbackNote key={text} tone="error">{text}</FeedbackNote>}
     </AnimatePresence>
   );
 }
@@ -1119,10 +1115,7 @@ function ReadyItem({ ok, text, link }: { ok: boolean | null; text: string; link?
 }
 
 /** A check mark that draws itself when `play` is set. */
+/** Shared self-drawing tick (components/ui/feedback-note.tsx). */
 function DrawnCheck({ play }: { play: boolean }) {
-  return (
-    <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden="true">
-      <motion.path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" initial={play ? { pathLength: 0 } : false} animate={{ pathLength: 1 }} transition={{ duration: 0.45, ease: [0.2, 0, 0, 1], delay: 0.05 }} />
-    </svg>
-  );
+  return <DrawTick play={play} />;
 }

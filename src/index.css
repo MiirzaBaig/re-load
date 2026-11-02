@@ -6694,3 +6694,21 @@ html.dark .theme-v2 .btn-sweep,
 .ship-disclosure-body .admin-card > header { padding-top: 0; }
 .ship-step:not([data-open]) .ship-step-dot { transform: scale(0.88); }
 .ship-step-dot { transition: transform 300ms var(--ease-brand), background-color 300ms var(--ease-brand), color 300ms var(--ease-brand), box-shadow 300ms var(--ease-brand); }
+
+/* Shared success tick (feedback-note.tsx): one soft ring breathes out as the
+   tick finishes drawing, then everything stays still. */
+.feedback-check-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--eligible) 45%, transparent);
+  animation: feedback-ring 700ms var(--ease-brand) both;
+  pointer-events: none;
+}
+@keyframes feedback-ring {
+  from { box-shadow: 0 0 0 0 color-mix(in oklab, var(--eligible) 45%, transparent); }
+  to { box-shadow: 0 0 0 8px color-mix(in oklab, var(--eligible) 0%, transparent); }
+}
+/* In dark mode the green tile needs a little more lift to read as success. */
+.dark .feedback-success { border-color: color-mix(in oklab, var(--eligible) 32%, transparent); }
+@media (prefers-reduced-motion: reduce) { .feedback-check-ring { display: none; } }

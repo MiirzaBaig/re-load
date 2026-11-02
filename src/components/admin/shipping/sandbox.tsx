@@ -13,7 +13,6 @@ import {
   RefreshCw,
   ShieldCheck,
   Truck,
-  TriangleAlert,
 } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
 import { Button } from "@/components/ui/button";
@@ -36,6 +35,7 @@ import {
   type SandboxQuotes,
   type CourierRate,
 } from "@/lib/oto/contracts";
+import { FeedbackNote } from "@/components/ui/feedback-note";
 
 const initial: QuoteInput = {
   originCity: "Riyadh",
@@ -358,28 +358,13 @@ export function ShippingSandbox({
       </Panel>
       <AnimatePresence initial={false}>
         {error && (
-          <motion.div
-            role="alert"
-            initial={{ opacity: 0, y: reduced ? 0 : 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={TWEEN}
-            className="flex gap-3 rounded-2xl border border-destructive/20 bg-destructive/5 p-4 text-sm"
-          >
-            <TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
-            <div>
-              <p className="font-medium">
-                {t("This step needs attention", "تحتاج هذه الخطوة إلى مراجعة")}
-              </p>
-              <p className="mt-1 leading-6 text-muted-foreground">
-                {errorCopy[error] ??
-                  t(
-                    "We couldn’t get a confirmed response from OTO. No shipment was created. Try this check again.",
-                    "تعذر تأكيد رد أوتو. لم يتم إنشاء شحنة. أعد محاولة التحقق.",
-                  )}
-              </p>
-            </div>
-          </motion.div>
+          <FeedbackNote key={error} tone="error" title={t("This step needs attention", "تحتاج هذه الخطوة إلى مراجعة")}>
+            {errorCopy[error] ??
+              t(
+                "We couldn’t get a confirmed response from OTO. No shipment was created. Try this check again.",
+                "تعذر تأكيد رد أوتو. لم يتم إنشاء شحنة. أعد محاولة التحقق.",
+              )}
+          </FeedbackNote>
         )}
       </AnimatePresence>
       {busy === "quote" && (
