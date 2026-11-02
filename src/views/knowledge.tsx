@@ -176,7 +176,7 @@ export function KnowledgePage() {
       if (!(event.metaKey || event.ctrlKey) || busy !== null) return;
       // Not while a dialog (import, confirm) is open on top of the page.
       if (document.querySelector('[role="dialog"], [role="alertdialog"]')) return;
-      if (event.key.toLowerCase() === "s") { event.preventDefault(); void save(false); }
+      if (event.key?.toLowerCase() === "s") { event.preventDefault(); void save(false); }
       if (event.key === "Enter" && editorRef.current?.contains(event.target as Node)) { event.preventDefault(); void save(true); }
     };
     window.addEventListener("keydown", onKey);

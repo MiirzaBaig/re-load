@@ -48,7 +48,8 @@ export function CommandPalette() {
   useEffect(() => {
     setIsMac(/Mac|iPhone|iPad/.test(navigator.platform));
     const onKey = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey)) {
+      // Autofill and some IMEs send keydown without a key name.
+      if (event.key?.toLowerCase() === "k" && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         setOpen((value) => !value);
       }

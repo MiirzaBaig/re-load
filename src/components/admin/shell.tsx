@@ -124,7 +124,7 @@ export function AdminShell({ initial, ...data }: AdminData & { initial: DeskStat
   const pendingG = useRef(0);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setPaletteOpen((open) => !open); return; }
+      if ((event.metaKey || event.ctrlKey) && event.key?.toLowerCase() === "k") { event.preventDefault(); setPaletteOpen((open) => !open); return; }
       const target = event.target as HTMLElement;
       if (event.metaKey || event.ctrlKey || event.altKey || target.closest("input, textarea, select, [contenteditable=true]") || document.querySelector("[role=dialog]")) return;
       if (event.key === "/") {
