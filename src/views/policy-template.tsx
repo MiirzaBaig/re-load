@@ -6,6 +6,7 @@ import { POLICY_CATEGORIES, type PolicyCategory } from "@/lib/policy-presets";
 import { SchemaGraph, baseGraph, breadcrumb } from "@/components/public-schema";
 import { ReturnPolicyGenerator } from "@/components/return-policy-generator";
 import { Crumbs } from "@/views/public-guides";
+import { PrintHeader } from "@/components/print-header";
 
 // The general template and each store-type template share this page.
 export function policyPath(locale: Locale, category?: PolicyCategory) {
@@ -39,6 +40,7 @@ export function PolicyTemplatePage({ locale, category }: { locale: Locale; categ
         ]}
       />
       <div className="mx-auto max-w-6xl px-5 pb-20 pt-14 sm:pt-20">
+        <PrintHeader print="faisaliah">
         <Crumbs locale={locale} items={category ? [[root[0], root[1]], [category.name[i]]] : [[root[0]]]} />
         <h1 className="max-w-3xl font-display text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">{heading}</h1>
         <p className="mt-5 max-w-2xl text-base leading-8 text-muted-foreground">
@@ -48,6 +50,7 @@ export function PolicyTemplatePage({ locale, category }: { locale: Locale; categ
               ? "اختر مدة الإرجاع، وحالة المنتج المقبولة، والاستثناءات، وطريقة الاسترداد، ومن يتحمل تكلفة الشحن. تظهر سياسة الاسترجاع والاستبدال جاهزة بالعربية أو الإنجليزية لتنسخها إلى متجرك على أي منصة. مجانًا وبدون تسجيل."
               : "Choose your return window, accepted condition, exclusions, refund method and who pays shipping. Your return and exchange policy appears ready in Arabic or English to copy into your store on any platform. Free, no sign-up."}
         </p>
+        </PrintHeader>
         {category && (
           <ul className="mt-8 max-w-2xl space-y-3">
             {category.tips.map((tip) => (

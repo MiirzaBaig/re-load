@@ -12,6 +12,13 @@ Brand System 3.0 is monochrome first. Light mode is ink `#0F0F12` on off-white `
 
 Sora is used for display headings. Manrope is used for body copy, labels, navigation, tables, and forms. Both are bundled through Fontsource with system fallbacks.
 
+Arabic (updated 2026-11-01) uses one family, Thmanyah Sans, for body and headings (`src/lib/fonts.ts`, rules under `html[dir="rtl"]` in `src/index.css`):
+
+- Thmanyah only covers Arabic characters (`unicode-range`), so digits, English words and brand names inside Arabic text render in Manrope. It is preloaded with a very short block period, so headings do not flash in a system font.
+- Large titles (H1, H2) use Regular (400); smaller headings use Medium (500); `font-semibold` maps to Medium in Arabic, because Thmanyah Bold is heavier than Latin semi-bold. Bold stays for true emphasis.
+- Headings use line-height 1.45 and balanced wrapping; body uses 1.75 and avoids single-word last lines. Letter-spacing and uppercase are always off in Arabic.
+- Thmanyah Serif Display is registered but unused; do not reintroduce a second Arabic family without a reason.
+
 ## Layout
 
 Public marketing content uses a maximum width near 1200px. Merchant content uses a maximum width near 1280px with a stable sidebar. Customer forms use a maximum width near 520px. Mobile flows stack content and keep primary actions full width.

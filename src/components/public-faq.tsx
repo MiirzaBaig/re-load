@@ -13,9 +13,10 @@ const EASE = "cubic-bezier(0.2, 0, 0, 1)";
 
 type ItemHandle = { el: HTMLDetailsElement; close: () => void };
 
-export function PublicFaq({ full = false }: { full?: boolean }) {
+/** only: show just these questions (matched by their English wording), e.g. on a solution page. */
+export function PublicFaq({ full = false, only }: { full?: boolean; only?: string[] }) {
   const { t, isArabic, locale } = useLanguage();
-  const items = full ? PUBLIC_FAQS : PUBLIC_FAQS.slice(0, 5);
+  const items = only ? PUBLIC_FAQS.filter((f) => only.includes(f.q[0])) : full ? PUBLIC_FAQS : PUBLIC_FAQS.slice(0, 5);
   // One question open at a time: opening one gently closes the others.
   const handles = useRef(new Map<number, ItemHandle>());
   const register = useCallback((index: number, handle: ItemHandle | null) => {

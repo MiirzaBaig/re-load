@@ -127,3 +127,14 @@ Latest visual follow-up: hub mark/animation polish and hidden duplicate outcome-
 Standard and Premium both include customer support, product help and returns. Updated public setup instructions and pricing prose that still described support as Premium-only. Prices, URLs, metadata structure, Salla wording and upcoming checkout/shipping status are unchanged. This copy update does not claim purchase creation or shipping is live.
 
 Validation: production build and public SEO assertions passed; browser pricing checks in Arabic/English at 1440px and 390px had no page errors or horizontal overflow. No public URL/schema change. Search indexing and external analytics acceptance remain external.
+
+## Theme v2 trial and inner pages refresh — 2026-10-31 (Claude, owner-approved trial, local only)
+
+- One switch: `theme-v2` on the public site root (`src/layouts/public-layout.tsx`). Remove it to return to the previous black-and-white look; all new styling in `src/index.css` is gated by it.
+- Visual only, no new URLs: Riyadh sand neutrals, deep palm-green bands, dithered Riyadh prints (hero, final CTA, inner-page headers, guide thumbnails; Unsplash License photos, `scripts/dither-print.py`), scroll-fill heading and button sweep. Print images are decorative (`alt=""`, `aria-hidden`).
+- Content changes: footer tagline now "Customer support, product help and returns on WhatsApp"; `/interest` headline and meta description match the current positioning (event sign-up form unchanged); pricing page no longer shows a second "Simple pricing" heading (the page H1 stays the only title).
+- How it works: steps are an open timeline and the shoe-return example is the interactive phone demo; the example paragraph text is kept as the demo intro, so the indexable copy is unchanged.
+- Solution pages: same H1/description; added the matching demo scenes and three related FAQ questions each (from `PUBLIC_FAQS`), plus the print header. Sales shows the product scene only, as checkout is not live.
+- Guides index: reading time computed from each guide's own word count; thumbnail per guide.
+- Verified: `SEO_CHECK_ORIGIN=http://localhost:8080 node scripts/check-public-seo.mjs` (47 checks pass; the default port 3000 now belongs to another local project), TypeScript, production build, browser checks EN/AR, light/dark, 1440/390 with no horizontal overflow or console errors. Not committed or deployed.
+- Share images (same day): `public/brand/reload-share-{ar,en}.png` redrawn in the print style (Kingdom Centre print, homepage headline, green "on WhatsApp"), 1200 × 630, about 50 KB each so WhatsApp shows the preview. Same URLs, so metadata and the SEO check are unchanged. Previous images kept as `reload-share-*-v1.png`; new generator `scripts/generate-share-images-v2.mjs`. Social apps cache previews: after deploy, refresh with Meta's Sharing Debugger (WhatsApp/Facebook), LinkedIn Post Inspector and an X card check.

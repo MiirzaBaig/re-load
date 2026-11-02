@@ -93,9 +93,12 @@ export function SiteFooter() {
               </span>
             </Link>
             <p className="mt-4 max-w-[280px] text-sm leading-6 text-footer-muted">
+              {/* Previous tagline (returns-only), kept for revert:
+                "Return decisions in minutes, from your own policy. Built for online stores in Saudi Arabia."
+                "قرارات الإرجاع في دقائق، من سياستك أنت. صُمم للمتاجر الإلكترونية في السعودية." */}
               {t(
-                "Return decisions in minutes, from your own policy. Built for online stores in Saudi Arabia.",
-                "قرارات الإرجاع في دقائق، من سياستك أنت. صُمم للمتاجر الإلكترونية في السعودية.",
+                "Customer support, product help and returns on WhatsApp. Built for online stores in Saudi Arabia.",
+                "خدمة العملاء والمساعدة في المنتجات والمرتجعات على واتساب. صُمم للمتاجر الإلكترونية في السعودية.",
               )}
             </p>
             <EmailChip t={t} />

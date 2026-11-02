@@ -9,6 +9,7 @@ import { PublicPricing } from "@/components/public-pricing";
 import { SeoProse } from "@/components/seo-prose";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { HeroTagline } from "@/components/hero-tagline";
@@ -244,11 +245,38 @@ export function LandingPage() {
 
   return (
     <div className="overflow-x-clip bg-background">
-      {/* Hero — an inset card floating on the page, nav included by the
-          layout. Centred copy, no imagery: the card itself is the object. */}
+      {/* Decorative photographic print stays separate from the semantic copy. */}
       <section id="whatsapp" className="hero-shell scroll-mt-24">
         <div className="hero-card">
-          <div className="hero-aurora" aria-hidden="true" />
+          <div className="hero-photo" aria-hidden="true">
+            {/* Preview (owner, 2026-10-31): dithered Riyadh print instead of Codex's
+                planned packing photo (file not added yet). Previous source, kept for revert:
+                src="/brand/reload-packing-dither-v1.webp" quality={85}
+                Served unoptimized so resizing never smears the dither dots.
+                Photo: Kingdom Centre, Riyadh, by Ibrahim Abdullah (Unsplash License),
+                4-tone ordered dither with 3x dots. */}
+            <Image
+              src="/brand/hero-riyadh-kingdom.png"
+              alt=""
+              fill
+              preload
+              unoptimized
+              sizes="100vw"
+              className="hero-photo-image"
+            />
+            <div className="hero-photo-shade" />
+          </div>
+          {/* Like a location caption on a print: bottom corner of the card,
+              appearing once the headline has landed. */}
+          <motion.p
+            variants={heroItem}
+            initial="hidden"
+            animate={heroIntroDone ? "visible" : "hidden"}
+            className="hero-badge-corner hidden items-center gap-2 rounded-full border border-white/12 bg-black/25 py-1 pe-3.5 ps-1.5 text-[13px] font-medium !text-white/80 backdrop-blur-[2px] sm:inline-flex"
+          >
+            <span className="hero-badge-dot" aria-hidden="true" />
+            {t("For online stores in Saudi Arabia", "للمتاجر الإلكترونية في السعودية")}
+          </motion.p>
           <motion.div
             initial="hidden"
             animate="visible"
@@ -258,7 +286,15 @@ export function LandingPage() {
             {/* Badge used to be the H1 (owner, 2026-10-20: the headline below is the H1 now). Previous text, kept for revert:
                 t("A smart platform for customer support and returns on WhatsApp", "منصة ذكية لخدمة العملاء وإدارة المرتجعات على واتساب")
                 t("WhatsApp customer support and returns for Saudi stores", "خدمة العملاء والمرتجعات عبر واتساب للمتاجر السعودية") */}
+            {/* Moved to the card's bottom corner (owner, 2026-10-31) so it no longer
+                sits on the tower. Previous placement, kept for revert:
             <motion.p variants={heroItem} className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] py-1 pe-3.5 ps-1.5 text-[13px] font-medium !text-white/75">
+              <span className="hero-badge-dot" aria-hidden="true" />
+              {t("For online stores in Saudi Arabia", "للمتاجر الإلكترونية في السعودية")}
+            </motion.p> */}
+
+            {/* Phones: the badge sits above the headline (the corner one is hidden there). */}
+            <motion.p variants={heroItem} className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/25 py-1 pe-3.5 ps-1.5 text-[13px] font-medium !text-white/80 sm:hidden">
               <span className="hero-badge-dot" aria-hidden="true" />
               {t("For online stores in Saudi Arabia", "للمتاجر الإلكترونية في السعودية")}
             </motion.p>
@@ -277,21 +313,32 @@ export function LandingPage() {
               variants={heroItem}
               initial="hidden"
               animate={heroIntroDone ? "visible" : "hidden"}
-              className="flex flex-wrap items-center justify-center gap-3"
+              className="flex flex-col items-center justify-center gap-4 sm:flex-row sm:flex-wrap sm:gap-3"
             >
-              <Button asChild size="lg" className="group bg-white text-[#0F0F12] hover:bg-white/90">
+              <Button asChild size="lg" className="btn-sweep group bg-white text-[#0F0F12] hover:bg-white/90 max-sm:h-12 max-sm:px-8 max-sm:text-[15px]">
                 <a href="#contact">
                   {/* Previous label: t("Sign up now", "سجّل الآن") */}
                   {t("Try Reload", "جرّب ريلود")}
                   <ArrowRight className={cn("size-4 transition-transform", isArabic ? "rotate-180 group-hover:-translate-x-1" : "group-hover:translate-x-1")} />
                 </a>
               </Button>
-              <Button asChild variant="outline" size="lg" className="border-white/20 bg-white/[0.04] text-white hover:border-white/40 hover:bg-white/[0.1] hover:text-white">
+              {/* Phones: one main button; WhatsApp becomes a quiet text link
+                  (the floating WhatsApp button is always there too). */}
+              <Button asChild variant="outline" size="lg" className="hidden border-white/20 bg-white/[0.04] text-white hover:border-white/40 hover:bg-white/[0.1] hover:text-white sm:inline-flex">
                 <a href={getWhatsAppPublicUrl()} target="_blank" rel="noopener noreferrer">
                   <WhatsAppLogo className="size-4" />
                   {t("Reload on WhatsApp", "ريلود على واتساب")}
                 </a>
               </Button>
+              <a
+                href={getWhatsAppPublicUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm font-medium !text-white/80 underline decoration-white/30 underline-offset-4 sm:hidden"
+              >
+                <WhatsAppLogo className="size-4" />
+                {t("Or ask us on WhatsApp", "أو اسألنا على واتساب")}
+              </a>
             </motion.div>
 
             {SHOW_HERO_TRUST_ROW && (
@@ -812,9 +859,14 @@ export function LandingPage() {
       <HomepageContact /> */}
       <SeoProse variant="home" />
 
-      {/* Final CTA */}
-      <section>
-        <div className="mx-auto max-w-[1200px] px-5 py-20 md:py-28">
+      {/* Final CTA. With theme-v2 it becomes a deep green band over a green
+          dithered Riyadh print (Faisaliah Tower and the King Fahd Library square,
+          photo by Tati Odintsova, Unsplash License); without it, unchanged. */}
+      <section className="band-green cta-band">
+        <div className="cta-print" aria-hidden="true">
+          <img src="/brand/cta-riyadh-green.png" alt="" loading="lazy" decoding="async" />
+        </div>
+        <div className="relative mx-auto max-w-[1200px] px-5 py-20 md:py-28">
           <ScrollReveal>
             <div className="flex flex-col items-center gap-6 text-center">
               <h2 className="font-display text-3xl font-semibold tracking-[-0.02em] text-foreground md:text-[40px] md:leading-[1.1] text-balance">
@@ -843,7 +895,7 @@ export function LandingPage() {
               </a>
               )}
               <div className="flex flex-wrap justify-center gap-3">
-                <Button asChild size="lg" className="group">
+                <Button asChild size="lg" className="btn-sweep group">
                   <a href="#contact">
                     {t("Sign up now", "سجّل الآن")}
                     <ArrowRight className={cn("size-4 transition-transform", isArabic ? "rotate-180 group-hover:-translate-x-1" : "group-hover:translate-x-1")} />

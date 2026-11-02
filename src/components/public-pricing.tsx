@@ -50,7 +50,8 @@ function RollingNumber({ value, decimals }: { value: number; decimals: number })
   return <span>{fmt(shown, decimals)}</span>;
 }
 
-export function PublicPricing() {
+/** heading=false hides the section intro where the page already has its own title (the pricing page). */
+export function PublicPricing({ heading = true }: { heading?: boolean } = {}) {
   const [interval, setIntervalChoice] = useState<"monthly" | "annual">("monthly");
   const { t, locale } = useLanguage();
   const reduce = useSsrReducedMotion();
@@ -93,9 +94,10 @@ export function PublicPricing() {
   ];
 
   return (
-    <section id="pricing" className="scroll-mt-24 border-y bg-background">
-      <div className="mx-auto max-w-5xl px-5 py-20 md:py-28">
+    <section id="pricing" className={cn("scroll-mt-24 border-y bg-background", !heading && "border-t-0")}>
+      <div className={cn("mx-auto max-w-5xl px-5 py-20 md:py-28", !heading && "pt-4 md:pt-6")}>
         {/* Header */}
+        {heading && (
         <ScrollReveal>
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-medium text-muted-foreground">{t("Pricing", "الأسعار")}</p>
@@ -110,10 +112,11 @@ export function PublicPricing() {
             </p>
           </div>
         </ScrollReveal>
+        )}
 
         {/* Billing switch */}
         <ScrollReveal delay={60}>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+          <div className={cn("flex flex-wrap items-center justify-center gap-3", heading && "mt-10")}>
             <Segmented
               label={t("Billing frequency", "مدة الاشتراك")}
               value={interval}

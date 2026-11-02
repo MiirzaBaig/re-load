@@ -226,7 +226,9 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   return (
-    <div className="public-site flex min-h-svh flex-col">
+    // theme-v2 (owner trial, 2026-10-31): sand neutrals, deep green bands,
+    // dithered prints and button sweep. Remove the class to revert all of it.
+    <div className="public-site theme-v2 flex min-h-svh flex-col">
       <PublicAnalytics />
       <IntroSplash />
       <header
@@ -307,7 +309,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
                         <Button
                           asChild
                           size="sm"
-                          className="nav-cta rounded-full px-4"
+                          className="nav-cta btn-sweep rounded-full px-4"
                         >
                           {/* Was: WhatsApp link, "Get started" / "ابدأ الآن" */}
                           <Link href={tryReloadHref}>
@@ -319,14 +321,16 @@ export function PublicLayout({ children }: { children: ReactNode }) {
                   </>
                 )}
               </div>
-              <LanguageToggle compact className="size-8" />
-              <ModeToggle className="size-8" />
+              {/* Phones (owner, 2026-10-31): only the logo and one round menu
+                  button in the bar; language and theme live in the menu. */}
+              <LanguageToggle compact className="hidden size-8 sm:inline-flex" />
+              <ModeToggle className="hidden size-8 sm:grid" />
               <button
                 type="button"
                 onClick={() => setMenuOpen((open) => !open)}
                 aria-expanded={menuOpen}
                 aria-controls="mobile-menu"
-                className="nav-ghost menu-toggle grid size-8 place-items-center rounded-full lg:hidden"
+                className="nav-ghost menu-toggle menu-toggle-round grid size-8 place-items-center rounded-full lg:hidden"
                 data-open={menuOpen}
               >
                 {/* Both icons stay mounted and cross-fade, so the swap eases
@@ -381,6 +385,14 @@ export function PublicLayout({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="mt-auto flex flex-col gap-2 px-6 pb-10 pt-8">
+          {/* Phones only: the language and theme switches moved here from the bar. */}
+          <div
+            style={{ ["--i" as string]: String(navLinks.length) }}
+            className="mobile-menu-item mb-4 flex items-center justify-between rounded-full border border-border/70 px-2 py-1.5 sm:hidden"
+          >
+            <LanguageToggle className="h-9 rounded-full px-4" />
+            <ModeToggle className="size-9" />
+          </div>
           {auth.user ? (
             <Button
               style={{ ["--i" as string]: String(navLinks.length + 1) }}

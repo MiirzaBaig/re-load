@@ -4,6 +4,7 @@ import type { Locale } from "@/lib/locale-server";
 import { GUIDES, GUIDES_COPY, type Guide } from "@/lib/public-guides";
 import { publicPath } from "@/lib/public-site";
 import { TOOL_COPY } from "@/lib/public-guides";
+import { PrintHeader } from "@/components/print-header";
 
 // Server-rendered on purpose: every word is in the HTML crawlers receive.
 
@@ -74,33 +75,59 @@ function Cta({ locale }: { locale: Locale }) {
   );
 }
 
+/** Reading time from the guide's own words in this language (about 200 words a minute). */
+function readMinutes(guide: Guide, i: 0 | 1) {
+  const parts = [guide.intro[i], ...guide.sections.flatMap((s) => [s.heading[i], ...s.body.map((p) => p[i]), ...(s.list ?? []).map((p) => p[i])])];
+  const words = parts.join(" ").split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 200));
+}
+function readLabel(minutes: number, ar: boolean) {
+  if (!ar) return `${minutes} min read`;
+  // Arabic counts: one and two minutes have their own words.
+  if (minutes === 1) return "قراءة دقيقة";
+  if (minutes === 2) return "قراءة دقيقتين";
+  return `قراءة ${minutes} ${minutes <= 10 ? "دقائق" : "دقيقة"}`;
+}
+/* Thumbnail prints, in guide order; the template link uses the last one. */
+const GUIDE_PRINTS = ["faisaliah", "square-green", "twisted", "kingdom"] as const;
+
 export function GuidesIndex({ locale }: { locale: Locale }) {
   const i = locale === "ar" ? 1 : 0;
   const copy = GUIDES_COPY[locale];
   return (
     <article className="mx-auto max-w-3xl px-5 pb-20 pt-14 sm:pt-20">
+      <PrintHeader print="twisted">
       <Crumbs locale={locale} items={[[i ? "الأدلة" : "Guides"]]} />
       <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">{copy.heading}</h1>
       <p className="mt-5 text-base leading-8 text-muted-foreground">{copy.description}</p>
+      </PrintHeader>
       <ul className="mt-12 divide-y border-y">
-        {GUIDES.map((g) => (
+        {GUIDES.map((g, n) => (
           <li key={g.slug}>
-            <Link href={`/${locale}/guides/${g.slug}`} className="group block py-7">
-              <h2 className="text-lg font-semibold leading-snug transition-colors group-hover:text-foreground/80">
-                {g.title[i]}
-              </h2>
-              <p className="mt-2 text-sm leading-7 text-muted-foreground">{g.description[i]}</p>
-              <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium">
-                {i ? "اقرأ الدليل" : "Read the guide"}
-                <ArrowUpRight className="size-3.5 transition-transform group-hover:-translate-y-0.5 rtl:-scale-x-100" />
-              </span>
+            <Link href={`/${locale}/guides/${g.slug}`} className="guide-row group block py-7">
+              <span className="guide-thumb" aria-hidden="true"><img src={`/brand/prints/${GUIDE_PRINTS[n % GUIDE_PRINTS.length]}.png`} alt="" loading="lazy" decoding="async" /></span>
+              <div>
+                <span className="block text-xs text-muted-foreground">{readLabel(readMinutes(g, i), i === 1)}</span>
+                <h2 className="mt-1.5 text-lg font-semibold leading-snug transition-colors group-hover:text-foreground/80">
+                  {g.title[i]}
+                </h2>
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">{g.description[i]}</p>
+                <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium">
+                  {i ? "اقرأ الدليل" : "Read the guide"}
+                  <ArrowUpRight className="size-3.5 transition-transform group-hover:-translate-y-0.5 rtl:-scale-x-100" />
+                </span>
+              </div>
             </Link>
           </li>
         ))}
         <li>
-          <Link href={`/${locale}/return-policy-template`} className="group block py-7">
-            <h2 className="text-lg font-semibold leading-snug">{TOOL_COPY[locale].heading}</h2>
-            <p className="mt-2 text-sm leading-7 text-muted-foreground">{TOOL_COPY[locale].description}</p>
+          <Link href={`/${locale}/return-policy-template`} className="guide-row group block py-7">
+            <span className="guide-thumb" aria-hidden="true"><img src="/brand/prints/kingdom.png" alt="" loading="lazy" decoding="async" /></span>
+            <div>
+              <span className="block text-xs text-muted-foreground">{i ? "أداة مجانية" : "Free tool"}</span>
+              <h2 className="mt-1.5 text-lg font-semibold leading-snug">{TOOL_COPY[locale].heading}</h2>
+              <p className="mt-2 text-sm leading-7 text-muted-foreground">{TOOL_COPY[locale].description}</p>
+            </div>
           </Link>
         </li>
       </ul>
@@ -114,11 +141,13 @@ export function GuideArticle({ locale, guide }: { locale: Locale; guide: Guide }
   const date = new Intl.DateTimeFormat(i ? "ar-SA-u-nu-latn" : "en-GB", { dateStyle: "long" }).format(new Date(guide.published));
   return (
     <article className="mx-auto max-w-3xl px-5 pb-20 pt-14 sm:pt-20">
+      <PrintHeader print="faisaliah">
       <Crumbs locale={locale} items={[[i ? "الأدلة" : "Guides", `/${locale}/guides`], [guide.title[i]]]} />
       <h1 className="font-display text-3xl font-semibold leading-tight tracking-tight sm:text-[44px]">{guide.title[i]}</h1>
       <p className="mt-4 text-xs text-muted-foreground">
         {i ? "فريق ريلود" : "Reload team"} · <time dateTime={guide.published}>{date}</time>
       </p>
+      </PrintHeader>
       <p className="mt-8 text-lg leading-9 text-foreground/90">{guide.intro[i]}</p>
       {guide.sections.map((section) => (
         <section key={section.heading[0]} className="mt-12">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import {
   ArrowUpRight,
@@ -65,13 +65,22 @@ const PILL: Record<Mood, string> = {
   info: "bg-foreground text-background",
 };
 
-export function ConversationDemo() {
+/**
+ * only: show just these scenarios (by key), e.g. the returns ones on a returns
+ * page. header: a custom intro, or null for none. With no props it is the
+ * homepage demo, unchanged.
+ */
+export function ConversationDemo({ only, header, id = "demo" }: {
+  only?: Array<"product" | "buy" | "accepted" | "review" | "outside">;
+  header?: { eyebrow: string; title: ReactNode; intro?: string } | null;
+  id?: string;
+} = {}) {
   const { t } = useLanguage();
   const reduce = useSsrReducedMotion();
   const root = useRef<HTMLDivElement>(null);
   const inView = useInView(root, { amount: 0.12 });
 
-  const scenarios: Scenario[] = [
+  const allScenarios: Scenario[] = [
     {
       key: "product",
       label: t("Product question", "سؤال عن منتج"),
@@ -165,6 +174,7 @@ export function ConversationDemo() {
       ],
     },
   ];
+  const scenarios = only ? allScenarios.filter((sc) => only.includes(sc.key as NonNullable<typeof only>[number])) : allScenarios;
 
   const [active, setActive] = useState(0);
   const [shown, setShown] = useState(0); // messages visible
@@ -252,12 +262,21 @@ export function ConversationDemo() {
   const msgs = [...s.msgs.slice(0, shown), ...(followUp ? [followUp] : [])];
 
   return (
-    <section id="demo" className="scroll-mt-24" aria-labelledby="demo-title">
-      <div className="mx-auto max-w-[1200px] px-5 py-20 md:py-28">
+    <section id={id} className="scroll-mt-24" aria-labelledby={header === null ? undefined : `${id}-title`} aria-label={header === null ? t("Example conversation", "مثال محادثة") : undefined}>
+      <div className={cn("mx-auto max-w-[1200px] px-5", header === null ? "py-6" : "py-20 md:py-28")}>
+        {header ? (
+        <ScrollReveal>
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-sm font-medium text-muted-foreground">{header.eyebrow}</p>
+            <h2 id={`${id}-title`} className="mt-3 font-display text-3xl font-semibold tracking-[-0.025em] text-balance md:text-[42px] md:leading-[1.15]">{header.title}</h2>
+            {header.intro && <p className="mt-4 text-base leading-8 text-muted-foreground">{header.intro}</p>}
+          </div>
+        </ScrollReveal>
+        ) : header === null ? null : (
         <ScrollReveal>
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-medium text-muted-foreground">{t("More than an auto-reply", "مو مجرد رد آلي")}</p>
-            <h2 id="demo-title" className="mt-3 font-display text-3xl font-semibold tracking-[-0.025em] text-balance md:text-[42px] md:leading-[1.15]">
+            <h2 id={`${id}-title`} className="mt-3 font-display text-3xl font-semibold tracking-[-0.025em] text-balance md:text-[42px] md:leading-[1.15]">
               {t("Reload doesn’t just reply. ", "ريلود ما يكتفي بالرد، ")}
               <Tone>{t("It settles the request.", "يحسم الطلب.")}</Tone>
             </h2>
@@ -267,10 +286,12 @@ export function ConversationDemo() {
             </p>
           </div>
         </ScrollReveal>
+        )}
 
         <div ref={root}>
           <ScrollReveal delay={60}>
-            <div ref={tabsRef} role="tablist" aria-label={t("Situations", "المواقف")} className="demo-tabs mx-auto mt-10">
+            {/* A single scenario needs no tabs. */}
+            <div ref={tabsRef} role="tablist" aria-label={t("Situations", "المواقف")} className={cn("demo-tabs mx-auto", header === null ? "mt-2" : "mt-10", scenarios.length < 2 && "hidden")}>
               {scenarios.map((sc, n) => (
                 <button
                   key={sc.key}
@@ -600,8 +621,13 @@ export function WhyReload() {
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-medium text-muted-foreground">{t("Why Reload?", "ليش ريلود؟")}</p>
             <h2 id="why-title" className="mt-3 font-display text-3xl font-semibold tracking-[-0.025em] text-balance md:text-[42px] md:leading-[1.15]">
+              {/* Previous two-tone heading, kept for revert:
               {t("Faster support, ", "خدمة عملاء أسرع، ")}
-              <Tone>{t("for less cost and effort.", "بتكلفة وجهد أقل.")}</Tone>
+              <Tone>{t("for less cost and effort.", "بتكلفة وجهد أقل.")}</Tone> */}
+              <ScrollFill parts={[
+                { text: t("Faster support,", "خدمة عملاء أسرع،") },
+                { text: t("for less cost and effort.", "بتكلفة وجهد أقل."), tone: true },
+              ]} />
             </h2>
           </div>
         </ScrollReveal>
@@ -635,7 +661,7 @@ export function TrustReload() {
     { Icon: Languages, title: t("Saudi, and speaks your customers' language", "سعودي ويتكلم لغة عملائك"), body: t("Made in Saudi Arabia, replying in Saudi Arabic or English, whichever your customer uses.", "صُنع في السعودية، ويرد بالعربي السعودي أو الإنجليزي حسب لغة عميلك.") },
   ];
   return (
-    <section className="scroll-mt-24" aria-labelledby="trust-title">
+    <section className="band-green scroll-mt-24" aria-labelledby="trust-title">
       <div className="mx-auto max-w-[1200px] px-5 py-20 md:py-28">
         <ScrollReveal>
           <div className="mx-auto max-w-2xl text-center">
@@ -752,7 +778,7 @@ export function QuickContact() {
                 {/* Left empty by people; bots that fill it are dropped by the server. */}
                 <input name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
                 {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-                <Button type="submit" size="lg" className="h-11 w-full" disabled={state === "sending"}>
+                <Button type="submit" size="lg" className="btn-sweep h-11 w-full" disabled={state === "sending"}>
                   {state === "sending" && <Loader2 className="size-4 animate-spin" />}
                   {t("Contact me", "تواصلوا معي")}
                 </Button>
@@ -765,5 +791,29 @@ export function QuickContact() {
         </ScrollReveal>
       </div>
     </section>
+  );
+}
+
+/* Words that fill from grey to full ink as the heading scrolls through the
+   screen (theme-v2, Chrome/Edge/Safari with scroll-driven animations). Without
+   theme-v2 or that support, it reads as the original two-tone heading: the
+   `tone` part keeps the quieter grey. Words are never split inside, so Arabic
+   shaping stays intact. */
+function ScrollFill({ parts }: { parts: Array<{ text: string; tone?: boolean }> }) {
+  let index = 0;
+  return (
+    <span className="sf">
+      {parts.map((part, p) => (
+        <span key={p} className={part.tone ? "heading-tone" : undefined}>
+          {p > 0 && " "}
+          {part.text.split(/\s+/).filter(Boolean).map((word, w) => (
+            <span key={w}>
+              {w > 0 && " "}
+              <span className="sf-word" style={{ ["--sf-i" as string]: index++ }}>{word}</span>
+            </span>
+          ))}
+        </span>
+      ))}
+    </span>
   );
 }

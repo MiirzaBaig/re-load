@@ -7,6 +7,7 @@ import { POLICY_CATEGORIES } from "@/lib/policy-presets";
 import { TOOLS, TOOLS_INDEX_COPY, type ToolSlug } from "@/lib/public-tools";
 import { SchemaGraph, baseGraph, breadcrumb } from "@/components/public-schema";
 import { Crumbs } from "@/views/public-guides";
+import { PrintHeader } from "@/components/print-header";
 import { PolicyChecker } from "@/components/policy-checker";
 import { WhatsAppLinkTool } from "@/components/whatsapp-link-tool";
 import { ReturnsCostCalculator } from "@/components/returns-cost-calculator";
@@ -28,9 +29,11 @@ export function ToolsIndex({ locale }: { locale: Locale }) {
         ]}
       />
       <div className="mx-auto max-w-3xl px-5 pb-20 pt-14 sm:pt-20">
+        <PrintHeader print="square-green">
         <Crumbs locale={locale} items={[[copy.heading]]} />
         <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">{copy.heading}</h1>
         <p className="mt-5 text-base leading-8 text-muted-foreground">{copy.description}</p>
+        </PrintHeader>
         <ul className="mt-12 divide-y border-y">
           {items.map((it) => (
             <li key={it.href}>
@@ -88,9 +91,11 @@ export function ToolPage({ locale, slug }: { locale: Locale; slug: ToolSlug }) {
         ]}
       />
       <div className="mx-auto max-w-6xl px-5 pt-14 sm:pt-20">
+        <PrintHeader print="square-green">
         <Crumbs locale={locale} items={[[TOOLS_INDEX_COPY[locale].heading, `/${locale}/tools`], [tool.heading[i]]]} />
         <h1 className="max-w-3xl font-display text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">{tool.heading[i]}</h1>
         <p className="mt-5 max-w-2xl text-base leading-8 text-muted-foreground">{tool.intro[i]}</p>
+        </PrintHeader>
       </div>
       <div className={slug === "returns-cost-calculator" ? "mt-10" : "mx-auto mt-14 max-w-6xl px-5"}>
         {slug === "policy-checker" ? (

@@ -136,6 +136,7 @@ export function WhatsAppChannel({
   /** Set false where another nearby element already states the status. */
   showStatus?: boolean;
 }) {
+  const { t: tr } = useLanguage();
   return (
     <span
       className={cn(
@@ -144,7 +145,8 @@ export function WhatsAppChannel({
       )}
     >
       <WhatsAppLogo className="size-4" />
-      <span>{status === "coming-soon" && showStatus ? "WhatsApp soon" : "WhatsApp"}</span>
+      {/* Was English-only ("WhatsApp" / "WhatsApp soon"); Arabic pages now say واتساب. */}
+      <span>{status === "coming-soon" && showStatus ? tr("WhatsApp soon", "واتساب قريبًا") : tr("WhatsApp", "واتساب")}</span>
     </span>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { ArrowUpRight, Check, MessageSquare } from "lucide-react";
+import { ArrowUpRight, Check } from "lucide-react"; // MessageSquare was used by the old example box (commented out below)
 import { useLanguage } from "@/components/language-provider";
 import { PublicPricing } from "@/components/public-pricing";
 import { PublicFaq } from "@/components/public-faq";
@@ -9,6 +9,8 @@ import { PUBLIC_STEPS } from "@/lib/public-content";
 import { publicPath, type PublicPage } from "@/lib/public-site";
 import { BILLING_PLANS } from "../../supabase/functions/_shared/billing-contract";
 import { Button } from "@/components/ui/button";
+import { PrintHeader } from "@/components/print-header";
+import { ConversationDemo } from "@/components/homepage-v2";
 export function PublicDetails({ page }: { page: Exclude<PublicPage, ""> }) {
   const { t, isArabic, locale } = useLanguage();
   const title =
@@ -42,6 +44,7 @@ export function PublicDetails({ page }: { page: Exclude<PublicPage, ""> }) {
   return (
     <>
       <div className="mx-auto max-w-5xl px-5 pb-2 pt-14 sm:pt-20">
+        <PrintHeader print={page === "pricing" ? "kingdom" : page === "faq" ? "faisaliah" : "square-green"}>
         <nav
           aria-label={t("Breadcrumb", "مسار التنقل")}
           className="mb-7 text-xs text-muted-foreground"
@@ -77,10 +80,13 @@ export function PublicDetails({ page }: { page: Exclude<PublicPage, ""> }) {
             "الإرجاع وخدمة العملاء عبر واتساب، بالمعلومات والسياسات التي تعتمدها. جهّز متجرك مجانًا؛ ويتطلب التفعيل اشتراكًا أو وصولًا تجريبيًا معتمدًا.",
           )}
         </p>
+        </PrintHeader>
       </div>
       {page === "pricing" ? (
         <>
-          <PublicPricing />
+          {/* The page title above already introduces pricing, so the section's
+              own "Simple pricing for every store." intro is hidden here. */}
+          <PublicPricing heading={false} />
           <section className="mx-auto max-w-5xl px-5 py-12">
             <h2 className="text-2xl font-semibold">
               {t(
@@ -133,7 +139,9 @@ export function PublicDetails({ page }: { page: Exclude<PublicPage, ""> }) {
                 </tbody>
               </table>
             </div>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {/* Was four boxed cards: grid gap-4, each "rounded-2xl border bg-card p-5"
+                with a grey tick on top. Now an open list (owner, 2026-10-31). */}
+            <div className="mt-10 grid gap-x-10 gap-y-7 sm:grid-cols-2">
               {[
                 [
                   t(
@@ -176,12 +184,16 @@ export function PublicDetails({ page }: { page: Exclude<PublicPage, ""> }) {
                   ),
                 ],
               ].map(([heading, body]) => (
-                <div key={heading} className="rounded-2xl border bg-card p-5">
-                  <Check className="size-4 text-muted-foreground" />
-                  <h3 className="mt-3 font-medium">{heading}</h3>
-                  <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                    {body}
-                  </p>
+                <div key={heading} className="flex gap-3.5 border-t pt-5">
+                  <span className="mt-0.5 grid size-[22px] shrink-0 place-items-center rounded-full bg-foreground text-background">
+                    <Check className="size-3.5" strokeWidth={2.5} />
+                  </span>
+                  <div>
+                    <h3 className="font-medium">{heading}</h3>
+                    <p className="mt-1.5 text-sm leading-7 text-muted-foreground">
+                      {body}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -197,6 +209,9 @@ export function PublicDetails({ page }: { page: Exclude<PublicPage, ""> }) {
       ) : page === "faq" ? (
         <PublicFaq full />
       ) : (
+        <>
+        {/* Previous layout (owner, 2026-10-31: replaced by an open timeline and the
+            phone demo). Kept for revert:
         <section className="mx-auto max-w-5xl px-5 py-12">
           <ol className="space-y-4">
             {PUBLIC_STEPS.map((step, i) => (
@@ -234,6 +249,40 @@ export function PublicDetails({ page }: { page: Exclude<PublicPage, ""> }) {
             </p>
           </div>
         </section>
+        */}
+        <section className="mx-auto max-w-3xl px-5 py-12">
+          <div className="hiw">
+            <span className="hiw-line" aria-hidden="true" />
+            <ol className="hiw-steps">
+              {PUBLIC_STEPS.map((step, i) => (
+                <li key={i} className="hiw-step">
+                  <span className="hiw-dot" aria-hidden="true">{i + 1}</span>
+                  <div>
+                    <h2 className="text-lg font-semibold">
+                      {step.title[isArabic ? 1 : 0]}
+                    </h2>
+                    <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                      {step.body[isArabic ? 1 : 0]}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+        <ConversationDemo
+          id="example"
+          only={["accepted", "review"]}
+          header={{
+            eyebrow: t("For example", "مثال"),
+            title: t("A customer wants to return shoes", "عميل يبي يرجّع حذاء"),
+            intro: t(
+              "Ahmed opens his store’s link and sends the prepared WhatsApp message. Reload identifies the merchant, checks Ahmed’s order ownership and asks which item he wants to return. He explains the reason and may add a photo. Reload checks the published policy and records the result. Unclear cases go to the merchant for review; a return decision is not a refund payout.",
+              "يفتح أحمد رابط متجره ويرسل الرسالة الجاهزة عبر واتساب. يتعرف ريلود على التاجر ويتحقق من ملكية أحمد للطلب، ثم يسأله عن المنتج المطلوب إرجاعه. يوضح السبب ويمكنه إضافة صورة. يراجع ريلود السياسة المنشورة ويسجل النتيجة. تُحال الحالات غير الواضحة للتاجر؛ وقرار الإرجاع لا يعني تحويل مبلغ الاسترداد.",
+            ),
+          }}
+        />
+        </>
       )}
       <SeoProse variant={page} />
       <section className="mx-auto mb-16 flex max-w-5xl flex-wrap items-center justify-between gap-5 px-5">

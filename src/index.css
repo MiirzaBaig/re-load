@@ -10,9 +10,11 @@
   --radius-xl: calc(var(--radius) + 4px);
   --font-sans: var(--font-manrope), system-ui, sans-serif;
   --font-display: var(--font-sora), var(--font-manrope), system-ui, sans-serif;
-  --font-arabic: var(--font-thmanyah-sans), system-ui, sans-serif;
-  --font-arabic-display: var(--font-thmanyah-display), var(--font-thmanyah-sans),
-    system-ui, serif;
+  /* Thmanyah covers Arabic letters only; Manrope picks up digits and Latin.
+     Was: --font-arabic: var(--font-thmanyah-sans), system-ui, sans-serif;
+          --font-arabic-display: var(--font-thmanyah-display), var(--font-thmanyah-sans), system-ui, serif; */
+  --font-arabic: var(--font-thmanyah-sans), var(--font-manrope), system-ui, sans-serif;
+  --font-arabic-display: var(--font-thmanyah-sans), var(--font-manrope), system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -256,7 +258,23 @@ html[dir="rtl"] .font-display {
   font-family: var(--font-arabic-display);
   letter-spacing: 0;
   line-height: 1.45;
+  /* Large and calm instead of heavy (owner, 2026-11-01): bold Arabic at
+     display sizes reads thick and crowded. Medium keeps a clear hierarchy. */
+  font-weight: 500;
+  text-wrap: balance;
 }
+/* Semi-bold maps to Thmanyah Bold, which is heavier than Latin semi-bold;
+   in Arabic, use Medium for the same emphasis. Bold stays bold. */
+html[dir="rtl"] .font-semibold { font-weight: 500; }
+/* No single-word last lines in Arabic paragraphs. */
+html[dir="rtl"] p { text-wrap: pretty; }
+/* The big titles (page H1 and section H2) go one step lighter, to Regular:
+   large and light reads calm and confident in Arabic. [class] lifts these
+   above the font-semibold mapping just above. Smaller headings stay Medium. */
+html[dir="rtl"] h1,
+html[dir="rtl"] h2,
+html[dir="rtl"] h1[class],
+html[dir="rtl"] h2[class] { font-weight: 400; }
 
 /* Tailwind tracking utilities are applied inline all over the app and would
    otherwise re-break the cursive joins. */
@@ -1597,6 +1615,35 @@ html.dark .mode-toggle:active .mode-toggle-moon {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Local photo treatment: dithering is baked into the image, so no canvas,
+   per-frame pixel processing or moving grain is needed. */
+.hero-photo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+}
+.hero-photo-image {
+  object-fit: cover;
+  object-position: 50% 60%;
+}
+.hero-photo-shade {
+  position: absolute;
+  inset: 0;
+  /* The darkest area sits behind the headline. The photograph has no role
+     in conveying availability, store integrations or product claims. */
+  background:
+    radial-gradient(ellipse 70% 70% at 50% 45%, rgb(15 15 18 / .62), rgb(15 15 18 / .12) 100%),
+    linear-gradient(180deg, rgb(15 15 18 / .38), rgb(15 15 18 / .42) 70%, rgb(15 15 18 / .72));
+}
+@media (max-width: 767px) {
+  .hero-photo-image { object-position: 58% 50%; }
+  .hero-photo-shade {
+    background: linear-gradient(180deg, rgb(15 15 18 / .58), rgb(15 15 18 / .72) 45%, rgb(15 15 18 / .65));
+  }
+}
+
 /* The strip continues the shell surface below the card, so the marquee reads
    as page rather than something sliding under the card's rounded edge. */
 .principles-strip {
@@ -1644,6 +1691,65 @@ html.dark .mode-toggle:active .mode-toggle-moon {
   to {
     transform: scale(var(--hero-zoom-to));
   }
+}
+
+/* Opening scene (owner, 2026-10-31). The hero is a little shorter than the
+   screen so the next section peeks in. As you start scrolling, the card opens
+   out to the full width with its corners squaring off, while the Riyadh print
+   inside slowly pulls back, like a camera opening on the city. It runs once
+   with scroll, then stays still. Replaces the old "shrink away" zoom: setting
+   --hero-zoom-to to 1 also turns off the Safari script that drove it. */
+.hero-shell { min-height: 88svh; }
+.hero-badge-corner {
+  position: absolute;
+  z-index: 2;
+  inset-inline-start: clamp(16px, 2.4vw, 32px);
+  bottom: clamp(16px, 2.4vw, 28px);
+  margin: 0;
+}
+.hero-card { --hero-zoom-to: 1; }
+.hero-photo-image { object-position: 50% 28%; transform-origin: 50% 35%; }
+/* Lighter than the first shade so the tower reads; still dark enough behind
+   the headline for white text (the print itself is already low-key). */
+.hero-photo-shade {
+  background:
+    radial-gradient(ellipse 58% 64% at 50% 56%, rgb(15 15 18 / .55), rgb(15 15 18 / .12) 100%),
+    linear-gradient(180deg, rgb(15 15 18 / .2), rgb(15 15 18 / .25) 60%, rgb(15 15 18 / .6));
+}
+@media (max-width: 767px) {
+  .hero-shell { min-height: 84svh; }
+}
+/* Phones (owner, 2026-10-31): the hero is as tall as its content plus
+   breathing room, so the next section peeks in; tablets keep 84svh. */
+@media (max-width: 639px) {
+  .hero-shell { min-height: 0; }
+  .hero-card-content { padding-block: 56px 60px; }
+}
+@media (max-width: 767px) {
+  .hero-photo-image { object-position: 50% 30%; }
+  .hero-photo-shade { background: linear-gradient(180deg, rgb(15 15 18 / .3), rgb(15 15 18 / .55) 45%, rgb(15 15 18 / .5)); }
+}
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-card {
+      animation: hero-open linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 42vh;
+    }
+    .hero-photo-image {
+      animation: hero-photo-open linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 60vh;
+    }
+  }
+}
+@keyframes hero-open {
+  from { border-radius: clamp(20px, 2.4vw, 34px); margin-inline: 0; }
+  to { border-radius: 0; margin-inline: calc(-1 * clamp(12px, 2.2vw, 28px)); }
+}
+@keyframes hero-photo-open {
+  from { transform: scale(1.12); }
+  to { transform: scale(1); }
 }
 
 /* The hero card used to tilt back in 3D as it scrolled away. That promoted a
@@ -6235,3 +6341,356 @@ a.rh-panel:hover .rh-label { color: var(--foreground); }
 .dark .logo-solid-bottom { stop-color: #d3d5db; }
 .dark .logo-solid { filter: drop-shadow(0 1px 0 rgb(0 0 0 / .7)) drop-shadow(0 3px 5px rgb(0 0 0 / .5)); }
 .dark .logo-solid-word { background-image: linear-gradient(180deg, #ffffff 0%, #d3d5db 100%); }
+
+/* ── Theme v2 trial (owner, 2026-10-31) ─────────────────────────────────────
+   Everything below applies only while the public site root carries
+   `theme-v2` (public-layout.tsx). Remove that class to return to the
+   black-and-white theme exactly as it was.
+   1. Riyadh sand neutrals: warm off-white and warm greys instead of cool,
+      slightly blue greys; warm charcoal in dark mode.
+   2. Deep palm green (#0f3d2e) as a second brand colour, used only on a
+      couple of full-width bands. WhatsApp green stays for WhatsApp cues.
+   3. Dithered Riyadh prints as the visual signature (hero, final CTA).
+   4. Two small touches: scroll-fill heading words, button colour sweep. */
+html:has(.public-site.theme-v2) {
+  --background: #f5f1e8;
+  --foreground: #16140f;
+  --card: #fbf8f2;
+  --card-foreground: #16140f;
+  --popover: #fbf8f2;
+  --popover-foreground: #16140f;
+  --primary: #16140f;
+  --primary-foreground: #f5f1e8;
+  --secondary: #ece6da;
+  --secondary-foreground: #16140f;
+  --muted: #ece6da;
+  --muted-foreground: #5d574d;
+  --accent: #e5ded0;
+  --accent-foreground: #16140f;
+  --border: #e2dacb;
+  --input: #8a8274;
+  --ring: #16140f;
+  --hero-card-bg: #16140f;
+  --heading-tone: #8a8377;
+  --heading-mark: color-mix(in srgb, #1f7a55 22%, transparent);
+  --band-green: #0f3d2e;
+  --footer-bg: #ebe4d6;
+  --footer-fg: #16140f;
+  --footer-muted: #4f493f;
+  --footer-subtle: #d6cdbb;
+  --footer-gold: #16140f;
+  --footer-gold-foreground: #f5f1e8;
+}
+html.dark:has(.public-site.theme-v2) {
+  --background: #12110e;
+  --foreground: #f3eee4;
+  --card: #1a1915;
+  --card-foreground: #f3eee4;
+  --popover: #1d1b17;
+  --popover-foreground: #f3eee4;
+  --primary: #f3eee4;
+  --primary-foreground: #12110e;
+  --secondary: #201e19;
+  --secondary-foreground: #f3eee4;
+  --muted: #201e19;
+  --muted-foreground: #b3ab9d;
+  --accent: #29261f;
+  --accent-foreground: #f3eee4;
+  --border: #2b2822;
+  --input: #5a554b;
+  --ring: #f3eee4;
+  --hero-card-bg: #1a1915;
+  --heading-tone: #9c9486;
+  --heading-mark: color-mix(in srgb, #34c486 30%, transparent);
+  --band-green: #0c3326;
+  --footer-bg: #1a1915;
+  --footer-fg: #f3eee4;
+  --footer-muted: #b3ab9d;
+  --footer-subtle: #2f2c25;
+  --footer-gold: #f3eee4;
+  --footer-gold-foreground: #12110e;
+}
+
+/* 2. Deep green bands: the section re-maps its own tokens, so every child
+   (headings, muted text, icons, buttons, borders) follows automatically. */
+.theme-v2 .band-green {
+  --background: var(--band-green);
+  --foreground: #f3eee4;
+  --card: color-mix(in oklab, var(--band-green) 88%, white);
+  --card-foreground: #f3eee4;
+  --muted: color-mix(in oklab, var(--band-green) 84%, white);
+  --muted-foreground: #b7c7bd;
+  --border: rgb(243 238 228 / 0.16);
+  --input: rgb(243 238 228 / 0.4);
+  --primary: #f3eee4;
+  --primary-foreground: #0f3d2e;
+  --heading-tone: #8fb3a1;
+  --heading-mark: color-mix(in srgb, #8fe0b4 26%, transparent);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* 3. Final CTA print: hidden unless theme-v2. */
+.cta-print { display: none; }
+.theme-v2 .cta-print {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.theme-v2 .cta-print img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; }
+.theme-v2 .cta-print::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 70% at 50% 50%, rgb(10 46 35 / .78), rgb(10 46 35 / .45) 100%);
+}
+
+/* 4a. Scroll-fill heading: each word moves from grey to full ink in turn as
+   the heading passes through the screen. Colour only, so nothing reflows. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .theme-v2 .sf .heading-tone { color: inherit; }
+    .theme-v2 .sf-word {
+      color: color-mix(in oklab, var(--foreground) 28%, transparent);
+      animation: sf-fill linear both;
+      animation-timeline: view();
+      animation-range: cover calc(18% + var(--sf-i) * 3.5%) cover calc(28% + var(--sf-i) * 3.5%);
+    }
+  }
+}
+@keyframes sf-fill { to { color: var(--foreground); } }
+
+/* 4b. Button sweep: on hover the colour slides up through the button
+   (palm green, or ivory on dark/green surfaces). */
+.theme-v2 .btn-sweep {
+  --sweep: #0f3d2e;
+  --sweep-text: #f3eee4;
+  background-image: linear-gradient(to top, var(--sweep) 50%, transparent 50%);
+  background-size: 100% 200%;
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  transition: background-position 340ms cubic-bezier(.76, 0, .24, 1), color 200ms cubic-bezier(.76, 0, .24, 1);
+}
+html.dark .theme-v2 .btn-sweep,
+.theme-v2 .band-green .btn-sweep { --sweep: #8fe0b4; --sweep-text: #0f3d2e; }
+@media (hover: hover) {
+  .theme-v2 .btn-sweep:hover { background-position: 0 100%; color: var(--sweep-text); }
+}
+@media (prefers-reduced-motion: reduce) { .theme-v2 .btn-sweep { transition: none; } }
+
+/* Inner-page print header (theme-v2). The header sits inside each page's
+   narrow column, so it bleeds out to the screen edges (minus the same gutter
+   as the homepage hero card) and pads its content back to the column. */
+.print-header-art { display: none; }
+.theme-v2 main { overflow-x: clip; }
+.theme-v2 .print-header {
+  --bleed: max(0px, calc(50vw - 50% - clamp(12px, 2.2vw, 28px)));
+  --foreground: #f3eee4;
+  --muted-foreground: rgb(243 238 228 / 0.74);
+  --heading-tone: #b9b3a8;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin-inline: calc(-1 * var(--bleed));
+  margin-top: calc(-1 * clamp(32px, 4vw, 52px));
+  margin-bottom: clamp(28px, 4vw, 48px);
+  padding: clamp(32px, 5vw, 64px) max(var(--bleed), 22px);
+  border-radius: clamp(20px, 2.4vw, 34px);
+  background: var(--hero-card-bg);
+  color: var(--foreground);
+}
+.theme-v2 .print-header-art {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.theme-v2 .print-header-art img { width: 100%; height: 100%; object-fit: cover; object-position: 60% 40%; }
+/* Darker on the reading side so the title stays crisp; RTL flips it. */
+.theme-v2 .print-header-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgb(15 15 18 / .86) 0%, rgb(15 15 18 / .62) 55%, rgb(15 15 18 / .38) 100%);
+}
+[dir="rtl"] .theme-v2 .print-header-art::after { background: linear-gradient(270deg, rgb(15 15 18 / .86) 0%, rgb(15 15 18 / .62) 55%, rgb(15 15 18 / .38) 100%); }
+.theme-v2 .print-header-green { background: var(--band-green); }
+.theme-v2 .print-header-green .print-header-art::after { background: linear-gradient(90deg, rgb(10 46 35 / .9) 0%, rgb(10 46 35 / .66) 55%, rgb(10 46 35 / .42) 100%); }
+[dir="rtl"] .theme-v2 .print-header-green .print-header-art::after { background: linear-gradient(270deg, rgb(10 46 35 / .9) 0%, rgb(10 46 35 / .66) 55%, rgb(10 46 35 / .42) 100%); }
+.theme-v2 .print-header-body { position: relative; }
+@media (max-width: 639px) {
+  .theme-v2 .print-header-art::after,
+  [dir="rtl"] .theme-v2 .print-header-art::after { background: rgb(15 15 18 / .72); }
+  .theme-v2 .print-header-green .print-header-art::after,
+  [dir="rtl"] .theme-v2 .print-header-green .print-header-art::after { background: rgb(10 46 35 / .78); }
+}
+
+/* How it works: open timeline (owner, 2026-10-31). A hairline runs down the
+   reading side and fills with ink as you scroll; each number turns solid as
+   it passes the middle of the screen. Without scroll-driven animation the
+   line is simply drawn and the numbers are plain. */
+.hiw { position: relative; }
+.hiw-line { position: absolute; inset-inline-start: 17px; top: 18px; bottom: 18px; width: 2px; background: var(--border); overflow: hidden; }
+.hiw-line::after { content: ""; position: absolute; inset: 0; background: var(--foreground); transform-origin: top; }
+.hiw-steps { position: relative; display: grid; gap: clamp(32px, 5vw, 48px); margin: 0; padding: 0; list-style: none; }
+.hiw-step { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 20px; align-items: start; }
+.hiw-dot {
+  position: relative; z-index: 1; display: grid; place-items: center;
+  width: 36px; height: 36px; border-radius: 999px;
+  background: var(--background); color: var(--foreground);
+  box-shadow: inset 0 0 0 1px var(--border);
+  font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .hiw-line::after { animation: hiw-draw linear both; animation-timeline: --hiw; animation-range: entry 30% exit 70%; }
+    .hiw { view-timeline: --hiw block; }
+    .hiw-dot { animation: hiw-dot linear both; animation-timeline: view(); animation-range: cover 40% cover 50%; }
+  }
+}
+@keyframes hiw-draw { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes hiw-dot { to { background: var(--foreground); color: var(--background); box-shadow: inset 0 0 0 1px var(--foreground); } }
+
+/* Guides list: a small print thumbnail beside each guide (theme-v2 only). */
+.guide-thumb { display: none; }
+@media (min-width: 640px) {
+  .theme-v2 .guide-row { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: 28px; align-items: start; }
+  .theme-v2 .guide-thumb { display: block; overflow: hidden; aspect-ratio: 16 / 11; border-radius: 14px; background: var(--hero-card-bg); }
+  .theme-v2 .guide-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 500ms var(--ease-brand); }
+  .theme-v2 .guide-row:hover .guide-thumb img { transform: scale(1.04); }
+}
+@media (prefers-reduced-motion: reduce) { .theme-v2 .guide-thumb img { transition: none; } }
+
+/* Phone navbar (owner, 2026-10-31): a solid bar with the logo and one round
+   menu button, like a clean app header. Tablets and desktops unchanged. */
+@media (max-width: 639px) {
+  .public-header-surface,
+  .public-header-scrolled .public-header-surface {
+    background: var(--card);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .menu-toggle-round {
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--border);
+    color: var(--foreground);
+  }
+}
+
+/* Policy review rules (owner, 2026-11-02). Icons trace their own lines in
+   once as the list appears; a hovered row lifts its icon slightly; an open
+   rule shows a solid ink tile and a turned arrow in a soft circle. Calm
+   tween timing, no bounce; reduced motion shows everything static. */
+.rule-icon {
+  transition: background-color 280ms var(--ease-brand), color 280ms var(--ease-brand), transform 320ms var(--ease-brand);
+}
+.rule-icon[data-draw] svg :is(path, line, polyline, polygon, rect, circle, ellipse) {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.rule-row[data-open] .rule-icon { background: var(--foreground); color: var(--background); }
+.rule-chevron {
+  transition: transform 420ms var(--ease-brand), background-color 250ms var(--ease-brand), color 250ms var(--ease-brand);
+}
+.rule-row:enabled:hover .rule-chevron { background: var(--muted); color: var(--foreground); }
+.rule-row[data-open] .rule-chevron { transform: rotate(180deg); background: var(--muted); color: var(--foreground); }
+@media (prefers-reduced-motion: no-preference) {
+  .rule-icon[data-draw] svg :is(path, line, polyline, polygon, rect, circle, ellipse) {
+    animation: rule-draw 900ms cubic-bezier(0.45, 0, 0.2, 1) 200ms both;
+  }
+  .rule-row:enabled:hover .rule-icon { transform: translateY(-2px) rotate(-4deg); }
+  [dir="rtl"] .rule-row:enabled:hover .rule-icon { transform: translateY(-2px) rotate(4deg); }
+}
+@keyframes rule-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .rule-icon, .rule-chevron { transition: none; }
+}
+
+/* Policy review, decisions (owner, 2026-11-02): a just-approved rule glows
+   softly in the approved colour and its icon turns green for a moment. */
+.rule-item { position: relative; }
+.rule-item-flash::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--eligible) 13%, transparent);
+  animation: rule-flash 1.3s var(--ease-brand) forwards;
+  pointer-events: none;
+}
+.rule-item-flash .rule-icon { color: var(--eligible); }
+.rule-item { isolation: isolate; }
+@keyframes rule-flash { 0% { opacity: 0; } 18% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .rule-item-flash::before { animation: none; opacity: 0; } }
+
+/* Shipping settings step flow (owner, 2026-11-02): numbered steps on one
+   rail, no cards. The rail fills in ink below each finished step. */
+.ship-steps { list-style: none; margin: 0; padding: 0; }
+.ship-step { position: relative; display: flex; gap: 18px; }
+.ship-step::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 15px;
+  top: 34px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--border);
+}
+.ship-step::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 15px;
+  top: 34px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--foreground);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 600ms var(--ease-brand);
+}
+.ship-step[data-done]::after { transform: scaleY(1); }
+.ship-step-last::before, .ship-step-last::after { display: none; }
+.ship-step-dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1.5px var(--border);
+  background: var(--background);
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background-color 300ms var(--ease-brand), color 300ms var(--ease-brand), box-shadow 300ms var(--ease-brand);
+}
+.ship-step[data-done] .ship-step-dot { background: var(--foreground); color: var(--background); box-shadow: inset 0 0 0 1.5px var(--foreground); }
+.ship-step-last[data-done] .ship-step-dot { background: var(--eligible); box-shadow: none; color: #fff; }
+/* Parcel form on this page: same open look, no card. */
+.ship-flow .admin-card { border: 0; background: transparent; box-shadow: none; border-top: 1px solid var(--border); border-radius: 0; }
+.ship-flow .admin-card > header, .ship-flow .admin-card > div { padding-inline: 0; }
+/* History as a timeline. */
+.ship-history { position: relative; display: grid; gap: 14px; padding-inline-start: 2px; }
+.ship-history-dot { width: 8px; height: 8px; flex: none; border-radius: 999px; }
+@media (prefers-reduced-motion: reduce) {
+  .ship-step::after, .ship-step-dot { transition: none; }
+}
+/* Inside a folded section the section title already names it. */
+.ship-disclosure-body .admin-card { border-top: 0; }
+.ship-disclosure-body .admin-card > header h2 { display: none; }
+.ship-disclosure-body .admin-card > header { padding-top: 0; }
+.ship-step:not([data-open]) .ship-step-dot { transform: scale(0.88); }
+.ship-step-dot { transition: transform 300ms var(--ease-brand), background-color 300ms var(--ease-brand), color 300ms var(--ease-brand), box-shadow 300ms var(--ease-brand); }
