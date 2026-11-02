@@ -5,3 +5,7 @@ export function setAdminAccess(value: unknown) {
 export async function getAdminAccess() {
   return access;
 }
+
+export async function logAdminEvent(value: unknown) {
+  if ((value as { auditFailure?: boolean }).auditFailure) throw new Error("private audit failure");
+}

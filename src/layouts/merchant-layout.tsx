@@ -40,6 +40,7 @@ import {
   MessageSquareWarning,
   Ellipsis,
   CreditCard,
+  Truck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { services } from "@/lib/services";
@@ -55,7 +56,7 @@ import { MerchantRouteSkeleton, SidebarWorkspaceSkeleton } from "@/components/me
 import { Button } from "@/components/ui/button";
 import { CreateWorkspace } from "@/components/create-workspace";
 
-export function MerchantLayout({ children }: { children: ReactNode }) {
+export function MerchantLayout({ children, shippingSettingsEnabled = false }: { children: ReactNode; shippingSettingsEnabled?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAuth();
@@ -115,6 +116,8 @@ export function MerchantLayout({ children }: { children: ReactNode }) {
       icon: Settings,
     },
   ];
+
+  if (shippingSettingsEnabled) secondaryNav.splice(3, 0, { label: t("Shipping", "الشحن"), href: "/app/shipping/settings", icon: Truck });
 
   const handleSignOut = async () => {
     await auth.signOut();

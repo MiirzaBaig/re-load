@@ -644,6 +644,7 @@ export function ActivityHub(props: HubProps) {
   ];
   return (
     <div className="space-y-6">
+      {owner && <div className="flex justify-end"><Link href="/admin/shipping" className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-muted active:scale-[.98]"><ExternalLink className="size-4" />{t("Try shipping sandbox", "تجربة الشحن التجريبي")}</Link></div>}
       <Segmented
         value={view}
         options={options}

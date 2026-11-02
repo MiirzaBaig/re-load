@@ -1,12 +1,39 @@
 # OTO shipping integration — plan and tracker
 
-Started: 2026-10-18. Status: **planning, nothing built yet.** Update this file whenever a decision is made, a test runs or code ships, so the team (and Codex) can follow along. Never paste tokens, keys or wallet details here.
+Started: 2026-10-18. Updated: 2026-10-28. Status: **owner-only sandbox connection, rates and selection built locally; wallet records applied to Supabase; sandbox wallet checkout built and one unpaid link verified; provider shipment booking not built yet.** Update this file whenever a decision is made, a test runs or code ships, so the team (and Codex) can follow along. Never paste tokens, keys or wallet details here.
+
+## Approved shipping funding — 2026-10-27
+
+Yazeed approved prepaid merchant shipping balances in Reload and charging OTO's actual shipping costs only, with zero Reload fees. Premium subscription/message allowances and shipping funds are separate. Reload's shared OTO wallet remains separate from each merchant's ledger. Future fees need fresh approval. Reserve funds before booking; settle verified charges and confirmed credits only; unresolved writes retain pending reservations. See [wallet contract](docs/oto-automatic-returns.md#approved-prepaid-shipping-wallet--2026-10-27). This records a decision, not a built wallet or live payment activation.
+
+## Approved automatic-return direction — 2026-10-27
+
+Yazeed and Mirza approved optional merchant-authorized automatic return shipping. Merchants approve warehouse, preferred couriers, collection method and maximum charge in advance. Only verified eligible, customer-confirmed returns inside current authorization/funding limits may book without another merchant click. Manual/unclear/over-limit/unsupported/uncertain cases pause for review. Customer confirms the collection address; completeness/serviceability are not proof of physical correctness. No automatic inspection/refund. This supersedes earlier per-request manual approval text below. Authoritative remaining sequence, message copy and reviewed-improvement boundaries: [automatic return plan](docs/oto-automatic-returns.md). Automation is not implemented; the built sandbox still provides connection/rates/selection only.
+
+## Current priority and sandbox evidence — 2026-10-27
+
+Yazeed moved OTO ahead of payment links while awaiting Zid support. This supersedes the earlier checkout-first hold in the execution tracker. Start with return shipping, which does not require enabling the unfinished WhatsApp purchase flow. Outbound shipping remains limited to paid orders attributed to Reload-created checkouts when that flow is accepted later.
+
+Owner created an active OTO API integration named reload and supplied its refresh token. Saved only in the Git-ignored root `.env` as `OTO_SANDBOX_REFRESH_TOKEN` with mode0600; no secret value in tracked documents. Tested exclusively against `https://staging-api.tryoto.com/rest/v2`:
+
+- Refresh token exchange: HTTP200, success true, access token received, expires_in3600.
+- Health: HTTP200, status OK. This response has no success property.
+- Authenticated accountInfo: HTTP200, FreePackage. This response also has no success property; account contact details/tokens were not printed or saved in the report.
+- Checked around 07:00 UTC on 27 October 2026. No production fallback, orders, pickup locations, shipment booking, webhook registration, wallet top-up or charge.
+
+This proves sandbox authentication and account reads only. Rate quotes are now verified and a sample-parcel owner screen is implemented locally. Merchant warehouse mapping, return booking, label, tracking and webhook acceptance remain unimplemented/unverified. Owner approved fictional sample data for sandbox development; authorized notification contacts are still required before provider notification tests. Funding model is now approved: merchant prepaid shipping balance and zero Reload markup. Payment/ledger/provider acceptance remains necessary before live booking.
+
+Official sandbox setup: https://help.tryoto.com/en/support/solutions/articles/150000200674-sandbox-account-setup . API authentication: https://help.tryoto.com/en/support/solutions/articles/150000213805-authorization . Credential names and endpoint base are sandbox-specific; never try the supplied token against production.
+
+## Sandbox foundation implementation — 2026-10-27
+
+See [sandbox implementation and checks](docs/oto-sandbox.md). Admin → Activity now links owners to a private Arabic/English sandbox screen with connection checks, sample parcel controls, actual rate comparison and selection review. Staging-only API rejects booking and contacts, audits checks and returns safe fields. Actual adapter returned 11 sandbox options. Eight new API/contract tests, seven existing admin tests and 56 browser checks passed. No booking, shipping label, tracking/webhook processing, customer notifications, new SQL or deployment is claimed. Source remains local.
 
 ## Latest approved direction — 2026-10-19
 
 Read [docs/current-execution-plan.md](docs/current-execution-plan.md) before implementing. It supersedes the older recommendations below: one Reload account with merchant warehouses; Premium-only shipping; outbound limited to paid orders attributed to Reload-created WhatsApp checkouts; merchant selects courier and approves charges before booking. Courier charges are separate; the funding mechanism and any Reload fee still need approval. Return delivery does not automatically confirm inspection or issue a refund.
 
-OTO confirmed sandbox testing, warehouse-based merchant separation and customer-printed return labels. Free API tracking is confirmed; free webhook access remains ambiguous. OTO treats Reload as a direct customer under standard plans, with no special partnership rates offered. No OTO code is implemented. Older references below to `public.cases`, automatic case receipt, merchant-owned-account pilot and unconfirmed sandbox availability must not be used as the current contract (`return_cases` is the actual table).
+OTO confirmed sandbox testing, warehouse-based merchant separation and customer-printed return labels. Free API tracking is confirmed; free webhook access remains ambiguous. OTO treats Reload as a direct customer under standard plans, with no special partnership rates offered. The sandbox foundation is now implemented locally; booking and merchant shipping are not implemented. Older references below to `public.cases`, automatic case receipt, merchant-owned-account pilot and unconfirmed sandbox availability must not be used as the current contract (`return_cases` is the actual table).
 
 ## 1. In one paragraph
 
@@ -117,8 +144,45 @@ Sources: [Authorization](https://help.tryoto.com/en/support/solutions/articles/1
 
 ## 11. Rules for anyone working on this
 
-- Never store customer addresses in Reload tables or logs; pass them through to OTO only.
+- Never store plaintext customer addresses in public tables, message transcripts, logs or model prompts. The narrowly scoped encrypted collection recovery storage and retention rules are documented in docs/whatsapp-return-collection.md; raw private transport input is redacted when its prepared reply commits.
 - Never put OTO tokens in the repo, chat, client code or logs. Server-side only, encrypted at rest.
 - The merchant stays in control: no shipment is booked without the merchant's action or their explicit auto-book setting.
 - A delivered return shipment means the item reached the merchant, not that a refund happened.
 - Update this file and CONTEXT.md when anything here ships.
+
+
+## Task 2 persistence foundation — 2026-10-27
+
+Implemented local migration 202610270001_shipping_records and isolated SQL/concurrency tests. Includes tenant-bound warehouse mappings, available/reserved/net-spent ledger, immutable attempts/events, one-time submission claim, safe provider-reference preservation and bounded authorized snapshot. Mutation RPCs are server-only and reject LIVE unconditionally. Historical Task 2 status: initially local only. On 28 October this migration was applied alongside Task 3. Booking and automation remain unimplemented; see the newer Task 3 entry below. Details and next boundaries: [shipping records](docs/oto-shipping-records.md).
+
+## Task 3 sandbox wallet — 2026-10-28
+
+Applied both shipping records/top-up migrations to Reload Supabase. Added private single-use Stream Pay sandbox top-ups, verified-invoice reconciliation, refund review holds and a gated Arabic/English wallet screen. One actual unpaid SAR 100 checkout was created for an existing authorized Premium sandbox workspace; no payment or funds were created. 127 backend tests, four API tests, isolated SQL/concurrency tests and 64 browser checks passed. Full paid checkout acceptance remains pending. Website changes are local, not committed or pushed. See [top-up contract, evidence and next steps](docs/shipping-wallet-topups.md).
+
+Task 3 backend follow-up: sandbox webhook, billing-verify and billing-reconcile deployed; unsigned/unauthorized probes rejected. Production build and TypeScript passed. Website review is local on port 3127; no source commit/push and no live shipping enablement.
+
+28 October payment acceptance: actual owner-completed SAR 100 sandbox payment verified and credited once. Repeat verification retained SAR 100 and one top-up. Automatic sandbox webhook delivery remains unverified (no recent receipt); explicit provider verification worked. OTO booking/label/tracking remain the next implementation stage.
+
+## Return test tool — 28 October
+
+Implemented a gated Premium sandbox return screen/API with private stage history, explicit confirmation, atomic cap reservation, once-only warehouse/reverse-order/return sequence, child-reference retention, strict actual-cost settlement and authenticated label/tracking reads. Migration 202610280002 applied. Eight new return tests, eight quote tests, six wallet API tests, local SQL and 56 simulated browser checks passed. Real helper verified a SAR 34.21 staging quote but stopped before any creation because OTO remainingCredit is zero; Reload remains SAR 100 available/zero reserved. Actual booking, charge/PDF/tracking acceptance awaits OTO test credit. No live activation, commit or push. See [return sandbox](docs/oto-return-sandbox.md).
+
+## Actual OTO return accepted — 31 October
+
+OTO staging funded by owner. Created one test warehouse and reverse-only order (provider ID 31183263), recovered the actual asynchronous same-parent reverse shipment, downloaded matching PDF label and read preparing status. Actual service charge SAR 68.42 exceeded earlier SAR 50 test reservation because separate `returnFee` had been used as shipping estimate. Corrected to reverse-eligible rates and service `price`; fresh read matches SAR 68.42. Owner explicitly approved that exact test charge; recorded approval, reserved difference and settled once. Reload sandbox: SAR 31.58 available, zero reserved, SAR 68.42 spent, one settlement after repeat check. Migration 202610310001 applied. 12 return + eight quote + six wallet tests, local SQL and 16 approval UI checks passed. No new booking retry, live activation, commit/push or claimed collection/delivery. Detail: docs/oto-return-sandbox.md. Provider cap/surcharge handling and all merchant automation/live acceptance remain pending.
+
+## Merchant controls — 31 October
+
+Sandbox merchant warehouse setup, ranked courier preferences, collection method, cost cap and versioned draft/approval/pause are implemented. Migration 202610310002 is applied. One staging settings warehouse was created and verified; no new shipment or wallet movement. Customer automatic booking remains inactive even after settings approval. Website changes remain local and uncommitted; stop before WhatsApp changes as requested. See [merchant controls and evidence](docs/merchant-shipping-settings.md).
+
+## WhatsApp customer confirmation — 31 October
+
+Task 7 built locally: eligible verified customers can enter current collection details in a gated Arabic/English sandbox flow with edit/back/help/stop/menu/resume and same-case re-verification. Explicit confirmation is encrypted privately with expiry; no plaintext address in dashboard messages or AI prompts. Migration 202610310003 applied; no real confirmation/booking/charge created. New worker code is not deployed and sandbox flags stay off. Automatic booking and verified customer label delivery remain separate Task 8 work. Reliable parcel information must come from merchant-approved data, not AI guesses. See [flow, privacy and tests](docs/whatsapp-return-collection.md).
+
+## Automatic sandbox booking path — 31 October
+
+Task 8 implemented locally: exact product/quantity packed measurements approved by the merchant, fresh order/policy/warehouse/rate/funding checks, atomic cap reservation/one submission, exact-reference charge reconciliation and customer-requested native PDF labels/statuses. Deduplicated operational signals inform merchant-reviewed improvements; no automatic policy or cap changes. Migration 202610310005 applied. No actual merchant approval, automatic shipment, Meta send or wallet movement; worker not deployed, feature default off. Real full WhatsApp acceptance remains pending. Contract, remaining limits and provider references: [booking implementation](docs/oto-whatsapp-booking.md).
+
+## Pilot preparation — 31 October
+
+Worker v33 deployed and ACTIVE with both WhatsApp shipping gates false and empty allowlists. Existing staging credential configured; no live OTO or booking activation. Invalid-ticket/method probes denied, with no real messages or orders created. Owner selected the existing testing-z-connected workspace and will complete its missing sandbox Premium/policy/WhatsApp/settings/funding setup and provide a qualifying test order. This workspace is separate from the previously funded payment-test workspace; no tenant resources were copied. See docs/oto-whatsapp-booking.md.

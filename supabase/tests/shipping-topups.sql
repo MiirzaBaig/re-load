@@ -1,0 +1,34 @@
+do $$
+declare store uuid:='11111111-1111-4111-8111-111111111111';actor uuid:='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';t jsonb; replay jsonb;
+consumer uuid:='11111111-aaaa-4111-8111-111111111111';product uuid:='22222222-aaaa-4222-8222-222222222222';link uuid:='33333333-aaaa-4333-8333-333333333333';invoice uuid:='44444444-aaaa-4444-8444-444444444444';before bigint; wh uuid;attempt uuid:=gen_random_uuid();
+begin
+ perform set_config('test.auth_role','service_role',true);
+ before:=(public.shipping_wallet_snapshot(store,'sandbox')->>'availableHalalas')::bigint;
+ perform public.test_shipping_assert(not has_function_privilege('authenticated','public.shipping_topup_complete(uuid,uuid,uuid,uuid,uuid,integer)','execute'),'merchant topup completion');
+ perform public.test_shipping_reject(format('select public.shipping_topup_start(%L,%L,10000)',store,actor));
+ insert into public.store_billing values(store,'sandbox','standard','ACTIVE',now()-interval '1 day',now()+interval '1 month');
+ perform public.test_shipping_reject(format('select public.shipping_topup_start(%L,%L,10000)',store,actor));
+ update public.store_billing set plan='premium';
+ t:=public.shipping_topup_start(store,actor,10000);
+ replay:=public.shipping_topup_start(store,actor,10000);
+ perform public.test_shipping_assert(t->>'id'=replay->>'id','topup replay');
+ perform public.test_shipping_reject(format('select public.shipping_topup_start(%L,%L,25000)',store,actor));
+ perform public.test_shipping_assert(public.shipping_topup_claim((t->>'id')::uuid,store),'payment create claim');
+ perform public.test_shipping_assert(not public.shipping_topup_claim((t->>'id')::uuid,store),'payment create replay');
+ perform public.shipping_topup_bind((t->>'id')::uuid,store,consumer,product);
+ perform public.shipping_topup_note_link((t->>'id')::uuid,store,link);
+ perform public.test_shipping_reject(format('select public.shipping_topup_ready(%L,%L,%L,''https://evil.example/pay'')',t->>'id',store,link));
+ perform public.shipping_topup_ready((t->>'id')::uuid,store,link,'https://pay.streampay.sa/test');
+ perform public.test_shipping_assert((public.shipping_wallet_snapshot(store,'sandbox')->>'availableHalalas')::bigint=before,'unpaid no credit');
+ perform public.test_shipping_reject(format('select public.shipping_topup_complete(%L,%L,%L,%L,%L,9999)',t->>'id',invoice,link,consumer,product));
+ perform public.test_shipping_assert(public.shipping_topup_complete((t->>'id')::uuid,invoice,link,consumer,product,10000),'paid credit');
+ perform public.test_shipping_assert(not public.shipping_topup_complete((t->>'id')::uuid,invoice,link,consumer,product,10000),'duplicate paid credit');
+ perform public.test_shipping_assert((public.shipping_wallet_snapshot(store,'sandbox')->>'availableHalalas')::bigint=before+10000,'paid exact credit');
+ perform public.shipping_topup_refund_review((t->>'id')::uuid,invoice);
+ perform public.test_shipping_assert((public.shipping_wallet_snapshot(store,'sandbox')->>'onHold')::boolean,'refund hold');
+ perform public.test_shipping_reject(format('select public.shipping_topup_start(%L,%L,10000)',store,actor));
+ wh:=public.shipping_register_warehouse(store,'sandbox','TOPUP-TEST-WAREHOUSE');
+ perform public.test_shipping_reject(format('select public.shipping_reserve_attempt(%L,%L,''sandbox'',%L,null,100,100,%L)',attempt,store,wh,now()+interval '10 minutes'));
+ perform public.test_shipping_reject(format('select public.shipping_topup_complete(%L,%L,%L,%L,%L,10000)',t->>'id',invoice,link,consumer,product));
+ perform public.test_shipping_assert((public.shipping_wallet_snapshot(store,'live')->>'availableHalalas')::bigint=0,'topup namespace isolation');
+end $$;

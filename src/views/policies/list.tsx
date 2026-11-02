@@ -53,7 +53,7 @@ export function PolicyListPage() {
   const totalRules = policy?.rules.length ?? 0;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div translate="no" className="flex flex-col gap-6">
       <PageHeader icon={FileText} title={t("Return policy", "سياسة الإرجاع")} helpId="policies"
         actions={<Button onClick={() => router.push("/app/policies/new")} className="group h-10 rounded-xl"><Plus className="size-4 transition-transform duration-300 group-hover:rotate-90" />{t("New policy", "سياسة جديدة")}</Button>}
         help={t("Your return policy is the set of rules Reload follows: how many days, which reasons, which items. You paste it once, approve the rules, and publish. Changing it later creates a new version, and old decisions keep the version they were made with.", "سياسة الإرجاع هي القواعد التي يتبعها ريلود: عدد الأيام، والأسباب، والمنتجات. تلصقها مرة واحدة، تعتمد القواعد، ثم تنشرها. أي تعديل لاحق ينشئ إصدارًا جديدًا، والقرارات السابقة تحتفظ بإصدارها.")}>
@@ -231,7 +231,7 @@ export function PolicyListPage() {
                             onClick={() => router.push(`/app/policies/review/${draft.id}`)}
                             className="group/btn"
                           >
-                            {t("Review", "مراجعة")}
+                            <span>{t("Review", "مراجعة")}</span>
                             <ArrowRight className={cn("size-3.5 transition-transform group-hover/btn:translate-x-0.5", isArabic && "rotate-180")} />
                           </Button>
                         </CardContent>

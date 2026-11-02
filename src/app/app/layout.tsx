@@ -5,5 +5,13 @@ export default function AppWorkspaceLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <MerchantLayout>{children}</MerchantLayout>;
+  return (
+    <MerchantLayout
+      shippingSettingsEnabled={
+        process.env.SHIPPING_SANDBOX_SETTINGS_ENABLED === "true"
+      }
+    >
+      {children}
+    </MerchantLayout>
+  );
 }

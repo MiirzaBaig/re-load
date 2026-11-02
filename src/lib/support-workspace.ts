@@ -112,6 +112,14 @@ export function journeyLabel(step: string, t: T) {
       "Reviewing the return request",
       "مراجعة طلب الإرجاع",
     ],
+    SHIPPING_COLLECTION: ["Confirming return shipping details", "تأكيد تفاصيل شحن الإرجاع"],
+    COLLECTION_CITY: ["Choosing the return city", "اختيار مدينة الإرجاع"],
+    COLLECTION_ADDRESS: ["Entering return address details", "إدخال تفاصيل عنوان الإرجاع"],
+    COLLECTION_BUILDING: ["Entering the building number", "إدخال رقم المبنى"],
+    COLLECTION_POSTCODE: ["Entering the postal code", "إدخال الرمز البريدي"],
+    COLLECTION_REVIEW: ["Reviewing shipping details", "مراجعة تفاصيل الشحن"],
+    COLLECTION_EDIT: ["Editing shipping details", "تعديل تفاصيل الشحن"],
+    COLLECTION_DETAILS_CONFIRMED: ["Shipping details saved; parcel review needed", "حُفظت تفاصيل الشحن؛ بيانات الطرد تحتاج مراجعة"],
     COMPLETE: ["Return decision ready", "قرار الإرجاع جاهز"],
     AWAITING_TICKET_CONFIRMATION: [
       "Reviewing a support request",
@@ -160,6 +168,8 @@ export function customerActionLabel(body: string, t: T, interactive = false) {
     ticket_edit: ["Editing the support request", "تعديل طلب الدعم"],
     skip_photo: ["Photo skipped", "تجاوز الصورة"],
     resume_return: ["Return resumed", "استكمال الإرجاع"],
+    collection_help: ["Return shipping help requested", "طلب مساعدة لشحن الإرجاع"],
+    collection_verify: ["Return shipping verification requested", "طلب التحقق لمتابعة شحن الإرجاع"],
   };
   const pair = labels[body];
   if (pair) return t(...pair);
@@ -186,6 +196,8 @@ export function auditLabel(kind: string, t: T) {
       "Answer draft prepared for a merchant",
       "تجهيز مسودة إجابة للتاجر",
     ],
+    OTO_SANDBOX_CONNECTION_CHECKED: ["Shipping sandbox connection checked", "تم التحقق من اتصال الشحن التجريبي"],
+    OTO_SANDBOX_RATES_REQUESTED: ["Sandbox shipping rates requested", "تم طلب أسعار الشحن التجريبية"],
     CHECKOUT_MONITOR_VIEWED: [
       "Checkout journeys viewed",
       "مراجعة رحلات الشراء",

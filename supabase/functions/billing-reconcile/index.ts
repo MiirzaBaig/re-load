@@ -102,6 +102,35 @@ Deno.serve(async (request) => {
         console.error("billing_checkout_recovery_failed");
       }
     }
+    // Separate sandbox shipping top-ups may have missed a provider notification.
+    const shipping = await admin.rpc("shipping_topup_recovery_list");
+    if (
+      !shipping.error &&
+      Array.isArray(shipping.data) &&
+      shipping.data.length > 0 &&
+      Deno.env.get("STREAM_SANDBOX_X_API_KEY")
+    ) {
+      const provider = new StreamProvider(
+        Deno.env.get("STREAM_SANDBOX_X_API_KEY") || "",
+      );
+      for (const topup of shipping.data) {
+        if (
+          typeof topup.paymentLinkId !== "string" ||
+          !/^[0-9a-f-]{36}$/i.test(topup.paymentLinkId)
+        )
+          continue;
+        try {
+          const invoices = await provider.request(
+            `/invoices?payment_link_id=${topup.paymentLinkId}&include_payments=true&limit=10`,
+          );
+          for (const invoice of invoices.data || [])
+            if (invoice.status === "COMPLETED")
+              await reconcileStreamInvoice("sandbox", invoice.id);
+        } catch {
+          console.error("shipping_topup_recovery_pending");
+        }
+      }
+    }
     const accounts = await admin.from("store_billing").select(
       "environment,subscription_id",
     ).not("subscription_id", "is", null).lt(

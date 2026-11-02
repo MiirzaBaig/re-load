@@ -163,3 +163,15 @@ export function sentMessageId(result: WhatsAppSendResult) {
   if (!id) throw new Error("whatsapp_message_id_missing");
   return id;
 }
+
+/** Upload a verified PDF; uploading does not send a customer message. */
+export async function uploadReturnLabel(bytes:Uint8Array) {
+  if(bytes.length>5_000_000||new TextDecoder().decode(bytes.slice(0,5))!=="%PDF-")throw Error("label_unavailable");
+  const form=new FormData();form.set("messaging_product","whatsapp");form.set("type","application/pdf");form.set("file",new Blob([new Uint8Array(bytes)],{type:"application/pdf"}),"return-label.pdf");
+  const response=await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${env("WHATSAPP_PHONE_NUMBER_ID")}/media`,{method:"POST",redirect:"error",signal:AbortSignal.timeout(10000),headers:{Authorization:`Bearer ${env("WHATSAPP_ACCESS_TOKEN")}`},body:form});
+  const result=await response.json().catch(()=>({}));if(!response.ok||typeof result.id!=="string"||!/^\d{1,100}$/.test(result.id))throw Error("label_unavailable");return result.id;
+}
+export async function sendWhatsAppDocument(to:string,mediaId:string,caption:string){
+ if(!/^\d{1,100}$/.test(mediaId)||caption.length>1024)throw Error("label_unavailable");
+ return metaRequest({to:digits(to),type:"document",document:{id:mediaId,filename:"return-label.pdf",caption}});
+}

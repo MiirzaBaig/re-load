@@ -80,3 +80,13 @@ Arabic/English visitor information, merchant signup guidance and customer store-
 ## Zid development checkout — 2026-10-22
 
 Owner successfully authorized testing-z; identity, payment methods, catalogue and shipping reads were independently verified. An isolated browser-bound test checkout is implemented with explicit contact consent, provider validation, review and atomic once-only order creation/status checking. It is separately gated and does not bind production merchant workspaces or enable customer purchases/OTO. Live valid order creation/payment acceptance remains pending. See docs/zid-development-checkout.md.
+
+## WhatsApp shipping confirmation — 2026-10-31
+
+Sandbox merchant settings and a customer collection-details wizard are implemented locally. Migration 202610310003 is applied; new worker source is not deployed, and collection flags remain off. Eligibility/identity checks precede collection; native Arabic/English controls support navigation and same-case re-verification. A narrow privacy exception permits encrypted private collection drafts (15 minutes) and confirmations (24 hours), with scheduled ciphertext deletion and no plaintext addresses in public transcripts, case snapshots, diagnostics or model prompts. Raw private transport input remains only until its durable reply commits, then is redacted transactionally. No automatic booking is connected: trusted parcel data, fresh shipping/funding gates and customer label delivery remain pending. See docs/whatsapp-return-collection.md.
+
+## Sandbox automatic shipping code — 2026-10-31
+
+Local worker code now connects collection confirmation to fresh order/policy/warehouse/rate/funding checks, exact merchant-approved SKU/quantity parcel measurements, atomic cap reservation/one reverse submission, exact-reference charge reconciliation and native customer-requested PDF labels. Migration 202610310005 is applied. No automatic shipment, message or funds movement created; worker not deployed and the additional booking sandbox flag is off. Usage signals produce deduplicated improvement counts and suggestions for merchant review; no automatic training, policy/cap changes or live shipping. Full WhatsApp acceptance remains pending. See docs/oto-whatsapp-booking.md.
+
+Pilot preparation: WhatsApp inbox v33 is now deployed with shipping explicitly disabled and empty store/sender allowlists. Existing OTO staging token configured. Backend deployment is verified, but real automated WhatsApp acceptance is pending the owner's setup of the testing-z-connected workspace and qualifying controlled-contact order. No tenant billing/funding/connection was copied from the separate wallet test workspace. See docs/oto-whatsapp-booking.md.

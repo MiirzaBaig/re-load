@@ -1,3 +1,5 @@
+import { bookConfirmedReturn,checkConfirmedReturn,type ShippingResult } from "./shipping-automation.ts";
+import { beginCollection, advanceCollection, collectionEnabled, collectionSensitive, type CollectionReply, type CollectionState } from "./return-collection.ts";
 import { withBilling, reserveBilling, supportAllowed, billingStoreId } from "./billing.ts";
 import { customerFirstName, merchantDisplayName } from "./presentation.ts";
 import { decrypt } from "./crypto.ts";
@@ -13,14 +15,15 @@ import { trackingMessage } from "./customer-tracking.ts";
 import { sha256 } from "./crypto.ts";
 import { env, json } from "./http.ts";
 import { adminClient } from "./supabase.ts";
-import { downloadWhatsAppImage, sendWhatsAppButtons as deliverButtons, sendWhatsAppList as deliverList, sendWhatsAppText as deliverText, sentMessageId, verifyWhatsAppSignature, type WhatsAppSendResult } from "./whatsapp.ts";
+import { sendWhatsAppDocument as deliverDocument,uploadReturnLabel,downloadWhatsAppImage, sendWhatsAppButtons as deliverButtons, sendWhatsAppList as deliverList, sendWhatsAppText as deliverText, sentMessageId, verifyWhatsAppSignature, type WhatsAppSendResult } from "./whatsapp.ts";
 
-type ReplyPlan = { kind: "text"; to: string; body: string } | { kind: "buttons"; to: string; body: string; buttons: Array<{ id: string; title: string }> } | { kind: "list"; to: string; body: string; label: string; rows: Array<{ id: string; title: string; description?: string }> };
+type ReplyPlan = { kind: "document";to:string;body:string;mediaId:string } | { kind: "text"; to: string; body: string } | { kind: "buttons"; to: string; body: string; buttons: Array<{ id: string; title: string }> } | { kind: "list"; to: string; body: string; label: string; rows: Array<{ id: string; title: string; description?: string }> };
 const sendWhatsAppText = async (to: string, body: string): Promise<ReplyPlan> => ({ kind: "text", to, body });
 const sendWhatsAppButtons = async (to: string, body: string, buttons: Array<{ id: string; title: string }>): Promise<ReplyPlan> => ({ kind: "buttons", to, body, buttons });
 const sendWhatsAppList = async (to: string, body: string, label: string, rows: Array<{ id: string; title: string; description?: string }>): Promise<ReplyPlan> => ({ kind: "list", to, body, label, rows });
 
 async function deliver(plan: ReplyPlan) {
+  if (plan.kind === "document") return deliverDocument(plan.to,plan.mediaId,plan.body);
   if (plan.kind === "text") return deliverText(plan.to, plan.body);
   if (plan.kind === "buttons") return deliverButtons(plan.to, plan.body, plan.buttons);
   return deliverList(plan.to, plan.body, plan.label, plan.rows);
@@ -42,14 +45,14 @@ async function persistAndDeliver(admin: Admin, messageId: string, plan: ReplyPla
   }
   const receipt = await admin.rpc("save_whatsapp_reply", { p_id: messageId, p_reply: reply, p_accepted: result });
   if (receipt.error) throw new Error("send_receipt_unknown");
-  if (storeId && conversationId) await saveOutbound(admin, storeId, conversationId, result, plan.body, plan.kind === "text" ? "TEXT" : "INTERACTIVE");
+  if (storeId && conversationId) await saveOutbound(admin, storeId, conversationId, result, plan.body, plan.kind === "document" ? "DOCUMENT" : plan.kind === "text" ? "TEXT" : "INTERACTIVE");
   return result;
 }
 
 type Admin = ReturnType<typeof adminClient>;
 type MetaMessage = { id?: string; from?: string; timestamp?: string; type?: string; text?: { body?: string }; image?: { id?: string; mime_type?: string; caption?: string }; interactive?: { button_reply?: { id?: string }; list_reply?: { id?: string } } };
 type Item = { id: string; name: string; sku: string; quantity: number; price: number };
-type Context = { shopping?: ShoppingSelection; emailChallengeId?: string; emailVerified?: boolean; generalHistory?: Array<{role:string;content:string}>; extractedOrder?: string; serviceMode?: "QUESTION" | "PRODUCT" | "TRACK" | "COMPLAINT" | "HUMAN"; ticketDraft?: string; ticketEditing?: boolean; returnResume?: { step: string; context: Record<string, unknown> }; caseId?: string | null; orderNumber?: string; identityReviewId?: string; verificationToken?: string; order?: { orderId: string; customerName: string; orderStatus?: string; customerEmail?: string; items: Item[] }; itemId?: string; quantity?: number; reason?: string; condition?: string; photoEvidenceId?: string; photoReviewRequired?: boolean; decisionId?: string; reportType?: "BUG" | "FEEDBACK"; reportMessage?: string; itemPage?: number };
+type Context = { collection?: CollectionState; collectionCaseId?: string; shopping?: ShoppingSelection; emailChallengeId?: string; emailVerified?: boolean; generalHistory?: Array<{role:string;content:string}>; extractedOrder?: string; serviceMode?: "QUESTION" | "PRODUCT" | "TRACK" | "COMPLAINT" | "HUMAN"; ticketDraft?: string; ticketEditing?: boolean; returnResume?: { step: string; context: Record<string, unknown> }; caseId?: string | null; orderNumber?: string; identityReviewId?: string; verificationToken?: string; order?: { orderId: string; customerName: string; orderStatus?: string; customerEmail?: string; items: Item[] }; itemId?: string; quantity?: number; reason?: string; condition?: string; photoEvidenceId?: string; photoReviewRequired?: boolean; decisionId?: string; reportType?: "BUG" | "FEEDBACK"; reportMessage?: string; itemPage?: number };
 type Conversation = { id: string; language: string; contact_id: string; return_case_id: string | null };
 type Store = { id: string; name: string; return_code: string };
 
@@ -95,7 +98,7 @@ async function recordJourneyIssue(admin: Admin, conversation: string, kind: stri
   } catch { console.error("journey_issue_record_failed"); }
 }
 
-async function saveOutbound(admin: Admin, storeId: string, conversationId: string, result: WhatsAppSendResult, body: string, type: "TEXT" | "INTERACTIVE") {
+async function saveOutbound(admin: Admin, storeId: string, conversationId: string, result: WhatsAppSendResult, body: string, type: "TEXT" | "INTERACTIVE" | "DOCUMENT") {
   const { error } = await admin.from("whatsapp_messages").upsert({
     store_id: storeId, conversation_id: conversationId, external_message_id: sentMessageId(result), direction: "OUTBOUND",
     message_type: type, body, status: "SENT", occurred_at: new Date().toISOString(),
@@ -315,10 +318,108 @@ async function shoppingReply(to: string, language: "ar" | "en", reply: ShoppingR
   return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
 }
 
+function shippingCopy(result:ShippingResult,language:"ar"|"en") {
+ const ar=language==="ar";
+ const states:Record<string,[string,string]>={checking:["نتحقق من حجز الإرجاع. طلبك محفوظ؛ لا تبدأ طلبًا جديدًا للمنتج نفسه. لم يتأكد موعد استلام بعد.","We’re checking the return booking. Your request is saved; please don’t start another return for this item. No collection time is confirmed yet."],preparing:["وصل طلب ترتيب الإرجاع إلى الناقل، وننتظر تأكيده. لم يتأكد موعد استلام بعد.","Your return booking request has reached the courier and is awaiting confirmation. No collection time is confirmed yet."],booked:["تم تأكيد شحن الإرجاع. يمكنك طلب بوليصة الإرجاع أدناه. اطبعها وثبّتها على الطرد قبل تسليمه للناقل.","Your return shipment is confirmed. Request the label below, then print it and attach it to the parcel before handing it to the courier."],collected:["استلم الناقل طرد الإرجاع. لم يؤكد المتجر فحص المنتج أو رد المبلغ بعد.","The courier has collected your return. Store inspection and any refund are separate steps."],in_transit:["طرد الإرجاع في الطريق إلى المتجر. استرداد المبلغ يخضع لمراجعة المتجر.","Your return is on its way to the store. The store will handle inspection and any refund."],delivered:["يشير تتبّع الناقل إلى وصول المرتجع. يبقى فحص المنتج وقرار رد المبلغ لدى المتجر.","The courier reports that the return has arrived. The store still handles inspection and any refund decision."],cancelled:["يشير الناقل إلى إلغاء الشحنة. تواصل مع المتجر لترتيب الخطوة التالية.","The courier reports this shipment as cancelled. Ask the store to arrange the next step."],needs_attention:["شحن الإرجاع يحتاج متابعة من المتجر. طلبك محفوظ، ولا تحتاج إلى تقديم طلب آخر.","The store needs to follow up on your return shipment. Your request is saved; you don’t need to create another one."]};
+ return states[result.state]?.[ar?0:1] || (ar?"تفاصيل الإرجاع محفوظة. يحتاج المتجر إلى مراجعة ترتيبات الشحن قبل المتابعة؛ لم نحجز ناقلًا.":"Your return details are saved. The store needs to review the shipping arrangements before continuing; no courier was booked.");
+}
+async function shippingReply(admin:Admin,store:Store,conversation:Conversation,to:string,language:"ar"|"en",context:Context,result:ShippingResult) {
+ await setFlow(admin,conversation.id,"COMPLETE",{caseId:context.caseId,decisionId:context.decisionId,reason:context.reason,condition:context.condition});
+ const body=shippingCopy(result,language),buttons=[{id:"check_status",title:language==="ar"?"تحديث الحالة":"Refresh status"},{id:"collection_help",title:language==="ar"?"مساعدة المتجر":"Ask the store"},{id:"menu",title:language==="ar"?"القائمة":"Menu"}];
+ if(result.state==="waiting"&&["BALANCE_REQUIRED","PROVIDER_FUNDS","PROVIDER_UNAVAILABLE","COURIER_UNAVAILABLE","ABOVE_CAP","PARCEL_REQUIRED"].includes(result.reason||""))buttons[0]={id:"shipping_retry",title:language==="ar"?"إعادة التحقق":"Check again"};
+ if(["booked","collected","in_transit","delivered"].includes(result.state))buttons[0]={id:"shipping_label",title:language==="ar"?"بوليصة الإرجاع":"Return label"};
+ return {body,result:await sendWhatsAppButtons(to,body,buttons),type:"INTERACTIVE" as const};
+}
+async function freshShipping(store:Store,to:string,context:Context,data:{orderId:string;itemId:string;quantity:number}) {
+ let reason=context.reason,condition=context.condition;
+ if(!reason||!condition){const saved=await adminClient().from("return_cases").select("item_snapshot").eq("store_id",store.id).eq("id",context.caseId).maybeSingle();if(saved.error)throw Error("order_review");reason=saved.data?.item_snapshot?.reason;condition=saved.data?.item_snapshot?.condition;}
+ const lookup=await invoke("salla-order-lookup",{returnCode:store.return_code,orderNumber:data.orderId,verifier:to});
+ if(!lookup.order||typeof lookup.verificationToken!=="string")throw Error("order_review");
+ const evaluated=await invoke("return-decide",{verificationToken:lookup.verificationToken,itemId:data.itemId,quantity:data.quantity,reason,condition,action:"evaluate"});
+ if(evaluated.decision?.outcome!=="ELIGIBLE"||!evaluated.decisionId)throw Error("order_review");
+ return {facts:lookup.order,decisionId:evaluated.decisionId};
+}
+
+async function collectionReply(admin: Admin, conversation: Conversation, to: string, language: "ar" | "en", context: Context, reply: CollectionReply) {
+  const clean = { ...context, collection: reply.state };
+  if (reply.expired) {
+    await setFlow(admin, conversation.id, "SHIPPING_COLLECTION", { ...clean, collection: undefined });
+  } else await setFlow(admin, conversation.id, reply.done ? "COMPLETE" : "SHIPPING_COLLECTION", clean);
+  if (reply.help) return { body: reply.body, result: await sendWhatsAppButtons(to, reply.body, [
+    { id: "collection_help", title: language === "ar" ? "مساعدة المتجر" : "Ask the store" },
+    { id: "resume_return", title: language === "ar" ? "متابعة التفاصيل" : "Continue details" },
+    { id: "menu", title: language === "ar" ? "القائمة" : "Menu" },
+  ]), type: "INTERACTIVE" as const };
+  if (reply.rows) return { body: reply.body, result: await sendWhatsAppList(to, reply.body, language === "ar" ? "تعديل" : "Edit", reply.rows), type: "INTERACTIVE" as const };
+  return { body: reply.body, result: await sendWhatsAppButtons(to, reply.body, reply.buttons ?? [{id:"menu",title:language === "ar"?"القائمة":"Menu"}]), type: "INTERACTIVE" as const };
+}
+async function startCollection(admin: Admin, store: Store, conversation: Conversation, to: string, language: "ar" | "en", context: Context) {
+  try {
+    const reply = await beginCollection(admin, context, store.id, conversation.id, to, language);
+    return reply ? collectionReply(admin, conversation, to, language, context, reply) : null;
+  } catch {
+    // A saved return remains valid when shipping is unavailable; never re-create the case or expose provider errors.
+    await recordJourneyIssue(admin, conversation.id, "shipping_details_unavailable");
+    return null;
+  }
+}
+
+async function resumeCollection(admin: Admin, store: Store, conversation: Conversation, to: string, language: "ar" | "en", previous: Context, order: NonNullable<Context["order"]>, token: string) {
+  if (!previous.collectionCaseId) return null;
+        const caseId = previous.collectionCaseId;
+        const { data: savedCase, error: savedError } = await admin.from("return_cases").select("id,order_id,decision_id,item_snapshot").eq("id", caseId).eq("store_id", store.id).maybeSingle();
+        if (savedError) throw savedError;
+        if (savedCase?.order_id !== order.orderId) {
+          const body = language === "ar" ? "هذا الطلب مختلف عن طلب الإرجاع المحفوظ. أرسل رقم الطلب الأصلي للمتابعة." : "That order is different from your saved return. Send the original order number to continue.";
+          return {body,result:await sendWhatsAppText(to,body),type:"TEXT" as const};
+        }
+        const context: Context = { caseId, decisionId: savedCase.decision_id, order, verificationToken: token, itemId: savedCase.item_snapshot?.id, quantity: savedCase.item_snapshot?.quantity,reason:savedCase.item_snapshot?.reason,condition:savedCase.item_snapshot?.condition };
+        const shipping = await startCollection(admin,store,conversation,to,language,context);
+        if (shipping) return shipping;
+        await setFlow(admin,conversation.id,"COMPLETE",{caseId,decisionId:savedCase.decision_id});
+        const body = language === "ar" ? "تم التحقق من الطلب. طلب الإرجاع محفوظ لدى المتجر، ويحتاج إلى متابعة منه قبل الشحن." : "Your order is verified. The store has your return and needs to follow up before shipping.";
+        return {body,result:await sendWhatsAppButtons(to,body,[{id:"collection_help",title:language === "ar"?"مساعدة المتجر":"Ask the store"},{id:"check_status",title:language === "ar"?"متابعة الإرجاع":"Track return"}]),type:"INTERACTIVE" as const};
+
+}
+
 async function processFlowInner(admin: Admin, store: Store, conversation: Conversation, to: string, input: string, profileName?: string, message?: MetaMessage) {
   let language: "ar" | "en" = conversation.language === "en" ? "en" : "ar";
   const normalized = input.trim().toLowerCase();
   const flow = await getFlow(admin, conversation.id);
+  if (normalized === "shipping_retry" && flow.context.caseId) {
+    const booking=await bookConfirmedReturn(admin,{store:store.id,conversation:conversation.id,caseId:flow.context.caseId,sender:to},{fresh:data=>freshShipping(store,to,flow.context,data),photoReview:flow.context.photoReviewRequired});
+    if(booking.state!=="off")return shippingReply(admin,store,conversation,to,language,flow.context,booking);
+    return menu(to,language,store.name,Boolean(flow.context.returnResume));
+  }
+  if (normalized === "shipping_label" && flow.context.caseId) {
+    const status = await checkConfirmedReturn(admin,{store:store.id,conversation:conversation.id,caseId:flow.context.caseId,sender:to},true);
+    if (status.label) {
+      try {
+        const mediaId=await uploadReturnLabel(status.label);
+        const body=language==="ar"?"بوليصة الإرجاع جاهزة. اطبعها وثبّتها على الطرد قبل تسليمه للناقل. إذا تعذّرت الطباعة، اكتب «مساعدة»؛ لا نفترض أن السائق سيطبعها.":"Your return label is ready. Print it and attach it to the parcel before handing it to the courier. If you can’t print, type HELP; the driver may not provide a printed label.";
+        return {body,result:{kind:"document",to,body,mediaId} as ReplyPlan,type:"DOCUMENT" as const};
+      }catch{}
+    }
+    const body=language==="ar"?"لم نتمكن من تجهيز البوليصة الآن. طلبك محفوظ؛ تحقق من الحالة أو اطلب مساعدة المتجر. لم ننشئ شحنة أخرى.":"We couldn’t prepare the label just now. Your return is saved; check its status or ask the store for help. No additional shipment was created.";
+    return {body,result:await sendWhatsAppButtons(to,body,[{id:"check_status",title:language==="ar"?"تحديث الحالة":"Refresh status"},{id:"collection_help",title:language==="ar"?"مساعدة المتجر":"Ask the store"}]),type:"INTERACTIVE" as const};
+  }
+  if (normalized === "collection_help" && flow.context.caseId) {
+    const draft = language === "ar" ? "أحتاج مساعدة في ترتيب شحن الإرجاع الخاص بي." : "I need help arranging shipping for my saved return.";
+    await setFlow(admin, conversation.id, "MENU", { caseId: flow.context.caseId, returnResume: flow.step === "SHIPPING_COLLECTION" ? { step: flow.step, context: flow.context } : undefined, serviceMode: "HUMAN", ticketDraft: draft });
+    const body = ticketPreview(store.name, draft, language);
+    return { body, result: await sendWhatsAppButtons(to, body, ticketButtons(language)), type: "INTERACTIVE" as const };
+  }
+  if (normalized === "collection_continue" && flow.context.caseId) {
+    const shipping = await startCollection(admin,store,conversation,to,language,flow.context);
+    if (shipping) return shipping;
+    const body = language === "ar" ? "طلبك محفوظ. نحتاج التحقق من رقم الطلب من جديد أو مساعدة المتجر لمتابعة تفاصيل الشحن." : "Your return is saved. Verify your order again or ask the store for help to continue shipping details.";
+    return {body,result:await sendWhatsAppButtons(to,body,[{id:"collection_verify",title:language === "ar"?"التحقق من الطلب":"Verify order"},{id:"collection_help",title:language === "ar"?"مساعدة المتجر":"Ask the store"},{id:"menu",title:language === "ar"?"القائمة":"Menu"}]),type:"INTERACTIVE" as const};
+  }
+  if (normalized === "collection_verify" && flow.context.caseId) {
+    await setFlow(admin, conversation.id, "AWAITING_ORDER", { collectionCaseId: flow.context.caseId });
+    const body = language === "ar" ? "أرسل رقم الطلب المرتبط بهذا الإرجاع للتحقق منه من جديد. لن ننشئ طلب إرجاع آخر." : "Send the order number for this return so we can verify it again. We won’t create another return request.";
+    return {body,result:await sendWhatsAppText(to,body),type:"TEXT" as const};
+  }
   const fullSupport = await supportAllowed(store.id, admin);
   const supportChoice = ["ask_question","shop_products","track_order","open_ticket","human_support","track_tickets"].includes(normalized);
   if (!fullSupport && (supportChoice || flow.context.serviceMode || flow.context.ticketDraft || flow.context.shopping)) {
@@ -362,7 +463,18 @@ Choose Continue to pick up where you left off, or New return to start again.`;
     language = ["english", "en", "language_en"].includes(normalized) ? "en" : "ar";
     await admin.from("whatsapp_conversations").update({ language }).eq("id", conversation.id);
     await admin.from("whatsapp_contacts").update({ locale: language }).eq("id", conversation.contact_id);
-    await setFlow(admin, conversation.id, "MENU");
+    if (flow.step === "SHIPPING_COLLECTION") {
+      const reply = await advanceCollection(admin, flow.context, store.id, conversation.id, to, "resume_return", language);
+      return collectionReply(admin, conversation, to, language, flow.context, reply);
+    }
+
+    if (flow.context.collectionCaseId) {
+      const emailStep = flow.step === "AWAITING_EMAIL_OTP";
+      const body = language === "ar" ? emailStep ? "تم تغيير اللغة. أرسل أحدث رمز تحقق وصلك عبر البريد لمتابعة الإرجاع المحفوظ." : "تم تغيير اللغة. أرسل رقم الطلب لمتابعة الإرجاع المحفوظ؛ لن ننشئ طلبًا آخر." : emailStep ? "Language updated. Enter the latest email verification code to continue your saved return." : "Language updated. Send the order number to continue your saved return; we won’t create another request.";
+      return {body,result:await sendWhatsAppText(to,body),type:"TEXT" as const};
+    }
+
+    await setFlow(admin, conversation.id, "MENU", { returnResume: flow.context.returnResume });
     return menu(to, language, store.name, Boolean(flow.context.returnResume));
   }
   if (flow.step === "AWAITING_LANGUAGE") return languagePrompt(to, profileName, store.name);
@@ -397,13 +509,31 @@ Choose Continue to pick up where you left off, or New return to start again.`;
   }
   if (["ask_question","shop_products","track_order","open_ticket","human_support"].includes(normalized)) {
     const serviceMode=normalized === "shop_products" ? "PRODUCT" : normalized === "track_order" ? "TRACK" : normalized === "open_ticket" ? "COMPLAINT" : normalized === "human_support" ? "HUMAN" : "QUESTION";
-    await setFlow(admin,conversation.id,serviceMode === "TRACK" ? "AWAITING_ORDER" : "MENU",{serviceMode,returnResume:flow.context.returnResume});
+    await setFlow(admin,conversation.id,serviceMode === "TRACK" ? "AWAITING_ORDER" : "MENU",{serviceMode,returnResume:flow.step === "SHIPPING_COLLECTION" ? {step:flow.step,context:flow.context} : flow.context.returnResume});
     const body=language === "ar" ? serviceMode === "TRACK" ? "أكيد. أرسل رقم الطلب مثل ما هو في تأكيد الشراء، ونتحقق منه قبل نعرض لك التفاصيل." : ["COMPLAINT","HUMAN"].includes(serviceMode) ? "اكتب لنا التفاصيل اللي تبي توصل لفريق المتجر. بنعرضها عليك قبل الإرسال." : serviceMode === "PRODUCT" ? "وش المنتج اللي تبحث عنه؟ وإذا عندك مقاس أو لون معيّن، اذكره لنا." : "حاضرين، اكتب سؤالك وبنساعدك بالمعلومات المعتمدة من المتجر." : serviceMode === "TRACK" ? "Send the order number from your purchase confirmation. We’ll verify it before showing the details." : ["COMPLAINT","HUMAN"].includes(serviceMode) ? "Tell us what you’d like the store team to know. You’ll review it before we send it." : serviceMode === "PRODUCT" ? "Which product are you looking for? Include the size or colour if you have one in mind." : "What would you like to know? We’ll use the store’s approved information to help.";
     return {body,result:await sendWhatsAppText(to,body),type:"TEXT" as const};
   }
-  if (["menu", "القائمة", "مساعدة", "help"].includes(normalized)) {
+  if (["menu", "القائمة", ...(flow.step === "SHIPPING_COLLECTION" ? [] : ["مساعدة", "help"])].includes(normalized)) {
     await setFlow(admin, conversation.id, "MENU", ["MENU", "COMPLETE", "AWAITING_LANGUAGE"].includes(flow.step) ? flow.context : { returnResume: { step: flow.step, context: flow.context } });
     return menu(to, language, store.name, Boolean(flow.context.returnResume));
+  }
+  if (flow.step === "SHIPPING_COLLECTION") {
+    try {
+      const reply = await advanceCollection(admin, flow.context, store.id, conversation.id, to, input, language);
+      if (reply.done && reply.confirmed && flow.context.caseId) {
+        const booking = await bookConfirmedReturn(admin,{store:store.id,conversation:conversation.id,caseId:flow.context.caseId,sender:to},{fresh:data=>freshShipping(store,to,flow.context,data),photoReview:flow.context.photoReviewRequired});
+        if (booking.state !== "off") return shippingReply(admin,store,conversation,to,language,flow.context,booking);
+      }
+      return collectionReply(admin, conversation, to, language, flow.context, reply);
+    } catch {
+      await recordJourneyIssue(admin, conversation.id, "shipping_details_unavailable");
+      const body = language === "ar" ? "تعذّر حفظ تفاصيل الشحن الآن. طلب الإرجاع محفوظ ولم نحجز ناقلًا. تقدر تعيد المحاولة أو تطلب مساعدة المتجر." : "We couldn’t save the shipping details just now. Your return is saved and no courier was booked. You can try again or ask the store for help.";
+      return {body,result:await sendWhatsAppButtons(to,body,[{id:"resume_return",title:language === "ar"?"إعادة المحاولة":"Try again"},{id:"collection_help",title:language === "ar"?"مساعدة المتجر":"Ask the store"},{id:"menu",title:language === "ar"?"القائمة":"Menu"}]),type:"INTERACTIVE" as const};
+    }
+  }
+  if (normalized.startsWith("rc:")) {
+    const body = language === "ar" ? "هذا الاختيار من خطوة سابقة. طلبك محفوظ؛ اختر المتابعة من القائمة أو راجع حالة الإرجاع." : "That choice belongs to an earlier step. Your request is saved; continue from the menu or check your return.";
+    return {body,result:await sendWhatsAppButtons(to,body,[{id:"check_status",title:language === "ar"?"متابعة الإرجاع":"Track return"},{id:"menu",title:language === "ar"?"القائمة":"Menu"}]),type:"INTERACTIVE" as const};
   }
   if (["report_bug", "send_feedback"].includes(normalized)) {
     const reportType = normalized === "report_bug" ? "BUG" : "FEEDBACK";
@@ -476,6 +606,17 @@ Choose Continue to pick up where you left off, or New return to start again.`;
       const body = language === "ar" ? "ما لقينا طلب إرجاع مرتبط بهذه المحادثة. اختر «طلب إرجاع جديد» للبدء." : "We couldn’t find a return linked to this conversation. Choose Start a return to begin.";
       return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
     }
+    if (collectionEnabled(store.id, to)) {
+      const booking=await checkConfirmedReturn(admin,{store:store.id,conversation:conversation.id,caseId:activeCase.id,sender:to});
+      if (booking.state!=="off") return shippingReply(admin,store,conversation,to,language,{...flow.context,caseId:activeCase.id},booking);
+      const {data: shippingStatus,error: shippingError} = await admin.rpc("shipping_collection_status", {p_store:store.id,p_conversation:conversation.id,p_case:activeCase.id});
+      if (!shippingError && shippingStatus && activeCase.status === "OPEN") {
+        const reference = `RL-${activeCase.id.slice(0,8).toUpperCase()}`;
+        const body = language === "ar" ? `${reference} · ${store.name}\n${shippingStatus.state === "EXPIRED" ? "انتهت صلاحية تفاصيل الشحن المحفوظة. اطلب مساعدة المتجر لتحديثها بأمان." : "وصلت تفاصيل الإرجاع. يحتاج المتجر إلى مراجعة بيانات الطرد قبل ترتيب الشحن."}\n\nلم يتأكد حجز ناقل أو موعد استلام بعد.` : `${reference} · ${store.name}\n${shippingStatus.state === "EXPIRED" ? "The saved shipping details have expired. Ask the store for help updating them securely." : "Return details received. The store needs to check the parcel details before shipping."}\n\nNo courier booking or collection time is confirmed yet.`;
+        await setFlow(admin,conversation.id,flow.step,{...flow.context,caseId:activeCase.id});
+        return {body,result:await sendWhatsAppButtons(to,body,[{id:"collection_help",title:language === "ar"?"مساعدة المتجر":"Ask the store"},{id:"menu",title:language === "ar"?"القائمة":"Menu"}]),type:"INTERACTIVE" as const};
+      }
+    }
     const statusLabels: Record<string, [string, string]> = {
       OPEN: ["مفتوح لدى المتجر", "Open with the store"], AWAITING_ITEM: ["بانتظار استلام المنتج", "Waiting for the item"],
       RECEIVED: ["استلم المتجر المنتج", "Item received by the store"], RESOLVED: ["مكتمل", "Completed"], CANCELLED: ["ملغي", "Cancelled"],
@@ -518,6 +659,8 @@ Choose Continue to pick up where you left off, or New return to start again.`;
         const refreshed = await invoke("salla-order-lookup", { returnCode: store.return_code, orderNumber: facts.orderId, verifier: facts._verificationContact });
         if (!refreshed.order?.items?.length || typeof refreshed.verificationToken !== "string") throw new Error("approved_order_unavailable");
         const context = { identityReviewId: flow.context.identityReviewId, order: refreshed.order as NonNullable<Context["order"]>, verificationToken: refreshed.verificationToken };
+        const resumedShipping = await resumeCollection(admin,store,conversation,to,language,flow.context,context.order,context.verificationToken);
+        if (resumedShipping) return resumedShipping;
         if (flow.context.serviceMode === "TRACK") {
           await setFlow(admin,conversation.id,"MENU",{});
           return orderTrackingReply(admin,facts._verificationContact,to,language,store,context.order);
@@ -528,7 +671,7 @@ Choose Continue to pick up where you left off, or New return to start again.`;
       }
     }
     if (review.status === "DECLINED" || review.status === "APPROVED") {
-      await setFlow(admin, conversation.id, "AWAITING_ORDER");
+      await setFlow(admin, conversation.id, "AWAITING_ORDER", { collectionCaseId: flow.context.collectionCaseId });
       const body = language === "ar" ? "ما نقدر نكمل بهذا التحقق. راجع بياناتك مع المتجر، ثم أرسل رقم الطلب من جديد." : "We can’t continue with this verification. Please check your details with the store, then send your order number again.";
       return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
     }
@@ -557,7 +700,7 @@ Check your spam folder if it hasn’t arrived.`;
   if (flow.step === "AWAITING_EMAIL_OTP" && normalized !== "identity_request") {
     const context = flow.context;
     if (!context.emailChallengeId || !context.orderNumber) {
-      await setFlow(admin, conversation.id, "AWAITING_ORDER");
+      await setFlow(admin, conversation.id, "AWAITING_ORDER", { collectionCaseId: flow.context.collectionCaseId });
       const body = language === "ar" ? "أرسل رقم الطلب من جديد عشان نكمل التحقق." : "Send your order number again so we can verify it.";
       return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
     }
@@ -579,6 +722,8 @@ Check your spam folder if it hasn’t arrived.`;
           await setFlow(admin, conversation.id, "MENU", {});
           return orderTrackingReply(admin, contact, to, language, store, lookup.order);
         }
+        const resumedShipping = await resumeCollection(admin,store,conversation,to,language,context,lookup.order,lookup.verificationToken);
+        if (resumedShipping) return resumedShipping;
         await setFlow(admin, conversation.id, "AWAITING_ITEM", { order: lookup.order, verificationToken: lookup.verificationToken });
         await admin.from("whatsapp_conversations").update({ state: "CAPTURING_RETURN" }).eq("id", conversation.id);
         const reply = await itemPrompt(to, language, lookup.order);
@@ -636,6 +781,8 @@ After the store reviews it, come back and tap Continue. Your order details stay 
         await setFlow(admin,conversation.id,"MENU",{});
         return orderTrackingReply(admin,to,to,language,store,order);
       }
+      const resumedShipping = await resumeCollection(admin,store,conversation,to,language,flow.context,order,lookup.verificationToken);
+      if (resumedShipping) return resumedShipping;
       await setFlow(admin, conversation.id, "AWAITING_ITEM", { order, verificationToken: lookup.verificationToken });
       await admin.from("whatsapp_conversations").update({ state: "CAPTURING_RETURN" }).eq("id", conversation.id);
       return itemPrompt(to, language, order);
@@ -645,7 +792,7 @@ After the store reviews it, come back and tap Continue. Your order details stay 
         const body = language === "ar" ? "تعذّر الاتصال بالمتجر الآن. حاول مرة ثانية بعد قليل؛ ما أرسلنا أي طلب." : "We couldn’t reach the store just now. Please try again shortly; nothing was submitted.";
         return { body, result: await sendWhatsAppText(to, body), type: "TEXT" as const };
       }
-      await setFlow(admin, conversation.id, "AWAITING_ORDER", { orderNumber, serviceMode: flow.context.serviceMode });
+      await setFlow(admin, conversation.id, "AWAITING_ORDER", { orderNumber, serviceMode: flow.context.serviceMode, collectionCaseId: flow.context.collectionCaseId });
       const body = language === "ar" ? "ما قدرنا نطابق رقم الطلب مع رقم واتساب. راجع رقم الطلب وأرسله مرة ثانية.\nإذا رقمك تغيّر، تقدر تتحقق عبر البريد المسجل في الطلب أو تطلب مساعدة المتجر." : "We couldn’t match that order to your WhatsApp number. Check the order number and send it again.\nIf your number has changed, verify through the email on your order or ask the store to help.";
       return { body, result: await sendWhatsAppButtons(to, body, [{ id: "email_request", title: language === "ar" ? "التحقق عبر البريد" : "Verify by email" }, { id: "identity_request", title: language === "ar" ? "التحقق عبر المتجر" : "Ask store to verify" }]), type: "INTERACTIVE" as const };
     }
@@ -797,6 +944,10 @@ After the store reviews it, come back and tap Continue. Your order details stay 
     await setFlow(admin, conversation.id, "COMPLETE", { ...context, caseId, decisionId: evaluated.decisionId });
     await admin.from("whatsapp_conversations").update({ state: "ANSWERED" }).eq("id", conversation.id);
     const outcome = evaluated.decision?.outcome;
+    if (outcome === "ELIGIBLE" && caseId) {
+      const shipping = await startCollection(admin, store, conversation, to, language, { ...context, caseId, decisionId: evaluated.decisionId });
+      if (shipping) return shipping;
+    }
     const reference = caseId ? `RL-${caseId.slice(0, 8).toUpperCase()}` : null;
     const body = language === "ar"
       ? outcome === "ELIGIBLE" ? `طلبك مستوفٍ لشروط الإرجاع ✅\n\nرقم المتابعة: ${reference}\nأرسلنا الطلب إلى ${store.name} لتأكيد الخطوة التالية. بنبلغك هنا بأي تحديث.` : outcome === "MANUAL_REVIEW" ? `طلبك يحتاج مراجعة من المتجر.\n\nرقم المتابعة: ${reference}\nأرسلنا التفاصيل إلى ${store.name}، وبنبلغك هنا بعد المراجعة.` : `هذا الطلب ما يستوفي أحد شروط الإرجاع لدى ${store.name}.\n\n${decisionExplanation(evaluated.decision, language)}`
@@ -835,7 +986,9 @@ After the store reviews it, come back and tap Continue. Your order details stay 
         }
       }
       if (result.ok || result.error !== "not_connected") {
-        await setFlow(admin, conversation.id, "MENU", { ...flow.context, reportMessage: input.slice(0,4096) });
+        // Same bounded state as a general answer, staying in product help so the
+        // customer can try another name. (Was: { ...flow.context, reportMessage }.)
+        await setFlow(admin, conversation.id, "MENU", { ...generalContext(flow.context), serviceMode: "PRODUCT", reportMessage: input.slice(0,4096) });
         const body = language === "ar"
           ? result.ok ? "ما لقيت منتجًا بهذا الاسم. جرّب اسم المنتج أو رمزه، أو أرسل سؤالك للمتجر." : "ما قدرنا نراجع المنتجات الآن. تقدر تعيد المحاولة أو ترسل سؤالك للمتجر."
           : result.ok ? "I couldn’t find that product. Try its name or SKU, or send your question to the store." : "I couldn’t check the products just now. You can try again or send your question to the store.";
@@ -940,8 +1093,12 @@ export async function handleMessage(phoneNumberId: string, message: MetaMessage,
       await setFlow(admin, conversation.id, "AWAITING_LANGUAGE");
     } else await admin.from("whatsapp_conversations").update({ service_window_expires_at: new Date(Date.now() + 86_400_000).toISOString(), last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", conversation.id);
     const input = routeCode ? "hello" : textOf(message);
-    const currentFlow = /[0-9٠-٩۰-۹]{6}/.test(input) ? await getFlow(admin, conversation.id) : null;
-    const storedInput = currentFlow?.step === "AWAITING_EMAIL_OTP" ? "[Verification code hidden]" : input;
+    const currentFlow = await getFlow(admin, conversation.id);
+    if (collectionSensitive(currentFlow?.step ?? "", input)) {
+      const protectedInput = await admin.rpc("shipping_collection_mark_transport", {p_message:messageId,p_conversation:conversation.id});
+      if (protectedInput.error) throw new Error("collection_transport_unavailable");
+    }
+    const storedInput = currentFlow?.step === "AWAITING_EMAIL_OTP" ? "[Verification code hidden]" : collectionSensitive(currentFlow?.step ?? "", input) ? "[Return collection details hidden]" : input;
     const { error: messageError } = await admin.from("whatsapp_messages").upsert({ store_id: store.id, conversation_id: conversation.id, external_message_id: messageId, direction: "INBOUND", message_type: message.type === "interactive" ? "INTERACTIVE" : message.type === "image" ? "IMAGE" : message.type === "text" ? "TEXT" : "UNSUPPORTED", body: message.type === "image" ? null : storedInput.slice(0, 4096) || null, status: "RECEIVED", occurred_at: message.timestamp ? new Date(Number(message.timestamp) * 1000).toISOString() : new Date().toISOString() }, { onConflict: "external_message_id", ignoreDuplicates: true });
     if (messageError) throw messageError;
     if(conversation.state === "HANDED_TO_HUMAN") {

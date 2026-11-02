@@ -213,6 +213,8 @@ export function SupportWorkspaceView({
                   "Assistant waiting for billing",
                   "المساعد بانتظار تفعيل الاشتراك",
                 )
+              : s.step === "shipping_details_unavailable"
+                ? t("Return shipping details need attention", "تفاصيل شحن الإرجاع تحتاج متابعة")
               : s.step === "order_lookup_unavailable"
                 ? t(
                     "Order lookup could not finish",
@@ -227,6 +229,8 @@ export function SupportWorkspaceView({
                   "The customer message is saved in Inbox. Review the store’s subscription and allowance.",
                   "رسالة العميل محفوظة في المحادثات. راجع الاشتراك ورصيد الرسائل.",
                 )
+              : s.step === "shipping_details_unavailable"
+                ? t("The return is saved. The customer can retry or ask the store for help; no courier was booked.", "طلب الإرجاع محفوظ. يمكن للعميل المحاولة مجددًا أو طلب مساعدة المتجر؛ لم يُحجز ناقل.")
               : t(
                   "The customer received guidance to retry. No order details were disclosed.",
                   "وصلت للعميل إرشادات للمحاولة مجددًا. لم تُعرض تفاصيل الطلب.",

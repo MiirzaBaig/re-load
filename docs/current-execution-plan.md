@@ -2,9 +2,17 @@
 
 Updated: 2026-10-22. Status: implementation in progress; deployment evidence is recorded per task below. Source code and recorded tests remain authoritative. No shipping or checkout purchase has been booked as part of this planning work.
 
-## Active checkout milestones — owner priority, 2026-10-24
+## Current priority — 2026-10-27
 
-OTO foundation, outbound shipping and return shipping are explicitly on hold until the four checkout milestones below are accepted. This ordering supersedes any suggestion to start OTO in parallel.
+Yazeed approved prioritizing OTO while waiting for Zid's reply. Start OTO sandbox return-shipping foundation now; this supersedes the older checkout-first hold below. Payment-link work and the UNKNOWN creation guard remain paused. Sandbox refreshToken, health and accountInfo passed on 27 October; no OTO resource/booking/charge was created. See root OTO.md. Shipping stays Premium-only, with merchant courier/charge approval and separate charges. Live wallet funding/fee collection still needs approval.
+
+## Approved shipping automation — 2026-10-27
+
+Latest approval replaces mandatory per-return merchant review with optional standing authorization: approved return location, preferred couriers/collection method and maximum charge. Verified ELIGIBLE requests may book only after customer address/submission confirmation and fresh policy/order/quantity/entitlement/quote/funding checks. Exceptions remain manual; uncertain writes are never blindly retried. Refund and inspection remain merchant decisions. No autonomous policy or spending-limit learning. Remaining implementation/checklist and bilingual message contract: [automatic-return plan](oto-automatic-returns.md). This is approved planning, not shipped automation.
+
+## Earlier checkout milestones — 2026-10-24 (priority superseded)
+
+The earlier instruction held OTO until these checkout milestones passed. Yazeed has since moved OTO sandbox return shipping ahead of these tasks. The checkout acceptance and duplicate-protection requirements below still apply before enabling customer purchases.
 
 1. **Resolve the provider uncertainty:** obtain Zid confirmation for the original 2026-10-23 18:29 UTC request, or identify an authoritative matching order. An unsent support draft and verified investigation evidence are in zid-checkout-recovery.md. Support delivery/reply is not claimed.
 2. **Reconcile the saved attempt:** associate a verified existing order, or record provider confirmation that no order/draft/link/pending creation exists before closing UNKNOWN. Preserve history, tenant checks and the atomic duplicate guard. Do not reset because a new product was selected or a list query returned no match.
@@ -47,7 +55,7 @@ Product lookup and public product links exist in the assistant; Zid variant beha
 
 ### 1. Restore AI and align documentation
 
-- [ ] Owner renews Ollama; verify authenticated text, extraction and vision requests without exposing keys.
+- [x] Owner renewed Ollama; hosted authenticated text/Arabic/basic extraction and patched image-helper requests passed on 2026-10-24. See [runtime verification](ai-runtime-check-2026-10-24.md); complete merchant/customer path acceptance remains separate.
 - [ ] Verify customer conversation, knowledge extraction, order screenshot and optional return photo paths.
 - [ ] Update current contracts as implementation changes; retain Gemini as deferred, not automatic fallback.
 
@@ -87,7 +95,7 @@ Product lookup and public product links exist in the assistant; Zid variant beha
 
 ### 6. OTO foundation
 
-- [ ] Create sandbox account and privately configure sandbox credentials/base URL.
+- [x] Sandbox account and private credential configured; staging-only token exchange/health/account reads passed 2026-10-27. Booking remains untested.
 - [ ] Verify authentication, account access, return quotes and supported test courier IDs.
 - [ ] Confirm free-plan webhooks versus API polling; verify signing method with known samples and retry behavior.
 - [ ] Map each merchant to its warehouse explicitly; never accept arbitrary client-selected warehouse/store IDs.
@@ -298,3 +306,87 @@ Final monitor checks: production build/TypeScript, 30 checkout tests, 4 API test
 Owner requested a fix before retrying. Reproduced and corrected two evidence-loss paths: retain a store-bound order reference before strict total parsing, and retain HTTP status on broken response bodies or later parsing/storage failures. 32 mocked checkout tests passed, including no-duplicate/private-link boundaries. These are verified code corrections, not a proven explanation of the original incident. The old UNKNOWN remains locked pending authoritative reconciliation. No new provider write or SQL reset occurred; source is local. See zid-checkout-recovery.md.
 
 Checkout response fixes approved for main on 2026-10-24. Verification: 32 mocked checkout tests and production Webpack build/TypeScript passed. Await Zid reply before any old-attempt reconciliation or new provider creation. No migration or worker deployment is required for these Next server changes.
+
+
+### Ollama runtime restored and image-format fix — 2026-10-24
+
+Live hosted-key tests passed for English/Arabic text and basic policy extraction. Gemma returned correct OCR inside Markdown fences, which the original strict parser rejected. Added bounded complete-wrapper parsing to image helpers; actual hosted OCR/photo helpers passed with synthetic inputs and all 120 backend tests passed. Deployed whatsapp-inbox v31 and whatsapp-photo-analysis v14, both ACTIVE. Temporary diagnostic function removed. No customer send/data, SQL change, billing activation or provider switch. Full merchant/customer end-to-end AI acceptance remains open; source/report are local. Details: [AI runtime check](ai-runtime-check-2026-10-24.md).
+
+
+### OTO sandbox foundation — 2026-10-27 (local)
+
+Owner approved sample data and development. Built owner-only `/admin/shipping` with audited same-origin staging connection/rates API, sample parcel and Saudi cities, independent return/delivery fee display and selection review. No contacts collected or booking endpoints offered. Actual new adapter passed staging connection and returned 11 rates. Eight mocked OTO tests, four admin API tests, three monitor tests and 56 browser checks passed. Detailed checks, configuration and remaining booking stages: [OTO sandbox](oto-sandbox.md). No new migration, deployment, shipment, wallet charge or customer message; checkout uncertainty remains locked. This is the quote stage, not completed merchant shipping.
+
+
+2026-10-27 replan: owner approved the automatic-return approach and requested concise connected Arabic/English messages plus improvement with usage. Added oto-automatic-returns.md, linked from OTO.md. Merchant-reviewed suggestions/measurement are planned; no autonomous self-training, customer-data reuse, booking code or deployment was added by this planning turn. The prior sandbox and AI work remain uncommitted.
+
+
+### Prepaid shipping wallet approved — 2026-10-27
+
+Yazeed approved a prepaid merchant shipping balance and passing through OTO actual costs with no Reload markup. This supersedes earlier open funding/fee questions. Record funds separately from subscriptions and message allowances; shared OTO wallet and tenant shipping ledgers are distinct. Verified paid top-ups only; atomic reservations, settlement and confirmed-credit handling required, with uncertainty locks and no duplicate debit. Future fees require a new decision. Detailed contract in oto-automatic-returns.md. This is a documentation update; wallet, top-up payments and automatic bookings are not yet implemented or enabled.
+
+
+### Consolidated remaining OTO tasks — 2026-10-27
+
+Latest ordered task list is [automatic returns: implementation order](oto-automatic-returns.md#implementation-order--revised-after-wallet-approval): built sandbox foundation → durable tenant/ledger/attempt records → verified sandbox top-ups → one OTO sandbox return → label/tracking/cancellation → merchant automation controls → WhatsApp confirmations → deterministic automatic-booking gate → exceptions/messages → merchant/admin visibility → reviewed improvements → full acceptance and separately approved live pilot. This supersedes older orderings and per-request manual review requirements. No additional business questions are pending; provider capability/actual-charge acceptance can still reveal technical blockers. This turn revises documentation only.
+
+
+### OTO Task 2 records implemented — 2026-10-27 (local only)
+
+Added shipping_records migration and isolated SQL/concurrency tests. Tenant-bound warehouse mappings, wallet/immutable ledger, booking attempts/events, submission claims, uncertain-outcome reservations, verified-reference settlement/credits and safe role-scoped snapshot are built as persistence primitives. Tests passed, including concurrent overspend/replay prevention and actual database role denials. LIVE mutations remain hard-disabled; migration not applied to hosted Supabase. No provider payment/OTO booking or new UI in this task. Next: provider-supported verified top-ups and complete sandbox return adapter. See [records contract](oto-shipping-records.md).
+
+### OTO Task 3 progress — 2026-10-28
+
+Both shipping migrations are now applied to hosted Reload Supabase. Built gated Arabic/English sandbox wallet, one-off fixed-amount Stream Pay checkout, authoritative invoice verification, atomic once-only ledger credit and refund review holds. An actual unpaid SAR 100 checkout was created for an authorized existing Premium test workspace; payment completion and credit acceptance remain pending. Tests: 127 backend, four API, isolated SQL/concurrency and 64 simulated browser checks passed. No shipment/live funds/customer messages, commit or push. Task 3 remains in acceptance; Task 4 reverse-order/return-booking adapter is next. See shipping-wallet-topups.md.
+
+Task 3 deployment/check follow-up: sandbox Stream Pay webhook, internal billing verifier and recovery worker deployed to Reload Supabase; unauthorized probes rejected (401/403). Production webpack build and TypeScript passed. Local review server: port 3127. Website source still uncommitted/unpushed; real sandbox test-card payment, credit/replay/refund acceptance and OTO booking remain outstanding.
+
+Wallet acceptance update: first sandbox checkout expired; controls now explain the pending/expired/refund state instead of presenting silently disabled fields. Existing attempt is preserved for reconciliation; no safety lock cleared and no credit granted. Test payment still pending. Local review now uses port 8080. OTO return-test migration/contract drafts have started locally and are not applied, routed or accepted.
+
+Sandbox wallet recovery: implemented verified retirement of expired, closed, uncollected, invoice-free links; retain old references for delayed verified credits. Added fresh-payment action and explanatory AR/EN UI. Six API tests, local SQL/replay/late-credit checks and TypeScript passed. Migration 202610280003 applied to Reload. No payment/card charge or wallet credit is created by recovery.
+
+Wallet acceptance: owner completed actual SAR 100 sandbox checkout. Authoritative server verification credited 10,000 halalas; repeated verification left one TOPUP and 10,000 available, zero reserved. No recent sandbox webhook receipts, so automatic notification delivery remains unverified; manual Check payment path is proven. OTO reverse-booking draft remains separate/unapplied.
+
+### OTO return test implementation — 2026-10-28
+
+Built `/app/shipping/return-test` and tenant/role-gated `/api/shipping/returns`; return-only adapter, stage journal, atomic cap reservation/one submission, exact return child tracking, conservative actual-charge verifier and private PDF download. Migration 202610280002 is applied. Eight return, eight quote, six top-up API tests, isolated SQL and 56 browser checks passed. Actual staging quote SAR 34.21; real submission preflight correctly refused the zero-credit OTO sandbox account without reserving Reload funds. One DRAFT recorded; no provider resource created. OTO test-credit request is required before actual return/label/tracking/charge acceptance. Payment webhook real delivery also remains unverified. UI source is local, no commit/push; full merchant automation/cancellation/live release remain outstanding.
+
+Return tool final validation: production webpack build and TypeScript passed; server running on 8080. Unknown external stage without a child reference now explicitly asks for reconciliation rather than silently refreshing local state. No shipment or wallet reservation created; source remains uncommitted/unpushed.
+
+### OTO actual sandbox return — 2026-10-31
+
+Funded account verified; one warehouse/reverse-only order/return created. Observed async no-child response and legacy parent-bound return evidence safely reconciled. Actual price SAR 68.42 vs separate returnFee SAR 34.21 exposed estimate bug: reverse rate request now uses forReverseShipment=true and service price. Above-cap test charge was held until owner explicitly approved SAR 68.42; private approval audit and once-only differential reservation/settlement implemented in migration 202610310001 (applied). Final wallet SAR 31.58 available/zero reserved/SAR 68.42 spent; repeat check one settlement. Matching PDF retrieved; tracking Preparing. Tests: 12 return, eight quote, six wallet, isolated SQL and 16 approval-screen browser checks passed. Source uncommitted/unpushed. No confirmed pickup/delivery, live shipping, cancellation/refund automation or real payment webhook acceptance. See oto-return-sandbox.md.
+
+### Merchant shipping settings — 31 October
+
+Implemented gated sandbox warehouse setup, ranked couriers, collection method, per-shipment cap, draft/review/explicit approval, pause and immutable history. Migration 202610310002 applied. Same-store owner/admin and Premium checks, stale-version rejection, policy/warehouse approval binding and uncertain warehouse recovery are enforced server-side. Eight settings tests, 12 return regression tests, isolated SQL and 64 simulated browser checks passed. Actual OTO warehouse creation/verification succeeded; no additional shipment, funds movement or real merchant approval. Available balance remains SAR 31.58. Local website only, no commit/push. Stop before WhatsApp journey changes per user instruction. Details: [merchant shipping settings](merchant-shipping-settings.md).
+
+### Task 7 · WhatsApp collection confirmation — 31 October
+
+Built a gated Arabic/English collection wizard after verified ELIGIBLE case creation: city, district/street, building, postcode, masked review and explicit confirmation. Back/edit/help/stop/menu/resume, language preservation, old-button rejection and expiry/re-verification of the same case are covered. Addresses are encrypted privately, masked from dashboard messages and omitted from AI; raw transport input is scrubbed atomically with its durable reply. Service-only database gate rechecks tenant/case, Premium, policy and settings version; confirmations are idempotent. Migration 202610310003 applied, including the previously missing email-OTP flow step and scheduled private-detail cleanup. Backend suite 139 passed; isolated shipping SQL and website TypeScript passed. No real collection record, Meta message, booking or wallet movement created. Worker source remains local, flags disabled, no commit/push. Automatic booking/label delivery remains Task 8, with reliable parcel defaults and acceptance required. Details: [WhatsApp collection contract](whatsapp-return-collection.md).
+
+Task 7 final checks: 140 backend tests passed after adding stop/restart recovery on the same case. Production webpack build, TypeScript and isolated shipping SQL passed. Both migrations 202610310003/004 are applied; hosted inventory confirms zero collection records and one active retention job. Failed private transport messages are scrubbed after 24 hours. Review server runs on port 8080. New worker code remains undeployed; no test sender or merchant was opted in and no commit/push was performed.
+
+### Task 8 · Sandbox WhatsApp booking path — 31 October
+
+Built exact SKU/quantity merchant parcel approvals with measured dimensions, bilingual UI and explicit consent; fresh order/policy and staging warehouse/rate/funding checks; atomic approved-cap reservation and once-only provider submission; durable reverse-only order/return stages; exact-reference reconciliation/actual-charge settlement; native private PDF label replies and customer status/retry/help. Added privacy-safe, deduplicated 30-day improvement counts with merchant-reviewed suggestions, not autonomous training or policy changes. Migration 202610310005 applied. No actual profile approval, automatic order/shipment, Meta message or wallet movement created. New booking flag remains false and worker source is not deployed. 154 backend, nine settings, 12 prior-return, isolated SQL and 48 mocked browser checks passed; TypeScript passed. Full automated WhatsApp acceptance and live rollout remain pending. See [booking contract](oto-whatsapp-booking.md).
+
+Task 8 final verification: production webpack build and TypeScript passed. Hosted inventory confirms migration 202610310005, zero parcel profiles, zero automatic attempts and zero improvement signals. Temporary browser-review route was removed; server restarted on port 8080. No commit/push, worker deployment or live activation performed.
+
+### Controlled WhatsApp pilot preparation — 31 October
+
+Saved private rollback source and deployed `whatsapp-inbox` v33 with both shipping gates explicitly false and empty store/sender allowlists. Configured only the existing OTO staging token plus these disabled settings. Verified ACTIVE and safe HTTP refusals (GET 405, invalid ticket 403); no message/booking created by probes. Shared pure rate parser moved inside the Edge bundle; website re-exports it. 154 backend, eight quote and 12 return checks plus TypeScript passed. Owner chose existing `testing-z` connection; its workspace still needs sandbox Premium, reviewed policy, WhatsApp activation, approved parcel/shipping settings and funded test wallet. Owner will finish setup and share only a qualifying test order number. Wait for those prerequisites before enabling a narrow store/sender pilot; do not change tenant entitlements/funds or invent order facts. Source still uncommitted/unpushed.
+
+Pilot readiness final check: production build passed after the shared-parser move, server restored on 8080. Hosted secret digests independently match false for both shipping gates and empty for both allowlists. Owner will complete the existing connected workspace setup and provide the test order number; no automatic pilot is enabled while waiting.
+
+### Policy publishing setup blocker — 2 November
+
+Read-only inspection confirmed both existing testing-z drafts had six pending rules. Saved-draft review UI lacked approval controls, so publishing could not proceed. Added explicit owner/admin per-rule approval/removal, workspace-scoped version-checked saves, retry/error handling, empty/pending policy guards and safe publication-result handling. Native Arabic/English policy surfaces now use stable text spans and opt out of browser translation; a related DOM-parent error reproduced on the original button under simulated text mutation, absent after the fix. 20 mocked real-component browser checks and TypeScript passed; no actual draft approval/publication or SQL change. See policy-review-recovery.md. Await the merchant's actual reviewed policy/setup before enabling the shipping pilot.
+
+Policy fix final verification: production webpack build passed; no SQL migration required. Local server restored on port 8080. Neither real draft was approved or published, and nothing was committed or pushed.
+
+### Pilot order preflight — 2 November
+
+Owner created separate manual development order 501579078. Read-only hosted verified-order lookup found it and matched the previously supplied controlled phone/email. Product: Ceramic Coffee Mug – 450ml, SKU Z.1791675533628925, quantity 1. Workspace checks: sandbox Premium active, shipping approved with automatic permission and SAR 100 cap, SAR 100 available, WhatsApp connected, policy v11.0 published. Two blockers remain: no approved parcel profile for that exact SKU/quantity; order is processing with no delivery date, while the policy requires delivered within 14 days. No order/status/policy/profile mutation, decision, booking or message was created by preflight. Shipping pilot flags remain off. Use only a supported development-store delivery simulation; do not fabricate live delivery facts or weaken the policy to force acceptance. Local connection decryption failed configuration validation; the hosted verified lookup succeeded without exposing its signed token or copying/rotating encryption keys.
+
+Pilot order status update — 2 November: owner marked only development order 501579078 Delivered through Zid's dashboard. Hosted read now reports delivered and still matches the authorized test contact; deliveryDate remains null. The exact mug SKU Z.1791675533628925/quantity 1 still has no approved parcel profile. Existing sandbox Premium, WhatsApp, approved SAR 100 shipping cap and SAR 100 balance pass. Do not substitute the current date/order creation date for delivery or enable booking until the missing delivery evidence and matching parcel profile are resolved. Read-only checks created no decision, shipment or debit.

@@ -1,0 +1,48 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {GET,POST} from '../src/app/api/shipping/settings/route';
+import {getShippingSettings,saveShippingSettings,approveShippingSettings,pauseShippingSettings,manageShippingWarehouse} from '../src/lib/shipping/settings-server';
+import {parcelInput,settingsInput,warehouseInput,warehouseProviderMatches} from '../src/lib/shipping/settings-contract';
+import {shippingTestContext} from './fixtures/shipping-billing-server';
+const store='11111111-1111-4111-8111-111111111111',wh='22222222-2222-4222-8222-222222222222',actor={id:'33333333-3333-4333-8333-333333333333',email:'test@example.com'},req='44444444-4444-4444-8444-444444444444';
+const input={version:0,warehouseId:wh,courierIds:['2828'],collectionMethod:'PICKUP_BY_DC',capHalalas:5000,automaticRequested:false};
+const contact={name:'Test warehouse',contactName:'Test Contact',email:'test@example.com',phone:'0501234567',city:'Riyadh',address:'Sample warehouse address in Riyadh',consent:true};
+function request(body:any,origin='https://reload.example'){return new Request('https://reload.example/api/shipping/settings',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)});}
+async function harness(work:(h:any)=>Promise<void>,options:any={}){
+ const names=['SHIPPING_SANDBOX_SETTINGS_ENABLED','SHIPPING_SANDBOX_TOPUPS_ENABLED','STREAM_SANDBOX_X_API_KEY','STREAM_SANDBOX_ALLOWED_EMAILS','OTO_SANDBOX_ENABLED','OTO_SANDBOX_RETURNS_ENABLED','OTO_SANDBOX_REFRESH_TOKEN'];const before=Object.fromEntries(names.map(n=>[n,process.env[n]]));Object.assign(process.env,{SHIPPING_SANDBOX_SETTINGS_ENABLED:'true',SHIPPING_SANDBOX_TOPUPS_ENABLED:'true',STREAM_SANDBOX_X_API_KEY:'test',STREAM_SANDBOX_ALLOWED_EMAILS:actor.email,OTO_SANDBOX_ENABLED:'true',OTO_SANDBOX_RETURNS_ENABLED:'true',OTO_SANDBOX_REFRESH_TOKEN:'test'});
+ const h:any={rpcCalls:[],providerWrites:0,state:null,pending:null,settings:null,newWarehouse:null};const original=fetch;
+ const base=()=>({canManage:!options.readonly,premium:!options.expired,settings:h.settings,warehouses:[{id:wh,code:'OWN-WAREHOUSE'}],history:[],policyReady:true,pendingWarehouse:h.pending});
+ const admin={rpc:async(name:string,a:any)=>{h.rpcCalls.push({name,a});if(name==='shipping_parcel_snapshot')return {data:{parcels:[],improvements:[]}};if(name==='shipping_parcel_save')return {data:1};if(name==='shipping_settings_snapshot')return {data:base()};if(name==='shipping_wallet_snapshot')return {data:{availableHalalas:3158,reservedHalalas:0,onHold:false,attempts:[]}};
+ if(name==='shipping_settings_save'){h.settings={version:1,warehouse_id:a.p_warehouse,courier_ids:a.p_couriers,collection_method:a.p_method,cap_halalas:a.p_cap,automatic_requested:a.p_automatic,state:'DRAFT'};return {data:1};}
+ if(name==='shipping_settings_approve'){assert.match(a.p_warehouse_fingerprint,/^[0-9a-f]{64}$/);h.settings={...h.settings,version:2,state:'APPROVED',approved_warehouse_fingerprint:a.p_warehouse_fingerprint};return {data:2};}
+ if(name==='shipping_settings_pause'){h.settings={...h.settings,version:3,state:'PAUSED'};return {data:3};}
+ if(name==='shipping_settings_warehouse_start'){if(h.pending)return {data:false};h.pending={id:req,state:'CREATING'};return {data:true};}
+ if(name==='shipping_settings_warehouse_finish'){if(a.p_verified){h.pending=null;return {data:wh};}h.pending={id:req,state:'UNKNOWN'};return {data:null};}
+ throw Error('unexpected rpc '+name);}};shippingTestContext({storeId:store,user:actor,role:options.readonly?'viewer':'owner'},admin);
+ globalThis.fetch=async(raw,init)=>{const u=new URL(String(raw));assert.equal(u.origin,'https://staging-api.tryoto.com');assert.equal(init?.redirect,'error');const p=u.pathname,b=init?.body?JSON.parse(String(init.body)):null;
+ if(p.endsWith('/refreshToken'))return Response.json({success:true,access_token:'test-access'});
+ if(p.endsWith('/getPickupLocationList')){if(options.providerDown)throw Error('PRIVATE provider issue');return Response.json({success:true,warehouses:[{code:'OWN-WAREHOUSE',name:'Own warehouse',city:'Riyadh',address:'Own warehouse address in Riyadh',contactPhone:'PRIVATE_PHONE'},{code:'FOREIGN-WAREHOUSE',name:'PRIVATE_FOREIGN',city:'Riyadh',address:'PRIVATE_FOREIGN_ADDRESS'},...(h.newWarehouse?[h.newWarehouse]:[])]});}
+ if(p.endsWith('/checkOTODeliveryFee')){assert.equal(b.forReverseShipment,true);return Response.json({success:true,deliveryCompany:[{deliveryOptionId:2828,deliveryOptionName:'SMSA Express',price:68.42,returnFee:34.21,pickupDropoff:options.dropoff?'freeDropoff':'freePickup'}]});}
+ if(p.endsWith('/createPickupLocation')){h.providerWrites++;if(options.timeout)throw Error('PRIVATE timeout');h.newWarehouse={code:b.code,name:b.name,city:b.city,address:b.address,contactPerson:b.contactName,contactEmail:b.contactEmail,contactPhone:b.mobile};return Response.json({success:true,pickupLocationCode:b.code});}
+ throw Error('unexpected path '+p);
+ };
+ try{await work(h);}finally{globalThis.fetch=original;shippingTestContext(null,null);for(const[k,v]of Object.entries(before)){if(v===undefined)delete process.env[k];else process.env[k]=v;}}
+}
+test('settings contracts reject foreign options, duplicate couriers, decimals, injected contacts and missing consent',()=>{assert.equal(settingsInput(input).automaticRequested,false);for(const bad of [{...input,courierIds:['2828','2828']},{...input,courierIds:['9999']},{...input,capHalalas:1.1},{...input,environment:'live'},{...input,warehouseId:'not-id'}])assert.throws(()=>settingsInput(bad));assert.equal(warehouseInput({...contact,phone:'٠٥٠١٢٣٤٥٦٧'}).phone,'966501234567');assert.throws(()=>warehouseInput({...contact,consent:false}));assert(!warehouseProviderMatches({code:'OTHER'},warehouseInput(contact),'OWN'));});
+test('settings API denies unauthenticated, cross-origin, read-only writes and provider field injection',async()=>harness(async h=>{shippingTestContext(null,null);assert.equal((await GET(new Request('https://reload.example/api/shipping/settings?store='+store))).status,403);assert.equal((await POST(request({},'https://evil.example'))).status,403);assert.equal((await POST(request({action:'save',token:'PRIVATE'}))).status,400);shippingTestContext({role:'viewer'},null);assert.equal((await POST(request({storeId:store,action:'save',input}))).status,403);assert.equal(h.providerWrites,0);}));
+test('snapshot exposes only mapped store warehouse and masked member view; automation always inactive',async()=>{
+ await harness(async()=>{const s=await getShippingSettings(store,actor);const json=JSON.stringify(s);assert.equal(s.warehouses.length,1);assert.equal(s.automationActive,false);assert(!json.includes('FOREIGN'));assert(!json.includes('PRIVATE_PHONE'));assert(!json.includes('OWN-WAREHOUSE'));});
+ await harness(async()=>{const s=await getShippingSettings(store,actor);assert.equal(s.canManage,false);assert(!('address' in s.warehouses[0]));},{readonly:true});
+});
+test('saved draft, explicit approval fingerprint and pause are separate versioned actions without provider creation',async()=>harness(async h=>{let s=await saveShippingSettings(store,actor,input);assert.equal(s.settings.state,'DRAFT');s=await approveShippingSettings(store,actor,1);assert.equal(s.settings.state,'APPROVED');assert.equal(s.warehouseChanged,false);s=await pauseShippingSettings(store,actor,2);assert.equal(s.settings.state,'PAUSED');assert.equal(h.providerWrites,0);assert.equal(s.automationActive,false);}));
+test('expired Premium and unsupported collection cannot save; expired merchant can still pause',async()=>{
+ await harness(async h=>{await assert.rejects(()=>saveShippingSettings(store,actor,input),/premium_required/);await pauseShippingSettings(store,actor,1);assert(!h.rpcCalls.some((x:any)=>x.name==='shipping_settings_save'));},{expired:true});
+ await harness(async h=>{await assert.rejects(()=>saveShippingSettings(store,actor,input),/courier_unavailable/);assert(!h.rpcCalls.some((x:any)=>x.name==='shipping_settings_save'));},{dropoff:true});
+});
+test('provider outage preserves safe settings and does not prevent pause',async()=>harness(async()=>{const s=await getShippingSettings(store,actor);assert.equal(s.providerReady,false);const p=await pauseShippingSettings(store,actor,1);assert.equal(p.settings.state,'PAUSED');},{providerDown:true}));
+test('warehouse creation is claimed once and verified against exact provider fields',async()=>harness(async h=>{await manageShippingWarehouse(store,actor,req,contact);assert.equal(h.providerWrites,1);assert.equal(h.pending,null);assert(h.rpcCalls.some((x:any)=>x.name==='shipping_settings_warehouse_finish'&&x.a.p_verified));}));
+test('uncertain warehouse creation cannot replay and recovery only reads the saved request',async()=>harness(async h=>{await assert.rejects(()=>manageShippingWarehouse(store,actor,req,contact),/warehouse_pending/);assert.equal(h.pending.state,'UNKNOWN');await assert.rejects(()=>manageShippingWarehouse(store,actor,req,contact),/warehouse_pending/);await assert.rejects(()=>manageShippingWarehouse(store,actor,req,contact,true),/warehouse_pending/);assert.equal(h.providerWrites,1);},{timeout:true}));
+
+test('parcel approval is exact, measured and refuses guesses or injected options',()=>{
+ const profile={sku:'SHOE-1',quantity:1,version:0,weightGrams:1000,lengthMm:300,widthMm:200,heightMm:120,consent:true};assert.equal(parcelInput(profile).weightGrams,1000);
+ for(const bad of [{...profile,consent:false},{...profile,weightGrams:0},{...profile,lengthMm:1501},{...profile,quantity:1.5},{...profile,sku:'<script>'},{...profile,weightGrams:10.5},{...profile,environment:'live'}])assert.throws(()=>parcelInput(bad));
+});

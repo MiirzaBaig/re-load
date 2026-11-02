@@ -46,3 +46,36 @@ Keep private files owner-readable only and outside Git. `.env.example` is intent
 Server-only client ID/secret, `ZID_DEV_ENCRYPTION_KEY`, exact `ZID_OAUTH_ORIGIN`, explicit `ZID_DEV_STORE_IDS` and default-off `ZID_DEV_OAUTH_ENABLED` are recorded locally. The development key is new and separate; never replace `INTEGRATION_ENCRYPTION_KEY`. The dev-only private migration and host configuration are prerequisites, not deployed resources. See zid-development-oauth.md. Raw development MCP link/metadata stay in the owner-only ~/.reload-secrets folder, outside the repository.
 
 Development-only Zid checkout proof additionally reads `ZID_DEV_CHECKOUT_ENABLED` (default false) and optional `ZID_DEV_PAYMENT_HOSTS` (exact provider-confirmed payment-link hosts; no wildcards). These server settings never activate merchant checkout or billing. See [zid-development-checkout.md](zid-development-checkout.md).
+
+
+## OTO sandbox — 2026-10-27
+
+`OTO_SANDBOX_REFRESH_TOKEN` is saved in the ignored private root `.env` for staging-only verification. The verified API base is `https://staging-api.tryoto.com/rest/v2`. No production OTO credential is configured by this work. Sandbox auth, health and account reads passed; this does not deploy shipping to Vercel/Supabase or grant live booking. Do not upload unrelated/empty environment fields. See root OTO.md for evidence and remaining setup.
+
+OTO sandbox website foundation also requires `OTO_SANDBOX_ENABLED=true` (default off). It is enabled only in the ignored local `.env` by this work. Provider origin is hardcoded to staging; no live OTO fallback exists. Deployed website configuration is unchanged. See [sandbox implementation](oto-sandbox.md).
+
+## Shipping wallet sandbox — 2026-10-28
+
+`SHIPPING_SANDBOX_TOPUPS_ENABLED` defaults false; enabled only in the ignored local `.env` for this task. Wallet checkout reuses the existing sandbox Stream Pay key, registered customer email and allowed test-account list, plus server Supabase credentials. It does not read live payment keys. Both shipping migrations are applied to Reload Supabase. Website configuration remains unchanged. See [shipping-wallet-topups.md](shipping-wallet-topups.md) for verification and acceptance limits.
+
+## OTO return acceptance — 28 October
+
+Server-only `OTO_SANDBOX_RETURNS_ENABLED` defaults false; locally enabled in ignored `.env`. Requires existing OTO sandbox flag/token and shipping sandbox test-account gate. Enables only the local test screen/API; no live OTO origin or production fallback. The applied private return-test migration is 202610280002. OTO sandbox provider credit is separate from Reload merchant test funds and currently zero. Details: [oto-return-sandbox.md](oto-return-sandbox.md).
+
+31 October OTO acceptance: owner funded staging wallet through its dashboard. Existing local flags/credentials unchanged; no production OTO connection configured. Migration 202610310001 adds only sandbox async-return and explicit test-charge approval records. Provider notifications may occur for authorized test contacts. PDF and contact-bearing diagnostic files remain private outside the repository. No new secret values added to tracked files.
+
+## Merchant shipping controls — 31 October
+
+Server-only `SHIPPING_SANDBOX_SETTINGS_ENABLED` defaults false and is enabled only in the ignored local environment. Requires existing staging OTO, shipping sandbox and authorized test-account settings; it does not activate live shipping or customer automatic bookings. Migration 202610310002 is applied. No new tracked secret or hosted website configuration was added. See [merchant shipping settings](merchant-shipping-settings.md).
+
+## WhatsApp collection pilot — 31 October
+
+New Supabase-worker-only settings are `WHATSAPP_SHIPPING_SANDBOX_ENABLED` (default false), `WHATSAPP_SHIPPING_SANDBOX_STORE_IDS` and `WHATSAPP_SHIPPING_SANDBOX_SENDERS` (both empty by default, exact allowlists). They are documented only; no hosted flag or root private key was changed in this task. Existing integration encryption and return-token signing keys are reused without rotation. This gate permits only sandbox collection confirmation, never an OTO booking. Migration 202610310003 is applied. See [collection contract](whatsapp-return-collection.md).
+
+Collection transport retention migration 202610310004 is also applied: marked failed private inputs are scrubbed after 24 hours, independently of new message traffic. No feature flag or credential change is required for retention.
+
+## WhatsApp booking sandbox — 31 October
+
+Worker-only `WHATSAPP_SHIPPING_BOOKING_SANDBOX_ENABLED` defaults false and is documented in `.env.example`. It additionally requires the collection store/sender allowlists, merchant approvals and an exact measured parcel profile. Staging API origin is hardcoded; existing OTO sandbox refresh token must be configured in the worker before an authorized pilot. No hosted flag/credential or root private value was changed by this task. Migration 202610310005 applied. See [sandbox booking](oto-whatsapp-booking.md).
+
+Pilot preparation update: deployed WhatsApp worker v33 with `OTO_SANDBOX_REFRESH_TOKEN` configured from the existing private inventory. Explicitly set both WhatsApp shipping flags false and both allowlists empty. Only these five scoped secrets were changed; temporary upload file removed. Other hosted secrets, live OTO configuration and private root values were preserved. Exact pilot configuration awaits the owner's completed setup/controlled contact.

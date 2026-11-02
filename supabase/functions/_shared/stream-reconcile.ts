@@ -1,3 +1,4 @@
+import { reconcileShippingTopup } from "./shipping-topup-reconcile.ts";
 import { adminClient } from "./supabase.ts";
 import {
   BILLING_PLANS,
@@ -53,7 +54,7 @@ export async function reconcileStreamInvoice(
     }
   }
   // A notification cannot select a store by supplying metadata or a redirect query string.
-  if (!checkout) return false;
+  if (!checkout) return await reconcileShippingTopup(admin, provider, environment, invoice);
   if (
     !isBillingPlan(checkout.plan) ||
     invoice.organization_consumer_id !== checkout.consumer_id
