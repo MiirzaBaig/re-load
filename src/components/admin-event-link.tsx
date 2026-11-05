@@ -12,8 +12,9 @@ import { renderEventPoster, renderQrPng, type PosterTheme } from "@/lib/event-po
 
 type Asset = "svg" | "png" | "poster-light" | "poster-dark";
 
-/** Event kit: the branded sign-up code, ready to download for a stand. */
-export function AdminEventLink() {
+/** Event kit: the branded sign-up code, ready to download for a stand.
+ *  `trigger` swaps the default admin button (the public footer uses its own). */
+export function AdminEventLink({ trigger }: { trigger?: (open: () => void) => React.ReactNode } = {}) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState<QrTheme>("ink");
@@ -50,7 +51,7 @@ export function AdminEventLink() {
     { id: "poster-dark", title: t("Poster · Dark", "الملصق · داكن"), meta: t("A4 or A5, 300 dpi.", "مقاس A4 أو A5، بدقة 300."), icon: ScanLine },
   ];
 
-  return <><Button variant="outline" size="sm" onClick={() => setOpen(true)}><QrCode className="size-4" />{t("Event kit", "حزمة الفعاليات")}</Button>
+  return <>{trigger ? trigger(() => setOpen(true)) : <Button variant="outline" size="sm" onClick={() => setOpen(true)}><QrCode className="size-4" />{t("Event kit", "حزمة الفعاليات")}</Button>}
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto rounded-2xl bg-card p-0 sm:max-w-3xl">
         <div className="grid md:grid-cols-[1.05fr_1fr]">

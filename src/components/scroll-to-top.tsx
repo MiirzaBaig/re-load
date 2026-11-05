@@ -12,7 +12,7 @@ import { useLanguage } from "@/components/language-provider";
 import { cn } from "@/lib/utils";
 
 const SIZE = 48;
-const STROKE = 2.5;
+const STROKE = 1.75; // was 2.5: read as a heavy black outline
 const RADIUS = (SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const SHOW_AFTER = 0.08;

@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Check, Copy, Mail } from "lucide-react";
+import { ArrowUpRight, Check, ClipboardList, Copy, Mail, QrCode } from "lucide-react";
 import { ReloadMark } from "@/components/reload-logo";
 import { useLanguage } from "@/components/language-provider";
 import { publicPath } from "@/lib/public-site";
 import { cn } from "@/lib/utils";
 import { DitherEdge } from "@/components/dither-edge";
+import { AdminEventLink } from "@/components/admin-event-link";
 
 /*
  * The site footer: brand + link columns, a quiet bottom bar, and the name set
@@ -106,6 +107,22 @@ export function SiteFooter() {
               )}
             </p>
             <EmailChip t={t} />
+            {/* Event shortcuts: the sign-up QR kit and the form it opens,
+                without signing in to /admin first. */}
+            <div className="footer-quick">
+              <AdminEventLink
+                trigger={(open) => (
+                  <button type="button" onClick={open} className="footer-quick-item">
+                    <QrCode className="size-4" />
+                    {t("Event QR", "رمز الفعاليات")}
+                  </button>
+                )}
+              />
+              <Link href="/interest" className="footer-quick-item">
+                <ClipboardList className="size-4" />
+                {t("Sign-up form", "نموذج التسجيل")}
+              </Link>
+            </div>
           </div>
           {footerColumns.map((column, index) => (
             <nav
