@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { QUICK, TWEEN } from "@/components/desk/primitives";
 import { Key, PageHeader } from "@/components/desk/page-header";
 import { SuccessMark } from "@/components/integrations/connect-stepper";
+import { PixelBurst } from "@/components/pixel-burst";
 import { useAuth } from "@/components/auth-provider";
 import { useLanguage } from "@/components/language-provider";
 import {
@@ -380,7 +381,11 @@ export function PolicyReviewPage() {
         translate="no"
         className="mx-auto flex w-full max-w-xl flex-col items-center rounded-3xl border border-border bg-card px-6 py-12 text-center"
       >
-        <SuccessMark />
+        {/* A real milestone, so a one-time pixel burst behind the tick. */}
+        <span className="relative grid place-items-center">
+          <PixelBurst />
+          <SuccessMark />
+        </span>
         <h1 className="mt-5 font-display text-2xl font-semibold tracking-tight">
           {t("Your policy is live", "سياستك مفعّلة الآن")}
         </h1>

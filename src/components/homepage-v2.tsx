@@ -33,6 +33,7 @@ import { RiyalSign } from "@/components/riyal-sign";
 import { getWhatsAppPublicUrl } from "@/lib/whatsapp";
 import { useSsrReducedMotion } from "@/hooks/use-ssr-reduced-motion";
 import { cn } from "@/lib/utils";
+import { DitherEdge } from "@/components/dither-edge";
 
 const EASE = [0.2, 0, 0, 1] as const;
 
@@ -662,6 +663,9 @@ export function TrustReload() {
   ];
   return (
     <section className="band-green scroll-mt-24" aria-labelledby="trust-title">
+      {/* Pixel edges where the page changes colour chapter (theme-v2 only). */}
+      <DitherEdge color="--band-green" direction="up" />
+      <DitherEdge color="--band-green" direction="down" />
       <div className="mx-auto max-w-[1200px] px-5 py-20 md:py-28">
         <ScrollReveal>
           <div className="mx-auto max-w-2xl text-center">

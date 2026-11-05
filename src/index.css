@@ -6402,7 +6402,7 @@ html.dark:has(.public-site.theme-v2) {
   --hero-card-bg: #1a1915;
   --heading-tone: #9c9486;
   --heading-mark: color-mix(in srgb, #34c486 30%, transparent);
-  --band-green: #0c3326;
+  --band-green: #0b3e2c; /* richer than the old #0c3326, which looked grey on charcoal */
   --footer-bg: #1a1915;
   --footer-fg: #f3eee4;
   --footer-muted: #b3ab9d;
@@ -6447,7 +6447,10 @@ html.dark:has(.public-site.theme-v2) {
   content: "";
   position: absolute;
   inset: 0;
+  /* Top fades into the band colour, so the pixel edge flows into the photo
+     with no flat strip between them. */
   background:
+    linear-gradient(180deg, var(--band-green) 0%, transparent 28%),
     radial-gradient(ellipse 55% 70% at 50% 50%, rgb(10 46 35 / .78), rgb(10 46 35 / .45) 100%);
 }
 
@@ -6712,3 +6715,96 @@ html.dark .theme-v2 .btn-sweep,
 /* In dark mode the green tile needs a little more lift to read as success. */
 .dark .feedback-success { border-color: color-mix(in oklab, var(--eligible) 32%, transparent); }
 @media (prefers-reduced-motion: reduce) { .feedback-check-ring { display: none; } }
+
+/* Pixel edges (theme-v2, 2026-11-05). Placed only where the page changes
+   colour chapter, as on phone-harness: into and out of the green trust band,
+   into the green finale (call to action + footer), and into the footer on
+   inner pages. Pixels are crisp 4px squares. */
+.dither-edge { display: none; }
+.theme-v2 .dither-edge {
+  display: block;
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: var(--edge-h);
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 1;
+}
+.theme-v2 { --edge-h: clamp(110px, 20vw, 300px); }
+/* Room for the edge, so it never covers the content next to it. */
+.theme-v2 .band-green:has(> .dither-edge-top) { margin-top: var(--edge-h); }
+.theme-v2 .band-green:has(> .dither-edge-bottom) { margin-bottom: var(--edge-h); }
+.theme-v2 .site-footer:has(> .footer-edge) { margin-top: var(--edge-h); }
+.public-site:has(.cta-band) .site-footer { margin-top: 0; }
+.theme-v2 .dither-edge-top { bottom: calc(100% - 1px); }
+.theme-v2 .dither-edge-bottom { top: calc(100% - 1px); }
+/* Edges extend outside their section, so the section must not clip them. */
+.theme-v2 .band-green { overflow: visible; }
+.theme-v2 .cta-print { overflow: hidden; }
+.theme-v2 .cta-band { z-index: 2; }
+/* Homepage: the call to action already carries the edge into the footer. */
+.public-site:has(.cta-band) .footer-edge { display: none !important; }
+
+/* Green finale footer (theme-v2): the call to action and the footer read as
+   one green chapter, ending in the large faded wordmark. */
+html:has(.public-site.theme-v2) {
+  --footer-bg: var(--band-green);
+  --footer-fg: #f3eee4;
+  --footer-muted: rgb(243 238 228 / 0.72);
+  --footer-subtle: rgb(243 238 228 / 0.14);
+  --footer-gold: #f3eee4;
+  --footer-gold-foreground: #0f3d2e;
+}
+.theme-v2 .site-footer { overflow: visible; border-top: 0; }
+.theme-v2 .footer-giant { overflow: hidden; }
+html.dark:has(.public-site.theme-v2) {
+  --footer-bg: var(--band-green);
+  --footer-fg: #f3eee4;
+  --footer-muted: rgb(243 238 228 / 0.72);
+  --footer-subtle: rgb(243 238 228 / 0.14);
+  --footer-gold: #f3eee4;
+  --footer-gold-foreground: #0c3326;
+}
+/* The setup section's faint tint would show as a hard line above the pixel
+   edge, so under theme-v2 it shares the page background. */
+.theme-v2 #store-setup { background: transparent; }
+
+/* Hub light as pixel packets (owner, 2026-11-05): three small squares
+   travel along each wire instead of a smooth bar, echoing the pixel edges.
+   Wires stay 2px; clip-path keeps the packet inside the wire's length while
+   letting its 4px squares overhang it. */
+.rh-line, .rh-bar, .rh-m-bar, .rh-f-bar { overflow: visible; clip-path: inset(-4px 0); }
+.rh-stem, .rh-drop, .rh-link, .rh-m-drop, .rh-f-drop, .rh-m-stem, .rh-f-stem { overflow: visible; clip-path: inset(0 -4px); }
+.rh-merge > span, .rh-fan > span { overflow: visible; }
+.rh-line > i, .rh-bar > i, .rh-m-bar > i, .rh-f-bar > i {
+  top: -1px;
+  width: 22px;
+  height: 4px;
+  border-radius: 0;
+  background: linear-gradient(90deg,
+    color-mix(in oklab, var(--foreground) 35%, transparent) 0 4px, transparent 4px 9px,
+    var(--foreground) 9px 13px, transparent 13px 18px,
+    color-mix(in oklab, var(--foreground) 35%, transparent) 18px 22px);
+}
+.rh-stem > i, .rh-drop > i, .rh-link > i, .rh-m-drop > i, .rh-f-drop > i, .rh-m-stem > i, .rh-f-stem > i {
+  left: -1px;
+  width: 4px;
+  height: 22px;
+  border-radius: 0;
+  background: linear-gradient(180deg,
+    color-mix(in oklab, var(--foreground) 35%, transparent) 0 4px, transparent 4px 9px,
+    var(--foreground) 9px 13px, transparent 13px 18px,
+    color-mix(in oklab, var(--foreground) 35%, transparent) 18px 22px);
+}
+/* The "light arrives" ring around the Reload icon read as a stray frame in
+   still moments; removed (owner, 2026-11-05). */
+.rh-pulse { display: none; }
+
+/* 404 page: the page ends in green ground with a pixel edge. */
+.nf-ground { position: relative; height: 28svh; min-height: 160px; background: var(--band-green); }
+.nf-content { padding-bottom: calc(var(--edge-h, 120px) + 24px); }
+.nf-ground { height: 18svh; min-height: 120px; }
+/* Dark mode: the green print is lighter than the band, so dim it to sit
+   under the pixel edge without a step in tone. */
+.dark .theme-v2 .cta-print img { filter: brightness(0.78) saturate(1.12); }

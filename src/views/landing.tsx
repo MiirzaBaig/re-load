@@ -58,6 +58,7 @@ import { useLanguage } from "@/components/language-provider";
 import { cn } from "@/lib/utils";
 import { Mark, Tone } from "@/components/heading-accent";
 import { getWhatsAppPublicUrl } from "@/lib/whatsapp";
+import { DitherEdge } from "@/components/dither-edge";
 
 const HERO_STEPS: TraceStep[] = [
   {
@@ -863,6 +864,7 @@ export function LandingPage() {
           dithered Riyadh print (Faisaliah Tower and the King Fahd Library square,
           photo by Tati Odintsova, Unsplash License); without it, unchanged. */}
       <section className="band-green cta-band">
+        <DitherEdge color="--band-green" direction="up" />
         <div className="cta-print" aria-hidden="true">
           <img src="/brand/cta-riyadh-green.png" alt="" loading="lazy" decoding="async" />
         </div>

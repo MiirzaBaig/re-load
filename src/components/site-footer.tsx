@@ -8,6 +8,7 @@ import { ReloadMark } from "@/components/reload-logo";
 import { useLanguage } from "@/components/language-provider";
 import { publicPath } from "@/lib/public-site";
 import { cn } from "@/lib/utils";
+import { DitherEdge } from "@/components/dither-edge";
 
 /*
  * The site footer: brand + link columns, a quiet bottom bar, and the name set
@@ -77,6 +78,9 @@ export function SiteFooter() {
 
   return (
     <footer className="site-footer">
+      {/* Inner pages: the sand page breaks into the green footer. Hidden on
+          the homepage, where the green call to action already has the edge. */}
+      <DitherEdge color="--footer-bg" direction="up" className="footer-edge" />
       <div className="mx-auto w-full max-w-[1200px] px-5 pt-16 sm:px-8 sm:pt-24">
         <div ref={gridRef} className={cn("footer-grid", gridIn && "is-in")}>
           <div className="footer-brand">
