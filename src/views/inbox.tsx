@@ -799,7 +799,7 @@ function EmptyInbox({ link, t }: { link: string | null; t: T }) {
   return (
     <div className="px-3 py-6 text-center">
       {qr ? (
-        <div className="mx-auto w-40 rounded-2xl border border-black/10 bg-[#f8f7f4] p-3 [&>svg]:block [&>svg]:w-full" role="img" aria-label={t("Your WhatsApp QR code", "رمز واتساب لمتجرك")} dangerouslySetInnerHTML={{ __html: qr.svg("ink", { transparent: true }) }} />
+        <div className="mx-auto w-40 rounded-2xl border border-black/10 bg-[#ffffff] p-3 [&>svg]:block [&>svg]:w-full" role="img" aria-label={t("Your WhatsApp QR code", "رمز واتساب لمتجرك")} dangerouslySetInnerHTML={{ __html: qr.svg("ink", { transparent: true }) }} />
       ) : (
         <span className="mx-auto grid size-11 place-items-center rounded-2xl bg-muted text-muted-foreground"><MessageSquare className="size-5" /></span>
       )}

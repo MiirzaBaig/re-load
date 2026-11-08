@@ -662,10 +662,10 @@ export function TrustReload() {
     { Icon: Languages, title: t("Saudi, and speaks your customers' language", "سعودي ويتكلم لغة عملائك"), body: t("Made in Saudi Arabia, replying in Saudi Arabic or English, whichever your customer uses.", "صُنع في السعودية، ويرد بالعربي السعودي أو الإنجليزي حسب لغة عميلك.") },
   ];
   return (
-    <section className="band-green scroll-mt-24" aria-labelledby="trust-title">
+    <section className="band-brand scroll-mt-24" aria-labelledby="trust-title">
       {/* Pixel edges where the page changes colour chapter (theme-v2 only). */}
-      <DitherEdge color="--band-green" direction="up" />
-      <DitherEdge color="--band-green" direction="down" />
+      <DitherEdge color="--brand-band" direction="up" />
+      <DitherEdge color="--brand-band" direction="down" />
       <div className="mx-auto max-w-[1200px] px-5 py-20 md:py-28">
         <ScrollReveal>
           <div className="mx-auto max-w-2xl text-center">

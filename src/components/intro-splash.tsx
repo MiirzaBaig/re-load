@@ -246,7 +246,7 @@ function flyTo(
   const scale = target.height / from.height;
   return el.animate(
     [
-      { transform: "translate(0, 0) scale(1)", color: "#f8f7f4" },
+      { transform: "translate(0, 0) scale(1)", color: "#ffffff" },
       { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, color },
     ],
     { duration: FLIGHT_MS, easing: WHIP, fill: "forwards" },

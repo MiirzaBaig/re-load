@@ -27,7 +27,7 @@ export async function renderEventPoster(qr: BrandQr, theme: PosterTheme): Promis
   const m = 8 * u;
   const fg = theme === "light" ? INK : PAPER;
   const bg = theme === "light" ? PAPER : INK;
-  const muted = theme === "light" ? "rgba(15,15,18,.56)" : "rgba(248,247,244,.6)";
+  const muted = theme === "light" ? "rgba(15,15,18,.56)" : "rgba(255,255,255,.6)";
 
   const fonts = await loadFonts();
   const canvas = document.createElement("canvas");
@@ -104,7 +104,7 @@ export async function renderEventPoster(qr: BrandQr, theme: PosterTheme): Promis
 
   // Footer: the address for anyone who can't scan.
   const ruleY = H - m - 6 * u;
-  ctx.fillStyle = theme === "light" ? STONE : "rgba(248,247,244,.16)";
+  ctx.fillStyle = theme === "light" ? STONE : "rgba(255,255,255,.16)";
   ctx.fillRect(m, ruleY, W - m * 2, Math.max(2, 0.12 * u));
   ctx.fillStyle = fg;
   ctx.direction = "ltr";

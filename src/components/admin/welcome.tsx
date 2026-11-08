@@ -83,7 +83,7 @@ export function AdminWelcome({ greeting, summary }: { greeting: string; summary:
         const dx = target.left + target.width / 2 - (from.left + from.width / 2);
         const dy = target.top + target.height / 2 - (from.top + from.height / 2);
         running.push(mark.animate(
-          [{ transform: "translate(0, 0) scale(1)", color: "#f8f7f4" }, { transform: `translate(${dx}px, ${dy}px) scale(${target.height / from.height})`, color: target.color }],
+          [{ transform: "translate(0, 0) scale(1)", color: "#ffffff" }, { transform: `translate(${dx}px, ${dy}px) scale(${target.height / from.height})`, color: target.color }],
           { duration: FLIGHT_MS, easing: WHIP, fill: "forwards" },
         ));
       } else {

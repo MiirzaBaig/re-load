@@ -12,7 +12,7 @@ export type PrintName = "kingdom" | "faisaliah" | "square-green" | "twisted";
 
 export function PrintHeader({ print, children, className }: { print: PrintName; children: ReactNode; className?: string }) {
   return (
-    <header className={cn("print-header", print.endsWith("-green") && "print-header-green", className)}>
+    <header className={cn("print-header", print.endsWith("-green") && "print-header-brand", className)}>
       <div className="print-header-art" aria-hidden="true">
         <img src={`/brand/prints/${print}.png`} alt="" decoding="async" />
       </div>

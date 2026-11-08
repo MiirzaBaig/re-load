@@ -72,19 +72,22 @@
 }
 
 :root {
+  /* Palette (Aziz, 2026-11-08): white #FFFFFF page, #F7F9FC secondary
+     surfaces, white cards, #0F0F12 text, brand accent #5669E0. The warm
+     #F8F7F4 off-white is retired everywhere. */
   --header-progress: 0;
   --radius: 0.5rem;
-  --background: #f8f7f4;
+  --background: #ffffff;
   --foreground: #0f0f12;
   --card: #ffffff;
   --card-foreground: #0f0f12;
   --popover: #ffffff;
   --popover-foreground: #0f0f12;
   --primary: #0f0f12;
-  --primary-foreground: #f8f7f4;
-  --secondary: #efeff2;
+  --primary-foreground: #ffffff;
+  --secondary: #f7f9fc;
   --secondary-foreground: #0f0f12;
-  --muted: #efeff2;
+  --muted: #f7f9fc;
   --muted-foreground: #4b5363;
   --accent: #e7e9ef;
   --accent-foreground: #0f0f12;
@@ -98,7 +101,7 @@
   --chart-3: #9099ab;
   --chart-4: #aeb8f5;
   --chart-5: #dc2626;
-  --sidebar: #f1f1ee;
+  --sidebar: #f7f9fc;
   --sidebar-foreground: #0f0f12;
   --sidebar-primary: #4557c7;
   --sidebar-primary-foreground: #ffffff;
@@ -122,12 +125,12 @@
   /* Light-mode footer: a distinctly deeper tinted surface than the page panel
      (#faf9f6) — enough separation for the curtain reveal to read, while still
      clearly a light surface. */
-  --footer-bg: #e7e9ef;
+  --footer-bg: #f7f9fc;
   --footer-fg: #0f0f12;
   --footer-muted: #374151;
   --footer-subtle: #c9cdd6;
   --footer-gold: #0f0f12;
-  --footer-gold-foreground: #f8f7f4;
+  --footer-gold-foreground: #ffffff;
   /* Hero inset card: the page it floats on, and the card itself. */
   --hero-shell-bg: var(--background);
   --hero-card-bg: #0f0f12;
@@ -141,36 +144,36 @@
 
 .dark {
   --background: #0f0f12;
-  --foreground: #f8f7f4;
-  --card: #17181c;
-  --card-foreground: #f8f7f4;
-  --popover: #1c1d22;
-  --popover-foreground: #f8f7f4;
-  --primary: #f8f7f4;
+  --foreground: #ffffff;
+  --card: #1b1c24;
+  --card-foreground: #ffffff;
+  --popover: #1b1c24;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
   --primary-foreground: #0f0f12;
-  --secondary: #1c1d22;
-  --secondary-foreground: #f8f7f4;
-  --muted: #1c1d22;
+  --secondary: #22232d;
+  --secondary-foreground: #ffffff;
+  --muted: #22232d;
   --muted-foreground: #a9afbc;
-  --accent: #24262c;
-  --accent-foreground: #f8f7f4;
+  --accent: #2a2b36;
+  --accent-foreground: #ffffff;
   --destructive: #f87171;
   --destructive-foreground: #1a0a0a;
-  --border: #26282e;
+  --border: #2a2b36;
   --input: #4a4f5c;
   --ring: #aeb8f5;
   --chart-1: #aeb8f5;
-  --chart-2: #f8f7f4;
+  --chart-2: #ffffff;
   --chart-3: #677185;
   --chart-4: #5669e0;
   --chart-5: #f87171;
-  --sidebar: #131418;
-  --sidebar-foreground: #f8f7f4;
+  --sidebar: #15161c;
+  --sidebar-foreground: #ffffff;
   --sidebar-primary: #aeb8f5;
   --sidebar-primary-foreground: #0f0f12;
-  --sidebar-accent: #24262c;
-  --sidebar-accent-foreground: #f8f7f4;
-  --sidebar-border: #26282e;
+  --sidebar-accent: #2a2b36;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2a2b36;
   --sidebar-ring: #aeb8f5;
   --eligible: #34d399;
   --eligible-foreground: #0a1a14;
@@ -184,20 +187,20 @@
   --brand-tint: #22273f;
   --saffron: #a9afbc;
   --saffron-foreground: #0f0f12;
-  --saffron-muted: #1c1d22;
+  --saffron-muted: #22232d;
   /* Lighter than the page (#0d1110), not darker: there is no headroom below
      near-black, so a darker footer gave the curtain edge ~1.03:1 and the reveal
      was invisible. Raising it instead reads as a lit surface behind the panel. */
-  --footer-bg: #1c1d22;
-  --footer-fg: #f8f7f4;
+  --footer-bg: #1b1c24;
+  --footer-fg: #ffffff;
   --footer-muted: #a9afbc;
-  --footer-subtle: #33353c;
-  --footer-gold: #f8f7f4;
+  --footer-subtle: #33343f;
+  --footer-gold: #ffffff;
   --footer-gold-foreground: #0f0f12;
   /* Dark mode: the page recedes and the card lifts, so the inset edge still
      reads without the light-mode contrast. */
   --hero-shell-bg: var(--background);
-  --hero-card-bg: #17181c;
+  --hero-card-bg: #1b1c24;
   --hero-card-rim: rgb(255 255 255 / 0.08);
   /* Blue-violet fails on ink (4.09:1); the guideline's soft accent is the
      dark-theme signal colour instead (10:1). */
@@ -3215,9 +3218,9 @@ html[dir="rtl"] .link-underline::after {
 /* The hero card is ink in both themes, so inside it the tokens invert:
    primary controls, icons and the accent dot become off-white. */
 .hero-card {
-  --primary: #f8f7f4;
+  --primary: #ffffff;
   --primary-foreground: #0f0f12;
-  --ring: #f8f7f4;
+  --ring: #ffffff;
 }
 
 /* Two-tone headline instead of a colour gradient: white, then slate. */
@@ -3239,7 +3242,8 @@ html[dir="rtl"] .link-underline::after {
 .speed-card-current {
   background: var(--muted);
 }
-.speed-card-relod {
+.speed-card-relod,
+.dark .speed-card-relod {
   border-color: var(--foreground);
   box-shadow: none;
 }
@@ -3262,7 +3266,7 @@ html[dir="rtl"] .link-underline::after {
 
 /* The financing CTA sits on the ink results panel in both themes. */
 .financing-cta {
-  background: #f8f7f4;
+  background: #ffffff;
   color: #0f0f12;
 }
 .dark .calculator-results {
@@ -3278,7 +3282,7 @@ html[dir="rtl"] .link-underline::after {
   border-radius: 12px;
   padding: 16px 18px;
   background: #0f0f12;
-  color: #f8f7f4;
+  color: #ffffff;
 }
 .dark .fin-estimate {
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
@@ -3288,7 +3292,7 @@ html[dir="rtl"] .link-underline::after {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgb(248 247 244 / 0.6);
+  color: rgb(255 255 255 / 0.6);
 }
 html[dir="rtl"] .fin-estimate-label { letter-spacing: 0; text-transform: none; }
 .fin-estimate-value {
@@ -3300,8 +3304,8 @@ html[dir="rtl"] .fin-estimate-label { letter-spacing: 0; text-transform: none; }
   letter-spacing: -0.02em;
   line-height: 1.15;
 }
-.fin-estimate-currency { font-size: 14px; font-weight: 500; color: rgb(248 247 244 / 0.6); }
-.fin-estimate-note { font-size: 12px; color: rgb(248 247 244 / 0.65); }
+.fin-estimate-currency { font-size: 14px; font-weight: 500; color: rgb(255 255 255 / 0.6); }
+.fin-estimate-note { font-size: 12px; color: rgb(255 255 255 / 0.65); }
 
 .fin-steps {
   display: grid;
@@ -3689,7 +3693,7 @@ html[dir="rtl"] .ws-eyebrow, html[dir="rtl"] .ws-label { letter-spacing: 0; text
   padding-inline: 8px;
   border-radius: 999px;
   background: #0f0f12;
-  color: #f8f7f4;
+  color: #ffffff;
   font-size: 11px;
   font-weight: 600;
   opacity: 0;
@@ -3832,11 +3836,11 @@ html[dir="rtl"] .ws-eyebrow, html[dir="rtl"] .ws-label { letter-spacing: 0; text
   width: fit-content;
   font-size: 12px;
   font-weight: 500;
-  color: rgb(248 247 244 / 0.75);
-  border-bottom: 1px solid rgb(248 247 244 / 0.25);
+  color: rgb(255 255 255 / 0.75);
+  border-bottom: 1px solid rgb(255 255 255 / 0.25);
   transition: color 160ms ease, border-color 160ms ease;
 }
-.fin-estimate-edit:hover { color: #f8f7f4; border-color: #f8f7f4; }
+.fin-estimate-edit:hover { color: #ffffff; border-color: #ffffff; }
 .fin-estimate-edit:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: 3px; }
 
 /* In the side column the steps read as a vertical timeline. */
@@ -4032,8 +4036,8 @@ html[dir="rtl"] .hero-steps-fill { transform-origin: right center; }
 }
 .hero-step:hover .hero-step-dot,
 .hero-step:focus-visible .hero-step-dot {
-  background: #f8f7f4;
-  border-color: #f8f7f4;
+  background: #ffffff;
+  border-color: #ffffff;
   color: #0f0f12;
   transform: translateY(-2px) scale(1.08);
   transition-delay: 0ms;
@@ -4090,14 +4094,14 @@ html[dir="rtl"] .hero-steps-fill { transform-origin: right center; }
 @media (min-width: 640px) { .benefit-side { padding: 32px; } }
 .benefit-side[data-side="store"] {
   --side-bg: #0f0f12;
-  --side-fg: #f8f7f4;
-  --side-muted: rgb(248 247 244 / 0.62);
+  --side-fg: #ffffff;
+  --side-muted: rgb(255 255 255 / 0.62);
   --side-line: rgb(255 255 255 / 0.1);
   --side-tile: rgb(255 255 255 / 0.08);
   --side-glow: rgb(255 255 255 / 0.09);
 }
 .dark .benefit-side[data-side="store"] {
-  --side-bg: #f8f7f4;
+  --side-bg: #ffffff;
   --side-fg: #0f0f12;
   --side-muted: #4b5363;
   --side-line: transparent;
@@ -4931,7 +4935,7 @@ html[data-intro="lift"] .intro {
 
 .intro-mark {
   width: 80px;
-  color: #f8f7f4;
+  color: #ffffff;
   will-change: transform;
   /* Settle: one soft breath once both halves have landed. */
   animation: intro-breath 560ms var(--ease-brand) 1060ms both;
@@ -4998,7 +5002,7 @@ html[data-intro="done"] [data-intro-word] {
   line-height: 1;
   letter-spacing: -0.02em;
   white-space: nowrap;
-  color: #f8f7f4;
+  color: #ffffff;
   will-change: transform;
 }
 .intro-word-clip { font-size: 97px; }
@@ -5029,7 +5033,7 @@ html[data-intro="landed"] [data-intro-word] { transition: none; }
   position: relative;
   z-index: 1;
   width: min(353px, 84vw);
-  color: #f8f7f4;
+  color: #ffffff;
   will-change: transform;
   /* The symbol's centre is 36.2% of the artwork width right of the middle. */
   animation: intro-ar-center 780ms var(--ease-brand) 1080ms both;
@@ -5177,7 +5181,7 @@ html[data-admin-welcome="lift"] .admin-welcome {
   z-index: 100;
   display: grid;
   place-items: center;
-  color: #f8f7f4;
+  color: #ffffff;
   animation: intro-failsafe 0s 6s forwards;
 }
 html[data-admin-welcome="lift"] .admin-welcome { pointer-events: none; }
@@ -5188,7 +5192,7 @@ html[data-admin-welcome="lift"] .admin-welcome { pointer-events: none; }
 .admin-welcome-a { animation: intro-drop 560ms var(--ease-brand) 240ms both; }
 .admin-welcome-text { animation: admin-rise 440ms var(--ease-brand) 560ms both; }
 .admin-welcome-greeting { font-family: var(--font-display); font-size: 30px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; }
-.admin-welcome-summary { margin-top: 8px; font-size: 14px; color: rgba(248, 247, 244, 0.62); }
+.admin-welcome-summary { margin-top: 8px; font-size: 14px; color: rgba(255, 255, 255, 0.62); }
 [dir="rtl"] .admin-welcome-greeting { font-family: var(--font-arabic-display); letter-spacing: 0; }
 /* The header symbol stays hidden until the flying one lands on it. */
 html[data-admin-welcome="play"] .admin-desk header :is([data-intro-mark], [data-intro-lockup]),
@@ -6364,90 +6368,130 @@ a.rh-panel:hover .rh-label { color: var(--foreground); }
 .dark .logo-solid { filter: drop-shadow(0 1px 0 rgb(0 0 0 / .7)) drop-shadow(0 3px 5px rgb(0 0 0 / .5)); }
 .dark .logo-solid-word { background-image: linear-gradient(180deg, #ffffff 0%, #d3d5db 100%); }
 
-/* ── Theme v2 trial (owner, 2026-10-31) ─────────────────────────────────────
-   Everything below applies only while the public site root carries
-   `theme-v2` (public-layout.tsx). Remove that class to return to the
-   black-and-white theme exactly as it was.
-   1. Riyadh sand neutrals: warm off-white and warm greys instead of cool,
-      slightly blue greys; warm charcoal in dark mode.
-   2. Deep palm green (#0f3d2e) as a second brand colour, used only on a
-      couple of full-width bands. WhatsApp green stays for WhatsApp cues.
-   3. Dithered Riyadh prints as the visual signature (hero, final CTA).
-   4. Two small touches: scroll-fill heading words, button colour sweep. */
+/* Public brand palette (owner, 2026-11-07): logo blue, white and blue-black.
+   Scoped to the public layout; workspace and semantic status tokens retain
+   their own palettes. Existing dither, scroll-fill and sweep motion remains. */
 html:has(.public-site.theme-v2) {
-  --background: #f5f1e8;
-  --foreground: #16140f;
-  --card: #fbf8f2;
-  --card-foreground: #16140f;
-  --popover: #fbf8f2;
-  --popover-foreground: #16140f;
-  --primary: #16140f;
-  --primary-foreground: #f5f1e8;
-  --secondary: #ece6da;
-  --secondary-foreground: #16140f;
-  --muted: #ece6da;
-  --muted-foreground: #5d574d;
-  --accent: #e5ded0;
-  --accent-foreground: #16140f;
-  --border: #e2dacb;
-  --input: #8a8274;
-  --ring: #16140f;
-  --hero-card-bg: #16140f;
-  --heading-tone: #8a8377;
-  --heading-mark: color-mix(in srgb, #1f7a55 22%, transparent);
-  --band-green: #0f3d2e;
-  --footer-bg: #ebe4d6;
-  --footer-fg: #16140f;
-  --footer-muted: #4f493f;
-  --footer-subtle: #d6cdbb;
-  --footer-gold: #16140f;
-  --footer-gold-foreground: #f5f1e8;
+  --background: #ffffff;
+  --foreground: #0f0f12;
+  --card: #ffffff;
+  --card-foreground: #0f0f12;
+  --popover: #ffffff;
+  --popover-foreground: #0f0f12;
+  --primary: #5669e0;
+  --primary-foreground: #ffffff;
+  --secondary: #f7f9fc;
+  --secondary-foreground: #263b85;
+  --muted: #f7f9fc;
+  --muted-foreground: #52617b;
+  --accent: #e8edff;
+  --accent-foreground: #3446af;
+  --border: #dce3f3;
+  --input: #7484a6;
+  --ring: #5669e0;
+  --brand-accent: #4555c5;
+  --brand-accent-fill: #5669e0;
+  --brand-accent-soft: #e8edff;
+  --hero-card-bg: #101b39;
+  --heading-tone: #697895;
+  --heading-mark: color-mix(in srgb, #5669e0 20%, transparent);
+  --brand-band: #27377f;
+  --print-filter: grayscale(1) sepia(1) saturate(2.8) hue-rotate(185deg);
+  --footer-bg: #27377f;
+  --footer-fg: #ffffff;
+  --footer-muted: #c3ceed;
+  --footer-subtle: #455595;
+  --footer-gold: #ffffff;
+  --footer-gold-foreground: #27377f;
 }
 html.dark:has(.public-site.theme-v2) {
-  --background: #12110e;
-  --foreground: #f3eee4;
-  --card: #1a1915;
-  --card-foreground: #f3eee4;
-  --popover: #1d1b17;
-  --popover-foreground: #f3eee4;
-  --primary: #f3eee4;
-  --primary-foreground: #12110e;
-  --secondary: #201e19;
-  --secondary-foreground: #f3eee4;
-  --muted: #201e19;
-  --muted-foreground: #b3ab9d;
-  --accent: #29261f;
-  --accent-foreground: #f3eee4;
-  --border: #2b2822;
-  --input: #5a554b;
-  --ring: #f3eee4;
-  --hero-card-bg: #1a1915;
-  --heading-tone: #9c9486;
-  --heading-mark: color-mix(in srgb, #34c486 30%, transparent);
-  --band-green: #0b3e2c; /* richer than the old #0c3326, which looked grey on charcoal */
-  --footer-bg: #1a1915;
-  --footer-fg: #f3eee4;
-  --footer-muted: #b3ab9d;
-  --footer-subtle: #2f2c25;
-  --footer-gold: #f3eee4;
-  --footer-gold-foreground: #12110e;
+  --background: #0f0f12;
+  --foreground: #ffffff;
+  --card: #1b1c24;
+  --card-foreground: #ffffff;
+  --popover: #1b1c24;
+  --popover-foreground: #ffffff;
+  --primary: #5669e0;
+  --primary-foreground: #ffffff;
+  --secondary: #22232d;
+  --secondary-foreground: #ffffff;
+  --muted: #1b1c24;
+  --muted-foreground: #a9afbc;
+  --accent: #2a2b36;
+  --accent-foreground: #ffffff;
+  --border: #2a2b36;
+  --input: #4a4f5c;
+  --ring: #aebaff;
+  --brand-accent: #aebaff;
+  --brand-accent-fill: #5669e0;
+  --brand-accent-soft: #22273f;
+  --hero-card-bg: #1b1c24;
+  --heading-tone: #94a6cc;
+  --heading-mark: color-mix(in srgb, #aebaff 24%, transparent);
+  --brand-band: #172650;
+  --footer-bg: #172650;
+  --footer-fg: #ffffff;
+  --footer-muted: #afbedb;
+  --footer-subtle: #283959;
+  --footer-gold: #ffffff;
+  --footer-gold-foreground: #0f0f12;
 }
 
-/* 2. Deep green bands: the section re-maps its own tokens, so every child
+/* A CSS duotone keeps the source photographs and crisp dither texture intact. */
+.theme-v2 .hero-photo-image,
+.theme-v2 .cta-print img,
+.theme-v2 .print-header-art img,
+.theme-v2 .guide-thumb img { filter: var(--print-filter); }
+.theme-v2 .hero-photo-shade {
+  background:
+    radial-gradient(ellipse 58% 64% at 50% 56%, rgb(8 15 32 / .55), rgb(16 27 57 / .12) 100%),
+    linear-gradient(180deg, rgb(16 27 57 / .22), rgb(16 27 57 / .3) 60%, rgb(8 15 32 / .68));
+}
+.theme-v2 .hero-card .hero-headline .hero-gradient-text {
+  background-image: linear-gradient(100deg, #ffffff 0%, #d7dfff 55%, #aebaff 100%);
+}
+[dir="rtl"] .theme-v2 .hero-card .hero-headline .hero-gradient-text {
+  background-image: linear-gradient(260deg, #ffffff 0%, #d7dfff 55%, #aebaff 100%);
+}
+.theme-v2 .hero-headline .hero-accent-line::after {
+  background: linear-gradient(90deg, rgb(174 186 255 / .35), #aebaff);
+}
+[dir="rtl"] .theme-v2 .hero-headline .hero-accent-line::after {
+  background: linear-gradient(270deg, rgb(174 186 255 / .35), #aebaff);
+}
+.theme-v2 .hero-badge-dot { background: rgb(174 186 255 / .16); }
+.theme-v2 .hero-badge-dot::after { background: #aebaff; }
+.theme-v2 .logo-solid-top { stop-color: #7c89ed; }
+.theme-v2 .logo-solid-bottom { stop-color: #4555c5; }
+.theme-v2 .logo-solid-word { background-image: linear-gradient(180deg, #6574df, #4555c5); }
+.dark .theme-v2 .logo-solid-top { stop-color: #e1e7ff; }
+.dark .theme-v2 .logo-solid-bottom { stop-color: #aebaff; }
+.dark .theme-v2 .logo-solid-word { background-image: linear-gradient(180deg, #e1e7ff, #aebaff); }
+.theme-v2 .rh-mark { background: linear-gradient(145deg, #7180ec, #4555c5); color: #ffffff; }
+.dark .theme-v2 .rh-glyph-top { stop-color: #ffffff; }
+.dark .theme-v2 .rh-glyph-bottom { stop-color: #d7dfff; }
+.dark .theme-v2 .rh-glyph-depth { fill: #aebaff; }
+@media (max-width: 767px) {
+  .theme-v2 .hero-photo-shade {
+    background: linear-gradient(180deg, rgb(16 27 57 / .38), rgb(8 15 32 / .62) 45%, rgb(8 15 32 / .56));
+  }
+}
+
+/* 2. Blue brand bands: the section re-maps its own tokens, so every child
    (headings, muted text, icons, buttons, borders) follows automatically. */
-.theme-v2 .band-green {
-  --background: var(--band-green);
-  --foreground: #f3eee4;
-  --card: color-mix(in oklab, var(--band-green) 88%, white);
-  --card-foreground: #f3eee4;
-  --muted: color-mix(in oklab, var(--band-green) 84%, white);
-  --muted-foreground: #b7c7bd;
-  --border: rgb(243 238 228 / 0.16);
-  --input: rgb(243 238 228 / 0.4);
-  --primary: #f3eee4;
-  --primary-foreground: #0f3d2e;
-  --heading-tone: #8fb3a1;
-  --heading-mark: color-mix(in srgb, #8fe0b4 26%, transparent);
+.theme-v2 .band-brand {
+  --background: var(--brand-band);
+  --foreground: #ffffff;
+  --card: color-mix(in oklab, var(--brand-band) 88%, white);
+  --card-foreground: #ffffff;
+  --muted: color-mix(in oklab, var(--brand-band) 84%, white);
+  --muted-foreground: #c3ceed;
+  --border: rgb(245 247 255 / 0.16);
+  --input: rgb(245 247 255 / 0.4);
+  --primary: #ffffff;
+  --primary-foreground: #27377f;
+  --heading-tone: #aebaff;
+  --heading-mark: color-mix(in srgb, #c4ceff 26%, transparent);
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -6472,8 +6516,8 @@ html.dark:has(.public-site.theme-v2) {
   /* Top fades into the band colour, so the pixel edge flows into the photo
      with no flat strip between them. */
   background:
-    linear-gradient(180deg, var(--band-green) 0%, transparent 28%),
-    radial-gradient(ellipse 55% 70% at 50% 50%, rgb(10 46 35 / .78), rgb(10 46 35 / .45) 100%);
+    linear-gradient(180deg, var(--brand-band) 0%, transparent 28%),
+    radial-gradient(ellipse 55% 70% at 50% 50%, rgb(16 27 57 / .78), rgb(16 27 57 / .45) 100%);
 }
 
 /* 4a. Scroll-fill heading: each word moves from grey to full ink in turn as
@@ -6492,10 +6536,10 @@ html.dark:has(.public-site.theme-v2) {
 @keyframes sf-fill { to { color: var(--foreground); } }
 
 /* 4b. Button sweep: on hover the colour slides up through the button
-   (palm green, or ivory on dark/green surfaces). */
+   (deeper blue, or pale blue on dark brand surfaces). */
 .theme-v2 .btn-sweep {
-  --sweep: #0f3d2e;
-  --sweep-text: #f3eee4;
+  --sweep: #3f4fbc;
+  --sweep-text: #ffffff;
   background-image: linear-gradient(to top, var(--sweep) 50%, transparent 50%);
   background-size: 100% 200%;
   background-position: 0 0;
@@ -6503,7 +6547,7 @@ html.dark:has(.public-site.theme-v2) {
   transition: background-position 340ms cubic-bezier(.76, 0, .24, 1), color 200ms cubic-bezier(.76, 0, .24, 1);
 }
 html.dark .theme-v2 .btn-sweep,
-.theme-v2 .band-green .btn-sweep { --sweep: #8fe0b4; --sweep-text: #0f3d2e; }
+.theme-v2 .band-brand .btn-sweep { --sweep: #c4ceff; --sweep-text: #27377f; }
 @media (hover: hover) {
   .theme-v2 .btn-sweep:hover { background-position: 0 100%; color: var(--sweep-text); }
 }
@@ -6516,9 +6560,9 @@ html.dark .theme-v2 .btn-sweep,
 .theme-v2 main { overflow-x: clip; }
 .theme-v2 .print-header {
   --bleed: max(0px, calc(50vw - 50% - clamp(12px, 2.2vw, 28px)));
-  --foreground: #f3eee4;
-  --muted-foreground: rgb(243 238 228 / 0.74);
-  --heading-tone: #b9b3a8;
+  --foreground: #ffffff;
+  --muted-foreground: rgb(245 247 255 / 0.74);
+  --heading-tone: #b4c2e3;
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -6543,18 +6587,18 @@ html.dark .theme-v2 .btn-sweep,
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgb(15 15 18 / .86) 0%, rgb(15 15 18 / .62) 55%, rgb(15 15 18 / .38) 100%);
+  background: linear-gradient(90deg, rgb(8 15 32 / .86) 0%, rgb(8 15 32 / .62) 55%, rgb(8 15 32 / .38) 100%);
 }
-[dir="rtl"] .theme-v2 .print-header-art::after { background: linear-gradient(270deg, rgb(15 15 18 / .86) 0%, rgb(15 15 18 / .62) 55%, rgb(15 15 18 / .38) 100%); }
-.theme-v2 .print-header-green { background: var(--band-green); }
-.theme-v2 .print-header-green .print-header-art::after { background: linear-gradient(90deg, rgb(10 46 35 / .9) 0%, rgb(10 46 35 / .66) 55%, rgb(10 46 35 / .42) 100%); }
-[dir="rtl"] .theme-v2 .print-header-green .print-header-art::after { background: linear-gradient(270deg, rgb(10 46 35 / .9) 0%, rgb(10 46 35 / .66) 55%, rgb(10 46 35 / .42) 100%); }
+[dir="rtl"] .theme-v2 .print-header-art::after { background: linear-gradient(270deg, rgb(8 15 32 / .86) 0%, rgb(8 15 32 / .62) 55%, rgb(8 15 32 / .38) 100%); }
+.theme-v2 .print-header-brand { background: var(--brand-band); }
+.theme-v2 .print-header-brand .print-header-art::after { background: linear-gradient(90deg, rgb(16 27 57 / .9) 0%, rgb(16 27 57 / .66) 55%, rgb(16 27 57 / .42) 100%); }
+[dir="rtl"] .theme-v2 .print-header-brand .print-header-art::after { background: linear-gradient(270deg, rgb(16 27 57 / .9) 0%, rgb(16 27 57 / .66) 55%, rgb(16 27 57 / .42) 100%); }
 .theme-v2 .print-header-body { position: relative; }
 @media (max-width: 639px) {
   .theme-v2 .print-header-art::after,
-  [dir="rtl"] .theme-v2 .print-header-art::after { background: rgb(15 15 18 / .72); }
-  .theme-v2 .print-header-green .print-header-art::after,
-  [dir="rtl"] .theme-v2 .print-header-green .print-header-art::after { background: rgb(10 46 35 / .78); }
+  [dir="rtl"] .theme-v2 .print-header-art::after { background: rgb(8 15 32 / .72); }
+  .theme-v2 .print-header-brand .print-header-art::after,
+  [dir="rtl"] .theme-v2 .print-header-brand .print-header-art::after { background: rgb(16 27 57 / .78); }
 }
 
 /* How it works: open timeline (owner, 2026-10-31). A hairline runs down the
@@ -6739,8 +6783,8 @@ html.dark .theme-v2 .btn-sweep,
 @media (prefers-reduced-motion: reduce) { .feedback-check-ring { display: none; } }
 
 /* Pixel edges (theme-v2, 2026-11-05). Placed only where the page changes
-   colour chapter, as on phone-harness: into and out of the green trust band,
-   into the green finale (call to action + footer), and into the footer on
+   colour chapter, as on phone-harness: into and out of the blue trust band,
+   into the blue finale (call to action + footer), and into the footer on
    inner pages. Pixels are crisp 4px squares. */
 .dither-edge { display: none; }
 .theme-v2 .dither-edge {
@@ -6755,38 +6799,38 @@ html.dark .theme-v2 .btn-sweep,
 }
 .theme-v2 { --edge-h: clamp(110px, 20vw, 300px); }
 /* Room for the edge, so it never covers the content next to it. */
-.theme-v2 .band-green:has(> .dither-edge-top) { margin-top: var(--edge-h); }
-.theme-v2 .band-green:has(> .dither-edge-bottom) { margin-bottom: var(--edge-h); }
+.theme-v2 .band-brand:has(> .dither-edge-top) { margin-top: var(--edge-h); }
+.theme-v2 .band-brand:has(> .dither-edge-bottom) { margin-bottom: var(--edge-h); }
 .theme-v2 .site-footer:has(> .footer-edge) { margin-top: var(--edge-h); }
 .public-site:has(.cta-band) .site-footer { margin-top: 0; }
 .theme-v2 .dither-edge-top { bottom: calc(100% - 1px); }
 .theme-v2 .dither-edge-bottom { top: calc(100% - 1px); }
 /* Edges extend outside their section, so the section must not clip them. */
-.theme-v2 .band-green { overflow: visible; }
+.theme-v2 .band-brand { overflow: visible; }
 .theme-v2 .cta-print { overflow: hidden; }
 .theme-v2 .cta-band { z-index: 2; }
 /* Homepage: the call to action already carries the edge into the footer. */
 .public-site:has(.cta-band) .footer-edge { display: none !important; }
 
-/* Green finale footer (theme-v2): the call to action and the footer read as
-   one green chapter, ending in the large faded wordmark. */
+/* Blue finale footer (theme-v2): the call to action and the footer read as
+   one blue chapter, ending in the large faded wordmark. */
 html:has(.public-site.theme-v2) {
-  --footer-bg: var(--band-green);
-  --footer-fg: #f3eee4;
-  --footer-muted: rgb(243 238 228 / 0.72);
-  --footer-subtle: rgb(243 238 228 / 0.14);
-  --footer-gold: #f3eee4;
-  --footer-gold-foreground: #0f3d2e;
+  --footer-bg: var(--brand-band);
+  --footer-fg: #ffffff;
+  --footer-muted: rgb(245 247 255 / 0.72);
+  --footer-subtle: rgb(245 247 255 / 0.14);
+  --footer-gold: #ffffff;
+  --footer-gold-foreground: #27377f;
 }
 .theme-v2 .site-footer { overflow: visible; border-top: 0; }
 .theme-v2 .footer-giant { overflow: hidden; }
 html.dark:has(.public-site.theme-v2) {
-  --footer-bg: var(--band-green);
-  --footer-fg: #f3eee4;
-  --footer-muted: rgb(243 238 228 / 0.72);
-  --footer-subtle: rgb(243 238 228 / 0.14);
-  --footer-gold: #f3eee4;
-  --footer-gold-foreground: #0c3326;
+  --footer-bg: var(--brand-band);
+  --footer-fg: #ffffff;
+  --footer-muted: rgb(245 247 255 / 0.72);
+  --footer-subtle: rgb(245 247 255 / 0.14);
+  --footer-gold: #ffffff;
+  --footer-gold-foreground: #0f0f12;
 }
 /* The setup section's faint tint would show as a hard line above the pixel
    edge, so under theme-v2 it shares the page background. */
@@ -6823,10 +6867,14 @@ html.dark:has(.public-site.theme-v2) {
    still moments; removed (owner, 2026-11-05). */
 .rh-pulse { display: none; }
 
-/* 404 page: the page ends in green ground with a pixel edge. */
-.nf-ground { position: relative; height: 28svh; min-height: 160px; background: var(--band-green); }
+/* 404 page: the page ends in blue ground with a pixel edge. */
+.nf-ground { position: relative; height: 28svh; min-height: 160px; background: var(--brand-band); }
 .nf-content { padding-bottom: calc(var(--edge-h, 120px) + 24px); }
 .nf-ground { height: 18svh; min-height: 120px; }
-/* Dark mode: the green print is lighter than the band, so dim it to sit
+/* Dark mode: the blue print is lighter than the band, so dim it to sit
    under the pixel edge without a step in tone. */
-.dark .theme-v2 .cta-print img { filter: brightness(0.78) saturate(1.12); }
+.dark .theme-v2 .cta-print img { filter: var(--print-filter) brightness(0.78); }
+
+/* The trust band's pixel edge dissolves straight into pricing; the section's
+   top rule drew a hard line under the dissolve. */
+.theme-v2 #pricing { border-top-color: transparent; }

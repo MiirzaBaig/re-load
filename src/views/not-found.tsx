@@ -40,7 +40,7 @@ export function NotFoundPage() {
         </div>
       </div>
       <div className="nf-ground" aria-hidden="true">
-        <DitherEdge color="--band-green" direction="up" />
+        <DitherEdge color="--brand-band" direction="up" />
       </div>
     </div>
   );

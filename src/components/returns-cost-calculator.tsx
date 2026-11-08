@@ -80,8 +80,8 @@ export function ReturnsCostCalculator({ withRequestForm = true }: { withRequestF
             </div>
           </div>
 
-          <div className="calculator-results relative isolate flex min-h-[440px] flex-col justify-center overflow-hidden bg-[#0F0F12] p-6 text-[#F8F7F4] sm:p-8 lg:p-10" aria-live="polite">
-            <p className="relative flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#F8F7F4]/70"><span className="size-1.5 rounded-full bg-[#F8F7F4]" />{t("The cost of unresolved returns", "تكلفة المرتجعات غير المعالجة")}</p>
+          <div className="calculator-results relative isolate flex min-h-[440px] flex-col justify-center overflow-hidden bg-[#0F0F12] p-6 text-[#ffffff] sm:p-8 lg:p-10" aria-live="polite">
+            <p className="relative flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#ffffff]/70"><span className="size-1.5 rounded-full bg-[#ffffff]" />{t("The cost of unresolved returns", "تكلفة المرتجعات غير المعالجة")}</p>
             <ResultValue
               icon={<WalletCards className="size-5" />}
               label={t("Tied up in delayed returns", "قيمة معلّقة في مرتجعات متأخرة")}
@@ -92,7 +92,7 @@ export function ReturnsCostCalculator({ withRequestForm = true }: { withRequestF
               <ResultValue icon={<Clock3 className="size-4" />} label={t("Estimated operational cost", "التكلفة التشغيلية التقديرية")} value={`${formatMoney(results.operatingCost)} ${t("/ month", "/ شهر")}`} />
               <ResultValue icon={<TimerReset className="size-4" />} label={t("Average return resolution", "متوسط مدة معالجة الإرجاع")} value={`${n(resolutionDays, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${t("days", "يوم")}`} />
             </div>
-            <div className="relative mt-6 flex items-center justify-between rounded-xl bg-white/5 px-4 py-3 text-xs text-[#F8F7F4]/75"><span>{t("Monthly staff time", "وقت العمل الشهري")}</span><span className="font-semibold tabular-nums latin-nums">{n(monthlyReturns * processingMinutes / 60, { maximumFractionDigits: 1 })} {t("hours", "ساعة")}</span></div>
+            <div className="relative mt-6 flex items-center justify-between rounded-xl bg-white/5 px-4 py-3 text-xs text-[#ffffff]/75"><span>{t("Monthly staff time", "وقت العمل الشهري")}</span><span className="font-semibold tabular-nums latin-nums">{n(monthlyReturns * processingMinutes / 60, { maximumFractionDigits: 1 })} {t("hours", "ساعة")}</span></div>
             <div className="relative mt-7 border-t border-white/10 pt-6">
               {/* Glides to the open form below rather than opening a popup,
                   so the form is part of the page, not hidden behind a click. */}
@@ -104,7 +104,7 @@ export function ReturnsCostCalculator({ withRequestForm = true }: { withRequestF
                 {t("Tell us about your store", "عرّفنا بمتجرك")}
                 <ArrowDown className="size-4 transition-transform duration-300 group-hover:translate-y-0.5" />
               </a>
-              <p className="mt-4 text-xs leading-relaxed text-[#F8F7F4]/65">
+              <p className="mt-4 text-xs leading-relaxed text-[#ffffff]/65">
                 {t("Planning estimate only. Not an offer of credit.", "تقدير للتخطيط فقط، وليس عرض تمويل.")}
               </p>
             </div>
@@ -171,7 +171,7 @@ function ResultValue({ icon, label, value, emphasis = false }: {
 }) {
   return (
     <div className={emphasis ? "relative mt-5" : "rounded-2xl border border-white/10 bg-white/[0.045] p-4 backdrop-blur-sm transition-colors hover:bg-white/[0.07]"}>
-      <div className="flex items-center gap-2 text-xs text-[#F8F7F4]/70">{icon}<span>{label}</span></div>
+      <div className="flex items-center gap-2 text-xs text-[#ffffff]/70">{icon}<span>{label}</span></div>
       {/* No `key` here: keying on the value remounts the node on every keystroke,
           which replays the fade and reads as a flicker while dragging a slider. */}
       <p className={emphasis ? "mt-2 text-[clamp(2.25rem,5vw,4.25rem)] font-semibold leading-none tabular-nums latin-nums" : "mt-2 text-lg font-semibold tracking-tight tabular-nums latin-nums"}>

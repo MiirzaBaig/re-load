@@ -1,12 +1,12 @@
 // Share images in the "Riyadh print" style (theme-v2, 2026-10-31): a dark card
 // on the dithered Kingdom Centre print, with the homepage headline and its
-// green "on WhatsApp". Renders with the Chrome already on the machine via the
+// blue "on WhatsApp". Renders with the Chrome already on the machine via the
 // DevTools protocol, so no extra dependency is needed.
 // The previous plain design is kept as public/brand/reload-share-*-v1.png and
 // its generator as scripts/generate-share-images.mjs.
 // usage: node scripts/generate-share-images-v2.mjs   (CHROME=/path/to/chrome to override)
 // Then shrink each file (~400 KB -> ~50 KB, safe for WhatsApp link previews)
-// with Pillow, keeping the green gradient smooth:
+// with Pillow, keeping the blue gradient smooth:
 //   Image.open(p).convert("RGB").quantize(colors=256, method=Image.Quantize.FASTOCTREE,
 //     dither=Image.Dither.FLOYDSTEINBERG).save(p, optimize=True)
 import { spawn } from "node:child_process";
@@ -20,8 +20,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const print = (await readFile("public/brand/hero-riyadh-kingdom.png")).toString("base64");
 const arabicFont = (await readFile("public/fonts/thmanyah/sans/woff2/thmanyah-sans-Bold.woff2")).toString("base64");
-const mark = (await readFile("public/brand/reload-icon.svg", "utf8")).replace('fill="currentColor"', 'fill="#f3eee4" style="width:46px;height:46px"');
-const arLockup = (await readFile("public/brand/reload-ar.svg", "utf8")).replace(/fill="[^"]*"/g, 'fill="#f3eee4"').replace("<svg", '<svg style="height:52px;width:auto"');
+const mark = (await readFile("public/brand/reload-icon.svg", "utf8")).replace('fill="currentColor"', 'fill="#f5f7ff" style="width:46px;height:46px"');
+const arLockup = (await readFile("public/brand/reload-ar.svg", "utf8")).replace(/fill="[^"]*"/g, 'fill="#f5f7ff"').replace("<svg", '<svg style="height:52px;width:auto"');
 
 const COPY = {
   en: {
@@ -46,23 +46,23 @@ function html(locale) {
   const imgLeft = ar ? -219 : 341;
   const logo = ar
     ? arLockup
-    : `<span style="display:flex;align-items:center;gap:12px">${mark}<span style="font:600 50px Manrope,sans-serif;letter-spacing:-1px;line-height:1;color:#f3eee4">Reload</span></span>`;
+    : `<span style="display:flex;align-items:center;gap:12px">${mark}<span style="font:600 50px Manrope,sans-serif;letter-spacing:-1px;line-height:1;color:#f5f7ff">Reload</span></span>`;
   return `<!doctype html><meta charset="utf-8"><style>
 @import url(https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&display=block);
 @font-face{font-family:arabic;src:url(data:font/woff2;base64,${arabicFont})}
-*{box-sizing:border-box}body{margin:0;background:#16140f}
-.card{position:relative;width:1200px;height:630px;overflow:hidden;background:#16140f;color:#f3eee4;font-family:${ar ? "arabic" : "Manrope"},sans-serif;padding:58px 72px}
-.print{position:absolute;top:-60px;left:${imgLeft}px;width:1100px;image-rendering:pixelated}
-.shade{position:absolute;inset:0;background:linear-gradient(${ar ? 270 : 90}deg,#16140f 0%,#16140f 30%,rgba(22,20,15,.82) 50%,rgba(22,20,15,.3) 100%)}
+*{box-sizing:border-box}body{margin:0;background:#080f20}
+.card{position:relative;width:1200px;height:630px;overflow:hidden;background:#080f20;color:#f5f7ff;font-family:${ar ? "arabic" : "Manrope"},sans-serif;padding:58px 72px}
+.print{position:absolute;top:-60px;left:${imgLeft}px;width:1100px;image-rendering:pixelated;filter:grayscale(1) sepia(1) saturate(2.8) hue-rotate(185deg)}
+.shade{position:absolute;inset:0;background:linear-gradient(${ar ? 270 : 90}deg,#080f20 0%,#080f20 30%,rgba(8,15,32,.82) 50%,rgba(8,15,32,.3) 100%)}
 .content{position:relative;display:flex;flex-direction:column;height:100%}
 .top{display:flex;justify-content:space-between;align-items:center}
-.domain{font:500 21px Manrope,sans-serif;color:rgba(243,238,228,.7)}
-.badge{display:inline-flex;align-items:center;gap:10px;align-self:flex-start;margin-top:64px;padding:7px 16px 7px 8px;border:1px solid rgba(243,238,228,.16);border-radius:999px;background:rgba(0,0,0,.25);font-size:19px;color:rgba(243,238,228,.85)}
-.dot{display:grid;place-items:center;width:22px;height:22px;border-radius:999px;background:rgba(37,211,102,.16)}.dot:after{content:"";width:8px;height:8px;border-radius:999px;background:#25d366}
+.domain{font:500 21px Manrope,sans-serif;color:rgba(245,247,255,.7)}
+.badge{display:inline-flex;align-items:center;gap:10px;align-self:flex-start;margin-top:64px;padding:7px 16px 7px 8px;border:1px solid rgba(245,247,255,.16);border-radius:999px;background:rgba(0,0,0,.25);font-size:19px;color:rgba(245,247,255,.85)}
+.dot{display:grid;place-items:center;width:22px;height:22px;border-radius:999px;background:rgba(174,186,255,.16)}.dot:after{content:"";width:8px;height:8px;border-radius:999px;background:#aebaff}
 h1{margin:26px 0 0;max-width:${ar ? 760 : 720}px;font-size:${ar ? 60 : 58}px;line-height:${ar ? 1.35 : 1.08};letter-spacing:${ar ? 0 : -1.6}px;font-weight:700}
-.accent{display:inline-block;position:relative;white-space:nowrap;background:linear-gradient(${ar ? 260 : 100}deg,#f6f8f7 0%,#b8f0cd 55%,#4ddb8a 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.accent:after{content:"";position:absolute;inset-inline:2px;bottom:${ar ? 2 : -6}px;height:5px;border-radius:5px;background:linear-gradient(${ar ? 270 : 90}deg,rgba(37,211,102,.35),#25d366)}
-p{margin:${ar ? 18 : 26}px 0 0;max-width:640px;font-size:24px;line-height:1.5;color:rgba(243,238,228,.72)}
+.accent{display:inline-block;position:relative;white-space:nowrap;background:linear-gradient(${ar ? 260 : 100}deg,#ffffff 0%,#d7dfff 55%,#aebaff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.accent:after{content:"";position:absolute;inset-inline:2px;bottom:${ar ? 2 : -6}px;height:5px;border-radius:5px;background:linear-gradient(${ar ? 270 : 90}deg,rgba(174,186,255,.35),#aebaff)}
+p{margin:${ar ? 18 : 26}px 0 0;max-width:640px;font-size:24px;line-height:1.5;color:rgba(245,247,255,.72)}
 </style><div class="card" dir="${ar ? "rtl" : "ltr"}"><img class="print" src="data:image/png;base64,${print}"><div class="shade"></div>
 <div class="content"><div class="top"><div>${logo}</div><span class="domain" dir="ltr">www.reload.sa</span></div>
 <span class="badge"><span class="dot"></span>${c.badge}</span>

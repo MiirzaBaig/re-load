@@ -46,7 +46,7 @@ function resolveColour(el: HTMLElement, cssVar: string): [number, number, number
   const value = getComputedStyle(probe).color;
   probe.remove();
   const c = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
-  if (!c) return [15, 61, 46];
+  if (!c) return [86, 105, 224];
   c.fillStyle = value;
   c.fillRect(0, 0, 1, 1);
   const [r, g, b] = c.getImageData(0, 0, 1, 1).data;
@@ -58,7 +58,7 @@ export function DitherEdge({
   direction = "up",
   className,
 }: {
-  /** CSS custom property holding the colour, e.g. "--band-green". */
+  /** CSS custom property holding the colour, e.g. "--brand-band". */
   color: string;
   direction?: "up" | "down";
   className?: string;

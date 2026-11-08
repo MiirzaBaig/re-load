@@ -79,8 +79,8 @@ export function SiteFooter() {
 
   return (
     <footer className="site-footer">
-      {/* Inner pages: the sand page breaks into the green footer. Hidden on
-          the homepage, where the green call to action already has the edge. */}
+      {/* Inner pages: the page breaks into the blue footer. Hidden on
+          the homepage, where the blue call to action already has the edge. */}
       <DitherEdge color="--footer-bg" direction="up" className="footer-edge" />
       <div className="mx-auto w-full max-w-[1200px] px-5 pt-16 sm:px-8 sm:pt-24">
         <div ref={gridRef} className={cn("footer-grid", gridIn && "is-in")}>

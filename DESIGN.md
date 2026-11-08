@@ -6,7 +6,7 @@ Monochrome-first Brand System 3.0: warm off-white/ink surfaces, one restrained s
 
 ## Tokens
 
-Brand System 3.0 is monochrome first. Light mode is ink `#0F0F12` on off-white `#F8F7F4` with white cards and stone `#E7E9EF` borders; dark mode inverts to off-white on ink. Primary actions are solid ink (white in dark mode). Blue-violet is a 10% signal for focus and selection only: deep accent `#4557C7` on light (text-safe at 5.70:1) and soft accent `#AEB8F5` on dark, exposed as `--brand-accent` and `--ring`. Eligibility/status colours stay separate from brand colour. Tokens are defined as CSS variables in `src/index.css` and consumed through Tailwind utilities.
+Brand System 3.0 is monochrome first. Light mode is ink `#0F0F12` on white `#FFFFFF` with `#F7F9FC` secondary surfaces and white cards and stone `#E7E9EF` borders; dark mode inverts to off-white on ink. Primary actions are solid ink (white in dark mode). Blue-violet is a 10% signal for focus and selection only: deep accent `#4557C7` on light (text-safe at 5.70:1) and soft accent `#AEB8F5` on dark, exposed as `--brand-accent` and `--ring`. Eligibility/status colours stay separate from brand colour. Tokens are defined as CSS variables in `src/index.css` and consumed through Tailwind utilities.
 
 ## Typography
 
@@ -36,3 +36,12 @@ Controls use visible focus styles, semantic labels, keyboard-friendly Radix prim
 Reuse `src/components/desk/primitives.tsx` (TWEEN, QUICK, EASE, Segmented, Metric, Panel, EmptyState), ProgressRing and integration steppers. PageHeader unifies merchant headings/help; SetupChecklist reflects real setup state. Use rounded-2xl cards and rounded-xl controls, shaped skeletons and brief 200–350ms transitions; reduced-motion users must not get translated/looping effects. Use AlertDialog for destructive confirmations.
 
 The current public footer is a normal footer with a faded wordmark, not the former curtain reveal. Workspace Inbox supports larger/full conversation views and collapsible context panels. Knowledge import explains how to find Zid/Salla public-page links and offers pasted text or guided setup. Native WhatsApp messages cannot run custom CSS animations.
+
+## Palette (Aziz, 2026-11-08)
+
+Applies to the marketing website and the merchant/admin platform.
+
+- Light: page `#FFFFFF`, secondary sections and subtle surfaces `#F7F9FC`, cards `#FFFFFF`, text `#0F0F12`, brand accent `#5669E0`. The warm `#F8F7F4` off-white is retired everywhere, including QR tiles, posters and the Zid checkout page.
+- Dark: page `#0F0F12`, cards and raised surfaces `#1B1C24`, text `#FFFFFF`, brand accent `#5669E0`.
+- Website: primary buttons use the brand blue. Brand bands, footer, pixel edges and the dithered Riyadh prints stay blue (`--brand-band`). Platform: primary buttons stay ink (white in dark mode); blue stays the focus and selection signal.
+- Functional colours stay separate: WhatsApp green, success, error and the Saudi-green footer heart.

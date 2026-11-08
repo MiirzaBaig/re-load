@@ -226,8 +226,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   return (
-    // theme-v2 (owner trial, 2026-10-31): sand neutrals, deep green bands,
-    // dithered prints and button sweep. Remove the class to revert all of it.
+    // Public blue/white/blue-black palette with the existing print and motion system.
     <div className="public-site theme-v2 flex min-h-svh flex-col">
       <PublicAnalytics />
       <IntroSplash />

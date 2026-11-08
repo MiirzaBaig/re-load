@@ -860,11 +860,11 @@ export function LandingPage() {
       <HomepageContact /> */}
       <SeoProse variant="home" />
 
-      {/* Final CTA. With theme-v2 it becomes a deep green band over a green
+      {/* Final CTA. With theme-v2 it becomes a blue brand band over a blue-toned
           dithered Riyadh print (Faisaliah Tower and the King Fahd Library square,
           photo by Tati Odintsova, Unsplash License); without it, unchanged. */}
-      <section className="band-green cta-band">
-        <DitherEdge color="--band-green" direction="up" />
+      <section className="band-brand cta-band">
+        <DitherEdge color="--brand-band" direction="up" />
         <div className="cta-print" aria-hidden="true">
           <img src="/brand/cta-riyadh-green.png" alt="" loading="lazy" decoding="async" />
         </div>

@@ -18,7 +18,7 @@ import { MARK_PATHS, MARK_VIEWBOX } from "@/components/reload-logo";
 export const EVENT_QR_URL = "https://reload.sa/qr";
 
 export const INK = "#0f0f12";
-export const PAPER = "#f8f7f4";
+export const PAPER = "#ffffff";
 
 export type QrTheme = "ink" | "inverted";
 
