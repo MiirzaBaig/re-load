@@ -51,7 +51,7 @@ import { useAuth } from "@/components/auth-provider";
 import { LanguageToggle } from "@/components/language-toggle";
 import { CommandPalette } from "@/components/command-palette";
 import { useLanguage } from "@/components/language-provider";
-import { StoreIdentity } from "@/components/store-identity";
+import { WorkspaceSwitcher } from "@/components/workspace-switcher";
 import { MerchantRouteSkeleton, SidebarWorkspaceSkeleton } from "@/components/merchant-skeletons";
 import { Button } from "@/components/ui/button";
 import { CreateWorkspace } from "@/components/create-workspace";
@@ -161,14 +161,7 @@ export function MerchantLayout({ children, shippingSettingsEnabled = false }: { 
             {auth.loading && auth.configured ? (
               <SidebarWorkspaceSkeleton />
             ) : (
-              <div className="rounded-xl border border-sidebar-border/80 bg-sidebar-accent/40 px-3 py-2.5 transition-[opacity,transform] duration-300 ease-out">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-sidebar-foreground/55">
-                  {t("Workspace", "مساحة العمل")}
-                </p>
-                <div className="mt-1 text-sm font-medium text-sidebar-foreground">
-                  <StoreIdentity name={storeName} markSize="sm" />
-                </div>
-              </div>
+              <WorkspaceSwitcher fallbackName={storeName} />
             )}
           </div>
         </SidebarHeader>

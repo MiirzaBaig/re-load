@@ -4,7 +4,7 @@ Updated 2026-10-13. WhatsApp, Arabic/RTL, email OTP, knowledge, inbox, multiple-
 
 ## Current priorities
 
-1. Salla public-app configuration/review, real merchant authorization, token-refresh/webhook lifecycle and verified product/order acceptance.
+1. Salla Easy Mode pilot: configure the private pairing setting/event, opt in a designated test workspace, complete real installation/product/order/return/revocation and token-refresh acceptance, then public review and billing lifecycle. See docs/salla-easy-mode.md.
 2. Stream Pay live acceptance and rollout: sandbox checkout, upgrades, payment records, signed callbacks and access checks are implemented. Monthly Standard SAR149 and Premium SAR299, annual SAR1,430.40 and SAR2,870.40 are approved; annual allowances refresh monthly; private first-month SAR99/199 applies selectively. Confirm bundle price, scheduled renewals/cancellation and live fees before enabling charging/enforcement.
 3. Measure real per-store costs and usage, then set plan allowances, overages and trial limits; validate first paid journey before outreach to 100 merchants.
 4. Bulk marketing: permitted contact list, approved templates, billing/limits check, campaign queue, delivery reporting, opt-out suppression and safe retry behavior.

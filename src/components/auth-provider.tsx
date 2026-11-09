@@ -3,17 +3,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
-
-interface Workspace {
-  storeId: string;
-  storeName: string;
-  role: "owner" | "admin" | "member";
-}
+import { preferredWorkspace, workspacePreferenceKey, type Workspace } from "@/lib/workspace-selection";
 
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
   workspace: Workspace | null;
+  workspaces: Workspace[];
+  switchWorkspace: (storeId: string) => void;
   loading: boolean;
   configured: boolean;
   workspaceError: boolean;
@@ -26,6 +23,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(isSupabaseConfigured);
 
   const [workspaceError, setWorkspaceError] = useState(false);
@@ -42,16 +40,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from("memberships")
         .select("store_id, role, stores(name)")
         .eq("user_id", userId)
-        .limit(1)
-        .maybeSingle();
+        .order("created_at", { ascending: true })
+        .order("store_id", { ascending: true })
+        .limit(100);
       if (version !== requestVersion.current) return;
       if (error) throw error;
-      const relation = data?.stores as unknown as { name?: string } | null;
-      setWorkspace(data ? {
-        storeId: data.store_id as string,
-        storeName: relation?.name ?? "My Store",
-        role: data.role as Workspace["role"],
-      } : null);
+      const available = (data ?? []).map((row: { store_id: string; role: string; stores: unknown }) => {
+        const relation = row.stores as unknown as { name?: string } | null;
+        return { storeId: row.store_id as string, storeName: relation?.name ?? "My Store", role: row.role as Workspace["role"] };
+      });
+      let preference: string | null = null;
+      try { preference = localStorage.getItem(workspacePreferenceKey(userId)); } catch { /* Browser storage can be disabled. */ }
+      setWorkspaces(available);
+      setWorkspace(preferredWorkspace(available, preference));
     } catch {
       if (version === requestVersion.current) setWorkspaceError(true);
     } finally {
@@ -72,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       currentUser.current = userId;
       ++requestVersion.current;
       setWorkspace(null);
+      setWorkspaces([]);
       setWorkspaceError(false);
       setLoading(Boolean(userId));
       if (userId) {
@@ -110,6 +112,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     user: session?.user ?? null,
     workspace,
+    workspaces,
+    switchWorkspace: (storeId) => {
+      if (!session || loading || !workspaces.some((item) => item.storeId === storeId)) throw Error("workspace_unavailable");
+      if (workspace?.storeId === storeId) return;
+      localStorage.setItem(workspacePreferenceKey(session.user.id), storeId);
+      // A full reload drops all tenant-bound forms, requests and singleton caches.
+      // Never keep a case/detail route belonging to the previous workspace.
+      window.location.assign("/app/integrations");
+    },
     loading,
     workspaceError,
     configured: isSupabaseConfigured,
@@ -136,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-  }), [loading, session, workspace, workspaceError, loadWorkspace]);
+  }), [loading, session, workspace, workspaces, workspaceError, loadWorkspace]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

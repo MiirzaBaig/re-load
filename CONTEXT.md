@@ -21,7 +21,7 @@ No self-training loop automatically changes approved answers or policies. Import
 ## Merchant journey
 
 1. Sign in and open `/app`; real overview checklist covers setup.
-2. Connect Zid using the merchant's official AI Connector link. Salla Custom OAuth is implemented but gated until public-app readiness and acceptance.
+2. Connect Zid using the merchant's official AI Connector link. Salla Easy Mode with private one-time workspace pairing is implemented and gated for a controlled pilot; real installation/read acceptance is pending. Legacy Custom OAuth is test-only. See docs/salla-easy-mode.md.
 3. Add return-policy text/URL, review proposed rules and publish a version.
 4. Add store answers manually, through guided questions, or import one public page/pasted text; approve before assistant retrieval.
 5. Activate the shared WhatsApp channel and distribute that store's link/QR.
@@ -90,3 +90,11 @@ Sandbox merchant settings and a customer collection-details wizard are implement
 Local worker code now connects collection confirmation to fresh order/policy/warehouse/rate/funding checks, exact merchant-approved SKU/quantity parcel measurements, atomic cap reservation/one reverse submission, exact-reference charge reconciliation and native customer-requested PDF labels. Migration 202610310005 is applied. No automatic shipment, message or funds movement created; worker not deployed and the additional booking sandbox flag is off. Usage signals produce deduplicated improvement counts and suggestions for merchant review; no automatic training, policy/cap changes or live shipping. Full WhatsApp acceptance remains pending. See docs/oto-whatsapp-booking.md.
 
 Pilot preparation: WhatsApp inbox v33 is now deployed with shipping explicitly disabled and empty store/sender allowlists. Existing OTO staging token configured. Backend deployment is verified, but real automated WhatsApp acceptance is pending the owner's setup of the testing-z-connected workspace and qualifying controlled-contact order. No tenant billing/funding/connection was copied from the separate wallet test workspace. See docs/oto-whatsapp-booking.md.
+
+## Salla Easy Mode — 9 November 2026
+
+Public app 1155852112 now has deployed signed Easy Mode authorization/settings pairing, private pending credentials, single-use hashed connection codes, explicit workspace isolation, revocation and guarded token refresh. Hosted credentials updated selectively; readiness false and pilot allowlist empty. One private `reload_connection_code` field plus App Settings Updated must be configured in Salla. Bilingual connection UI remains local, uncommitted. No actual installation/read/return or paid subscription acceptance yet. See docs/salla-easy-mode.md.
+
+Salla pilot update (9 November): admin@reload.sa now owns a separate Salla Test workspace; only its UUID is allowlisted and Salla readiness is enabled for it. Existing Zid My Store remains CONNECTED. A new membership-validated sidebar switcher is local, with per-user selection and full reload to clear tenant forms/caches; frontend not pushed. Actual Salla pairing/reads are still pending. See docs/salla-easy-mode.md.
+
+Salla demo acceptance update (9 November): real signed Easy Mode authorization plus fresh-code pairing succeeded. Salla Test is CONNECTED, token valid, with settings.read/orders.read/products.read/offline_access. Screenshots match hosted status. This establishes connection only; product/order/return/renewal and WhatsApp acceptance still require testing. See docs/salla-easy-mode.md.

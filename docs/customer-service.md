@@ -52,3 +52,7 @@ Each store is assigned an immutable, unique `RL-` + ten hexadecimal-character Wh
 ## Current workspace improvements
 
 Knowledge supports guided questions when no help page exists. Import explains Zid/Salla public page locations, distinguishes storefront links from dashboard/platform help URLs, and offers pasted text/guided setup. Staff owners can prepare new drafts from /admin/workspaces/[storeId]; only merchants approve them. Claude's 23bfbe7 polish added shared headers, real setup checklist, clearer policy review/publish controls and expanded Inbox context. The latest footer is normal with a faded wordmark. See merchant-support-workspace.md for role and diagnostics limits.
+
+## Salla configuration update — 9 November 2026
+
+Current public-app route is Easy Mode, superseding the historical Custom OAuth release notes above. App 1155852112; one private `reload_connection_code` String setting binds Salla to an owner/admin-authorized Reload workspace via signed settings events. SALLA_AUTH_MODE=easy, SALLA_CUSTOM_TEST_ENABLED=false, SALLA_PUBLIC_APP_READY=false and SALLA_EASY_PILOT_STORE_IDS empty. Selectively synchronized Salla credentials and deployed lifecycle/renewal functions; no real pilot enabled. Details and exact dashboard setup: [Salla Easy Mode](salla-easy-mode.md).

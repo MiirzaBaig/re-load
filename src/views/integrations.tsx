@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  AlertTriangle, ArrowRight, ArrowUpRight, Check, Plug, ChevronRight, Copy, Download, ExternalLink, FileText, Link2, Loader2,
+  AlertTriangle, ArrowRight, Check, Plug, ChevronRight, Copy, Download, ExternalLink, FileText, Link2, Loader2,
   Lock, QrCode, RefreshCw, ShieldCheck, ShoppingBag, Unplug,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ import { useLanguage } from "@/components/language-provider";
 import { IntegrationsPageSkeleton } from "@/components/merchant-skeletons";
 import { WhatsAppLogo } from "@/components/phone-frame";
 import { ZidConnectCard } from "@/components/zid-connect-card";
-import { ConnectStepper } from "@/components/integrations/connect-stepper";
+import { SallaEasyConnect } from "@/components/integrations/salla-easy-connect";
 import { ProgressRing } from "@/components/desk/progress-ring";
 import { Key, PageHeader } from "@/components/desk/page-header";
 import { QUICK, TWEEN } from "@/components/desk/primitives";
@@ -394,7 +394,6 @@ function PanelHeader({ platform, tone, connection, connectedAt, lastChecked, t, 
   );
 }
 
-const SALLA = "#004d5a";
 
 function SallaPanel({ connected, storeId, t, onChange }: { connected: boolean; storeId: string | null; t: T; onChange: () => void }) {
   const [action, setAction] = useState<"connect" | "test" | "disconnect" | null>(null);
@@ -428,24 +427,7 @@ function SallaPanel({ connected, storeId, t, onChange }: { connected: boolean; s
           </div>
         </>
       ) : (
-        <ConnectStepper
-          current={0} busy={action === "connect"} accent={SALLA}
-          steps={[
-            {
-              title: t("Approve Reload in Salla", "وافق على ريلود في سلة"),
-              content: (
-                <div className="space-y-3">
-                  <p className="text-sm leading-6 text-muted-foreground">{t("We’re preparing Reload’s public Salla app. New connections will open after testing and Salla approval.", "نعمل على تجهيز تطبيق ريلود العام في سلة. سيتاح الربط بعد الاختبار وموافقة سلة.")}</p>
-                  <Button className="h-11 w-full rounded-xl transition-transform active:scale-[.99]" disabled>
-                    {action === "connect" ? <><Loader2 className="size-4 animate-spin" />{t("Opening Salla…", "جارٍ فتح سلة…")}</> : <>{t("Under development", "قيد التطوير")}<ArrowUpRight className="size-3.5 rtl:-scale-x-100" /></>}
-                  </Button>
-                </div>
-              ),
-            },
-            { title: t("Come back connected", "عُد وقد تم الربط") },
-            { title: t("Customers can start returns", "يبدأ العملاء طلبات الإرجاع") },
-          ]}
-        />
+        <SallaEasyConnect key={storeId} storeId={storeId} onChange={onChange} />
       )}
       <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-4 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5"><ShieldCheck className="size-3.5 text-[#004d5a] dark:text-[#5ec6c6]" />{t("Encrypted access", "وصول مشفّر")}</span>

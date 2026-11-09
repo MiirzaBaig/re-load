@@ -39,3 +39,5 @@ Read docs/billing.md before payment work. Sandbox Standard payment and prorated 
 Annual billing update: Standard SAR1,430.40/year and Premium SAR2,870.40/year (VAT included), monthly allowance resets, first-month private offers remain monthly-only. See docs/billing.md for sandbox evidence and remaining acceptance. Mirza approved committing and pushing the billing release on 2026-10-17; live charging still requires separate rollout approval.
 
 SEO/GEO maintenance: public search-facing changes must update root SEO.md and GEO.md with decisions, verified checks and remaining external work. Arabic-first public URLs are approved. Preserve the existing Salla wording until Mirza supplies the Make.com decision.
+
+Workspace selection (9 November): AuthProvider now loads current membership choices, validates any per-user stored preference, and reloads `/app/integrations` on explicit switch to clear tenant-scoped forms/caches. Never replace these membership checks with an arbitrary stored workspace ID. Owner-authorized Salla Test belongs to admin@reload.sa and is separate from the connected Zid workspace.

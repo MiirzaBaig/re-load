@@ -38,3 +38,7 @@ See ../docs/environment-configuration.md and the sanitized root .env.example. Th
 ## Snapshot
 
 The audit found 21 ACTIVE hosted functions and 31 migration versions matched between local and remote inventories. Deployment status alone does not establish source parity, template approval or full merchant acceptance. See CONTEXT.md and the dedicated feature guides for implementation boundaries.
+
+## Salla configuration update — 9 November 2026
+
+Current public-app route is Easy Mode, superseding the historical Custom OAuth release notes above. App 1155852112; one private `reload_connection_code` String setting binds Salla to an owner/admin-authorized Reload workspace via signed settings events. SALLA_AUTH_MODE=easy, SALLA_CUSTOM_TEST_ENABLED=false, SALLA_PUBLIC_APP_READY=false and SALLA_EASY_PILOT_STORE_IDS empty. Selectively synchronized Salla credentials and deployed lifecycle/renewal functions; no real pilot enabled. Details and exact dashboard setup: [Salla Easy Mode](../docs/salla-easy-mode.md).
