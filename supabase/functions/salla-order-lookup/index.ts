@@ -5,24 +5,10 @@ import { ZidMcp, zidOrderFacts } from "../_shared/zid-mcp.ts";
 import { corsHeaders, env, json } from "../_shared/http.ts";
 import { signReturnFacts } from "../_shared/return-token.ts";
 import { sallaGet } from "../_shared/salla.ts";
+import { sallaOrderDate as isoDate, sallaOrderStatus as statusOf, sallaOrderReferenceMatches } from "../_shared/salla-order.ts";
 import { adminClient } from "../_shared/supabase.ts";
 
 
-
-function statusOf(order: Record<string, any>) {
-  const raw = String(order.status?.slug ?? order.status?.name ?? order.status ?? "").toLowerCase();
-  if (raw.includes("deliver") || raw.includes("complete")) return "delivered";
-  if (raw.includes("ship")) return "shipped";
-  if (raw.includes("cancel")) return "cancelled";
-  return "processing";
-}
-
-function isoDate(value: unknown): string | null {
-  const raw = typeof value === "string" ? value : value && typeof value === "object" && "date" in value ? String((value as { date: unknown }).date) : "";
-  if (!raw) return null;
-  const parsed = new Date(raw.replace(" ", "T"));
-  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
-}
 
 function customerVerifier(order: Record<string, any>) {
   const customer = order.customer ?? {};
@@ -72,13 +58,14 @@ Deno.serve(async (request) => {
     const query = new URLSearchParams({ reference_id: orderNumber.trim(), per_page: "1", page: "1" });
     const list = await sallaGet(store.id, `/orders?${query.toString()}`);
     const candidate = Array.isArray(list?.data) ? list.data[0] : null;
-    if (!candidate?.id) return json({ error: "order_not_verified" }, 404);
+    if (!candidate?.id || !sallaOrderReferenceMatches(candidate, orderNumber)) return json({ error: "order_not_verified" }, 404);
 
     const [orderResponse, itemsResponse] = await Promise.all([
       sallaGet(store.id, `/orders/${encodeURIComponent(String(candidate.id))}?format=light`),
       sallaGet(store.id, `/orders/items?order_id=${encodeURIComponent(String(candidate.id))}`),
     ]);
     const order = (orderResponse?.data ?? candidate) as Record<string, any>;
+    if (String(order.id) !== String(candidate.id) || !sallaOrderReferenceMatches(order, orderNumber)) return json({ error: "order_not_verified" }, 404);
     const supplied = normalizeVerifier(verifier);
     if (!supplied || !customerVerifier(order).includes(supplied)) return json({ error: "order_not_verified" }, 404);
 
@@ -87,7 +74,7 @@ Deno.serve(async (request) => {
       storeId: store.id,
       orderId: String(order.reference_id ?? order.id),
       externalOrderId: String(order.id),
-      orderDate: isoDate(order.date) ?? new Date().toISOString(),
+      orderDate: isoDate(order.date) ?? "",
       deliveryDate: isoDate(order.delivered_at ?? order.delivery_date ?? order.shipping?.delivered_at),
       orderStatus: statusOf(order),
       customerEmail: String(order.customer?.email ?? order.receiver?.email ?? ""),

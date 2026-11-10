@@ -24,6 +24,7 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { getReturnStartPath } from "@/lib/return-url";
+import { needsReturnVerification } from "@/lib/return-errors";
 
 export function ReturnDetailsPage() {
   const router = useRouter();
@@ -66,6 +67,11 @@ export function ReturnDetailsPage() {
   const handleCheck = async () => {
     if (!selectedItemId) return;
     const verificationToken = sessionStorage.getItem("relod-verification-token");
+    if (sessionStorage.getItem("relod-return-code") && (!verificationToken || !supabase)) {
+      toast.error(t("Please verify your order again to continue.", "تحقق من طلبك مرة أخرى للمتابعة."));
+      router.push(getReturnStartPath());
+      return;
+    }
     let decision = null;
     if (verificationToken && supabase) {
       setChecking(true);
@@ -73,6 +79,11 @@ export function ReturnDetailsPage() {
         body: { verificationToken, itemId: selectedItemId, quantity, reason, condition, action: "evaluate" },
       });
       setChecking(false);
+      if (await needsReturnVerification(data, error)) {
+        toast.error(t("Please verify your order again to continue.", "تحقق من طلبك مرة أخرى للمتابعة."));
+        router.push(getReturnStartPath());
+        return;
+      }
       if (error || !data?.decision || !data?.decisionId) {
         toast.error(t("We could not check this return. Please try again.", "تعذر التحقق من طلب الإرجاع. حاول مرة أخرى."));
         return;

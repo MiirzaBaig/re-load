@@ -1,5 +1,11 @@
 # Reload current context
 
+Main release — 10 November 2026: owner approved committing/pushing the tested Salla and return-flow corrections below. This release includes fixture tests and migration 202611100001. A Git push deploys the frontend through Vercel; it does not apply the Supabase migration or deploy return-decide. Those backend release steps remain pending. Historical local/uncommitted notes below describe the testing stage.
+
+Dummy acceptance update — later 10 November: 24 isolated real-handler return/WhatsApp scenarios, 22 bilingual browser component checks and the full 196-test backend suite pass. Disposable PostgreSQL reproduced a concurrent duplicate-case race; local migration 202611100001 fixes it. New local fixes bind web submission to the evaluated selection and prevent live-to-demo fallback/recover expired verification. These new changes are uncommitted and undeployed; no hosted dummy records/policies/messages/shipments were created. See docs/salla-acceptance-2026-11-10.md.
+
+Salla acceptance update — 10 November 2026: actual demo product/detail/options/variant and order/item reads succeeded. Deployed order verification accepts the registered contact and rejects wrong contacts/nonexistent references. Explicit status/reference/timezone fixes deployed selectively; 172 backend tests passed. Salla Test still has no published policy; full customer return/case, real WhatsApp, dedicated reviewer access, real token renewal and paid entitlement acceptance remain pending. Source changes are uncommitted. See docs/salla-acceptance-2026-11-10.md; older chronological notes below do not supersede this evidence.
+
 Reviewed 2026-10-13. This document supersedes the September prototype context. Source code is authoritative for implementation; live inventories establish deployment, not successful customer outcomes.
 
 ## Purpose and boundaries

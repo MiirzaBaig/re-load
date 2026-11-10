@@ -1,5 +1,7 @@
 # Salla Easy Mode connection
 
+Latest acceptance, 10 November: real demo product/detail and order/item reads now pass, along with deployed matched-contact and rejected wrong-contact/nonexistent-order lookups. Status/reference/timezone corrections are deployed, with source still uncommitted. Full return-policy/case, real WhatsApp and renewal acceptance remain pending. See [acceptance evidence](salla-acceptance-2026-11-10.md).
+
 Implementation/deployment review: 9 November 2026. Public app 1155852112; client ID a8695793-40d8-481a-86be-2b5246591958. Private app 1924091915 is separate. No secrets belong in this document.
 
 ## Merchant flow

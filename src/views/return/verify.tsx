@@ -41,6 +41,11 @@ export function ReturnVerifyPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
+    if (live && !supabase) {
+      setLoading(false);
+      setError(t("We couldn’t connect to your store. Please try again shortly.", "تعذر الاتصال بمتجرك. حاول مرة أخرى بعد قليل."));
+      return;
+    }
     if (live && supabase && returnCode) {
       const { data, error: lookupError } = await supabase.functions.invoke("salla-order-lookup", {
         body: { returnCode, orderNumber, verifier: email },

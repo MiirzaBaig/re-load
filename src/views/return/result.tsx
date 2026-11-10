@@ -35,6 +35,7 @@ import { ReturnProgress } from "@/components/return-progress";
 import { supabase } from "@/lib/supabase";
 import { Spinner } from "@/components/ui/spinner";
 import { getReturnStartPath } from "@/lib/return-url";
+import { needsReturnVerification } from "@/lib/return-errors";
 
 export function ReturnResultPage() {
   const router = useRouter();
@@ -66,12 +67,22 @@ export function ReturnResultPage() {
     if (submitted || !context) return;
     const verificationToken = sessionStorage.getItem("relod-verification-token");
     const savedDecisionId = sessionStorage.getItem("relod-decision-id");
+    if (sessionStorage.getItem("relod-return-code") && (!verificationToken || !savedDecisionId || !supabase)) {
+      toast.error(t("Please verify your order again to continue.", "تحقق من طلبك مرة أخرى للمتابعة."));
+      router.push(getReturnStartPath());
+      return;
+    }
     if (verificationToken && savedDecisionId && supabase) {
       setSubmitting(true);
       const { data, error } = await supabase.functions.invoke("return-decide", {
         body: { verificationToken, decisionId: savedDecisionId, itemId: context.itemId, quantity: context.quantity, reason: context.reason, condition: context.condition, action: "create_case" },
       });
       setSubmitting(false);
+      if (await needsReturnVerification(data, error)) {
+        toast.error(t("Please verify your order again to continue.", "تحقق من طلبك مرة أخرى للمتابعة."));
+        router.push(getReturnStartPath());
+        return;
+      }
       if (error || !data?.caseId) {
         toast.error(t("Could not create the return request. Please try again.", "تعذر إنشاء طلب الإرجاع. حاول مرة أخرى."));
         return;

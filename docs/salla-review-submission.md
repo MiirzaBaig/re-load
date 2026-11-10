@@ -4,6 +4,10 @@ Prepared 9 November 2026 at the owner's request to push the current build and su
 
 ## Before clicking Request to publish
 
+Later 10 November: dummy acceptance found additional case-binding/concurrent-submission/live-to-demo fallback issues. Fixes pass backend, bilingual browser and disposable database tests but are **local and undeployed**, including migration 202611100001. Release these corrections before hosted reviewer testing. See the acceptance record for scope and evidence.
+
+10 November acceptance update: connection UI/workspace switching were released in c7eb084 and verified on Vercel. Actual demo product/detail/options/variant reads, order/item reads and matched-contact/wrong-contact/nonexistent-order checks now pass. Order status/reference/timezone fixes were deployed selectively; full policy/case and WhatsApp acceptance remains pending. See [the acceptance record](salla-acceptance-2026-11-10.md). The historical checklist below remains for review preparation; it is not evidence of a completed general launch.
+
 - Deploy the new connection screen and workspace selector to reload.sa and verify the deployment serves the pushed commit.
 - Rename the listing's current typo Relaod to Reload and verify the Arabic name.
 - Use current screenshots and correct support/privacy/setup links.

@@ -13,7 +13,7 @@ function daysBetween(from: Date, to: Date) { return Math.floor((to.getTime() - f
 function evaluate(rule: Rule, facts: Facts, item: Item, quantity: number, reason: string, condition: string): Applied {
   const list = rule.value.split(",").map((value) => value.trim());
   if (rule.category === "window") {
-    if (!facts.deliveryDate) return { rule, passed: false, evaluatedValue: "No delivery date available", reasonCode: "MISSING_DELIVERY_DATE" };
+    if (!facts.deliveryDate || !Number.isFinite(Date.parse(facts.deliveryDate))) return { rule, passed: false, evaluatedValue: "No delivery date available", reasonCode: "MISSING_DELIVERY_DATE" };
     const elapsed = daysBetween(new Date(facts.deliveryDate), new Date());
     const limit = Number.parseInt(rule.value, 10);
     const passed = elapsed >= 0 && elapsed <= limit;
@@ -51,17 +51,25 @@ Deno.serve(async (request) => {
     if(!await paidStoreAllowed(facts.storeId))return json({error:"assistant_unavailable"},403);
     const item = facts.items.find((entry) => entry.id === itemId);
     if (!item) return json({ error: "item_not_found" }, 400);
+    if (quantity < 1) return json({ error: "invalid_quantity" }, 400);
 
     const admin = adminClient();
     if (action === "create_case") {
       if (typeof decisionId !== "string") return json({ error: "decision_required" }, 400);
-      const { data: savedDecision } = await admin.from("eligibility_decisions").select("id, store_id, order_id, outcome")
+      const { data: savedDecision } = await admin.from("eligibility_decisions").select("id, store_id, order_id, outcome, order_facts_snapshot")
         .eq("id", decisionId).eq("store_id", facts.storeId).eq("order_id", facts.orderId).maybeSingle();
       if (!savedDecision || savedDecision.outcome === "NOT_ELIGIBLE") return json({ error: "case_not_allowed" }, 409);
+      const savedFacts = savedDecision.order_facts_snapshot;
+      const selected = savedFacts?._returnSelection;
+      if (!selected || selected.itemId !== itemId || selected.quantity !== quantity || selected.reason !== reason || selected.condition !== condition) {
+        return json({ error: "decision_details_changed" }, 409);
+      }
+      const savedItem = savedFacts.items?.find((entry: Item) => entry.id === itemId);
+      if (!savedItem) return json({ error: "decision_details_changed" }, 409);
       const { data: caseId, error } = await admin.rpc("create_return_case_from_decision", {
         p_decision_id: decisionId,
-        p_customer_snapshot: { name: facts.customerName, email: facts.customerEmail },
-        p_item_snapshot: { ...item, quantity, reason, condition },
+        p_customer_snapshot: { name: savedFacts.customerName, email: savedFacts.customerEmail },
+        p_item_snapshot: { ...savedItem, quantity, reason, condition },
       });
       if (error) throw error;
       return json({ caseId });
@@ -72,6 +80,11 @@ Deno.serve(async (request) => {
     const rules = Array.isArray(policy.rules_snapshot) ? policy.rules_snapshot as Rule[] : [];
     if (rules.length === 0) return json({ error: "published_policy_required" }, 409);
     const appliedRules = rules.map((rule) => evaluate(rule, facts, item, quantity, reason, condition));
+    // Purchased quantity is a hard boundary even if the merchant has no quantity rule.
+    if (!Number.isInteger(item.quantity) || quantity > item.quantity) appliedRules.push({
+      rule: { id: "purchased-quantity", name: "Purchased quantity", description: "Cannot return more than purchased", value: String(item.quantity), category: "quantity" },
+      passed: false, evaluatedValue: `${quantity} requested, ${item.quantity} purchased`, reasonCode: "QUANTITY_EXCEEDED",
+    });
     const failures = appliedRules.filter((entry) => !entry.passed);
     const missing = failures.some((entry) => ["MISSING_DELIVERY_DATE", "MISSING_ORDER_STATUS"].includes(entry.reasonCode));
     const outcome = missing ? "MANUAL_REVIEW" : failures.length ? "NOT_ELIGIBLE" : "ELIGIBLE";
@@ -82,7 +95,7 @@ Deno.serve(async (request) => {
       : `This item is outside the return policy: ${first?.rule.name ?? "policy condition"}, ${first?.evaluatedValue ?? "not met"}.`;
     const windowRule = rules.find((rule) => rule.category === "window");
     let deadline: string | undefined;
-    if (windowRule && facts.deliveryDate) { const date = new Date(facts.deliveryDate); date.setDate(date.getDate() + Number.parseInt(windowRule.value, 10)); deadline = date.toISOString(); }
+    if (windowRule && facts.deliveryDate && Number.isFinite(Date.parse(facts.deliveryDate))) { const date = new Date(facts.deliveryDate); date.setDate(date.getDate() + Number.parseInt(windowRule.value, 10)); deadline = date.toISOString(); }
     const decision = {
       outcome, reasonCodes, explanation, appliedRules,
       policyVersionId: policy.id, policyVersionLabel: policy.version_label,
@@ -93,7 +106,7 @@ Deno.serve(async (request) => {
     {
       const parameters = {
         p_store_id: facts.storeId, p_policy_version_id: policy.id, p_order_id: facts.orderId,
-        p_outcome: outcome, p_reason_codes: reasonCodes, p_order_facts: facts,
+        p_outcome: outcome, p_reason_codes: reasonCodes, p_order_facts: { ...facts, _returnSelection: { itemId, quantity, reason, condition } },
         p_policy_snapshot: { ...policy, rules_snapshot: rules },
         p_customer_snapshot: { name: facts.customerName, email: facts.customerEmail },
         p_item_snapshot: { ...item, quantity, reason, condition }, p_create_case: false,
@@ -111,6 +124,7 @@ Deno.serve(async (request) => {
   } catch (error) {
     console.error("return_decision_failed", error instanceof Error ? error.message : "unknown");
     if (error instanceof Error && error.message === "expired_return_token") return json({ error: "expired_return_token" }, 401);
+    if (error instanceof Error && error.message === "invalid_return_token") return json({ error: "invalid_return_token" }, 401);
     return json({ error: "return_decision_failed" }, 500);
   }
 });
